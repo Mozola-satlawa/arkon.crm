@@ -4,6 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>ARKON CRM — demo 1-plikowe</title>
+  <!-- Chart.js i jsPDF z CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <style>
     :root{
       --bg:#0b1020;--card:#0f1636;--line:#263168;--accent:#3a6df0;
@@ -18,7 +21,7 @@
     .tab.active{background:var(--chip)}
     .grid{display:grid;gap:16px}
     .cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
-    @media (max-width:900px){.cols-3{grid-template-columns:1fr}}
+    @media (max-width:900px){ .cols-3{grid-template-columns:1fr} }
     .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
     .small{opacity:.8;color:var(--muted);font-size:13px}
     h1{margin:0 0 10px}
@@ -40,6 +43,7 @@
     .msg strong{color:#9ec5ff}
     .list-reset{list-style:none;margin:0;padding:0}
     .danger{color:#ffb4b4}
+    canvas{background:transparent}
   </style>
 </head>
 <body>
@@ -60,18 +64,14 @@
     <section id="tab-dashboard" class="grid">
       <h1>Pulpit</h1>
       <div class="grid cols-3">
-        <div class="card">
-          <div class="small">Przychód (symulacja)</div>
-          <h2 id="db-revenue">0 zł</h2>
-        </div>
-        <div class="card">
-          <div class="small">Aktywne umowy</div>
-          <h2 id="db-open">0</h2>
-        </div>
-        <div class="card">
-          <div class="small">Brakujące dokumenty</div>
-          <h2 id="db-missing">0</h2>
-        </div>
+        <div class="card"><div class="small">Przychód (symulacja)</div><h2 id="db-revenue">0 zł</h2></div>
+        <div class="card"><div class="small">Aktywne umowy</div><h2 id="db-open">0</h2></div>
+        <div class="card"><div class="small">Brakujące dokumenty</div><h2 id="db-missing">0</h2></div>
+      </div>
+      <div class="grid cols-3">
+        <div class="card"><div class="small">Przychody miesięczne</div><canvas id="chartRevenue" height="160"></canvas></div>
+        <div class="card"><div class="small">Liczba umów</div><canvas id="chartContracts" height="160"></canvas></div>
+        <div class="card"><div class="small">Udział statusów</div><canvas id="chartPie" height="160"></canvas></div>
       </div>
     </section>
 
@@ -90,9 +90,7 @@
       </div>
       <div class="card scroll">
         <table>
-          <thead>
-            <tr><th>ID</th><th>Nazwa</th><th>E-mail</th><th>Telefon</th><th>Opiekun</th></tr>
-          </thead>
+          <thead><tr><th>ID</th><th>Nazwa</th><th>E-mail</th><th>Telefon</th><th>Opiekun</th></tr></thead>
           <tbody id="cli-rows"></tbody>
         </table>
         <div id="cli-empty" class="muted" style="padding:8px;display:none">Brak wyników…</div>
@@ -109,6 +107,7 @@
           <button class="btn ghost" id="mode-cash">Gotówka</button>
           <button class="btn ghost" id="mode-pref">Prefinansowanie</button>
           <span id="mode-badge" class="chip">Gotówka</span>
+          <button class="btn" id="btn-pdf" title="Wygeneruj prosty PDF z podsumowaniem">Eksport PDF</button>
         </div>
         <div class="spacer"></div>
         <div class="row">
@@ -131,10 +130,8 @@
       <div class="card scroll">
         <h2>Lista umów (demo)</h2>
         <table>
-          <thead>
-            <tr><th>ID</th><th>Klient</th><th>Kwota</th><th>Status</th></tr>
-          </thead>
-        <tbody id="ctr-rows"></tbody>
+          <thead><tr><th>ID</th><th>Klient</th><th>Kwota</th><th>Status</th></tr></thead>
+          <tbody id="ctr-rows"></tbody>
         </table>
       </div>
     </section>
@@ -142,14 +139,10 @@
     <!-- PRODUCTS -->
     <section id="tab-products" class="grid" hidden>
       <h1>Produkty i komponenty</h1>
-      <div class="card">
-        <div class="row" id="prod-filters"></div>
-      </div>
+      <div class="card"><div class="row" id="prod-filters"></div></div>
       <div class="card scroll">
         <table>
-          <thead>
-            <tr><th>SKU</th><th>Nazwa</th><th>Kategoria</th><th>Cena</th></tr>
-          </thead>
+          <thead><tr><th>SKU</th><th>Nazwa</th><th>Kategoria</th><th>Cena</th></tr></thead>
           <tbody id="prod-rows"></tbody>
         </table>
       </div>
@@ -161,9 +154,7 @@
       <div class="card">
         <h2>Lista wymaganych dokumentów</h2>
         <ul id="doc-list" class="list-reset"></ul>
-        <div class="right" style="margin-top:10px">
-          <button id="doc-reset" class="btn ghost">Odznacz wszystko</button>
-        </div>
+        <div class="right" style="margin-top:10px"><button id="doc-reset" class="btn ghost">Odznacz wszystko</button></div>
       </div>
     </section>
 
@@ -176,7 +167,7 @@
           <input id="chat-text" class="field" placeholder="Napisz wiadomość…" />
           <button id="chat-send" class="btn">Wyślij</button>
         </div>
-        <div class="small muted" style="margin-top:8px">* Demo lokalne (bez backendu). Docelowo: Supabase Realtime.</div>
+        <div class="small muted" style="margin-top:8px">* Demo lokalne (bez backendu). Docelowo: realtime.</div>
       </div>
     </section>
 
@@ -185,12 +176,11 @@
       <h1>Ustawienia</h1>
       <div class="card">
         <div class="row">
-          <button class="btn" onclick="window.print()">Drukuj / PDF</button>
+          <button class="btn" onclick="window.print()">Drukuj / PDF przeglądarki</button>
           <button id="wipe" class="btn ghost danger" title="Usuwa zapis lokalny">Wyczyść zapisane dane (localStorage)</button>
         </div>
         <div class="small" style="margin-top:10px">
-          To wersja 1-plikowa. Gdy będziesz gotowa: dodamy logowanie (role: admin/handlowiec),
-          bazę danych oraz magazyn skanów (Supabase), generowanie PDF i czat realtime.
+          To wersja 1-plikowa (front). Backend (Supabase, OAuth, Storage, realtime) można łatwo dodać w pełnej aplikacji Next.js.
         </div>
       </div>
     </section>
@@ -204,8 +194,9 @@
       { id:"C-003", name:"Piotr Kamiński", email:"piotr@example.com", phone:"600-100-202", manager:"Kasia" },
     ];
     const seedContracts = [
-      { id:"U-1001", customer:"Anna Kowalska", total:21500, status:"W toku" },
-      { id:"U-1002", customer:"Jan Nowak",     total:42000, status:"Zakończona" },
+      { id:"U-1001", customer:"Anna Kowalska", total:21500, status:"W toku", month:1 },
+      { id:"U-1002", customer:"Jan Nowak",     total:42000, status:"Zakończona", month:2 },
+      { id:"U-1003", customer:"Piotr Kamiński",total:15000, status:"W toku", month:2 },
     ];
     const seedProducts = [
       { sku:"PV-410",  name:"Panel 410W",               category:"fotowoltaika", price:520 },
@@ -250,24 +241,36 @@
           chat: s.chat || [{from:"System",text:"Witaj w czacie ARKON 👋"}],
           mode: s.mode || "gotówka"
         };
-      }catch{ return {clients:seedClients.slice(),contracts:seedContracts.slice(),docs:defaultDocList.map(n=>({name:n,done:false})),chat:[{from:"System",text:"Witaj w czacie ARKON 👋"}],mode:"gotówka"} }
+      }catch{
+        return {
+          clients:seedClients.slice(),
+          contracts:seedContracts.slice(),
+          docs:defaultDocList.map(n=>({name:n,done:false})),
+          chat:[{from:"System",text:"Witaj w czacie ARKON 👋"}],
+          mode:"gotówka"
+        };
+      }
     }
     let state = loadState();
     function saveState(){
       localStorage.setItem(LSKEY, JSON.stringify(state));
-      renderDashboard(); // szybkie odświeżenie wskaźników
+      renderDashboard();
     }
 
     // ====== POMOCNICZE ======
-    const $ = sel => document.querySelector(sel);
+    const $  = sel => document.querySelector(sel);
     const $$ = sel => Array.from(document.querySelectorAll(sel));
-    function money(x){ return (x||0).toLocaleString("pl-PL")+" zł"; }
+    const money = x => (x||0).toLocaleString("pl-PL")+" zł";
     function annuity(P, months, annualPct){
       const r = (annualPct/100)/12;
       if (!P||!months) return 0;
       if (r===0) return Math.round(P/months);
       const a = r*Math.pow(1+r,months)/(Math.pow(1+r,months)-1);
       return Math.round(P*a);
+    }
+    function nextClientId(){
+      const n = state.clients.length+1;
+      return C-${String(n).padStart(3,"0")};
     }
 
     // ====== NAV ======
@@ -278,6 +281,7 @@
         const key = el.dataset.tab;
         $$("section[id^='tab-']").forEach(s => s.hidden = true);
         $("#tab-"+key).hidden = false;
+        if(key==="dashboard") drawCharts();
       });
     });
 
@@ -289,6 +293,51 @@
       $("#db-revenue").textContent = money(revenue);
       $("#db-open").textContent = open;
       $("#db-missing").textContent = missing;
+      // aktualizacja wykresów, jeśli są narysowane
+      if(window._chartsDrawn) drawCharts(true);
+    }
+
+    let _revenueChart,_contractsChart,_pieChart;
+    function drawCharts(update=false){
+      const months = ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII"];
+      const revPerMonth = new Array(12).fill(0);
+      const cntPerMonth = new Array(12).fill(0);
+      state.contracts.forEach(c=>{
+        const m = (c.month||1)-1;
+        revPerMonth[m]+= (c.total||0);
+        cntPerMonth[m]+= 1;
+      });
+      const statusCounts = state.contracts.reduce((acc,c)=>{
+        acc[c.status]=(acc[c.status]||0)+1; return acc;
+      },{});
+
+      const rc = $("#chartRevenue"), cc=$("#chartContracts"), pc=$("#chartPie");
+      if(!_revenueChart){
+        _revenueChart = new Chart(rc, {
+          type:"line",
+          data:{ labels:months, datasets:[{ label:"Przychód (zł)", data:revPerMonth }]},
+          options:{ plugins:{legend:{labels:{color:"#e7ecff"}}}, scales:{x:{ticks:{color:"#a3b3ff"}}, y:{ticks:{color:"#a3b3ff"}}}}
+        });
+      }else{ _revenueChart.data.datasets[0].data=revPerMonth; _revenueChart.update(); }
+
+      if(!_contractsChart){
+        _contractsChart = new Chart(cc, {
+          type:"bar",
+          data:{ labels:months, datasets:[{ label:"Umowy (szt.)", data:cntPerMonth }]},
+          options:{ plugins:{legend:{labels:{color:"#e7ecff"}}}, scales:{x:{ticks:{color:"#a3b3ff"}}, y:{ticks:{color:"#a3b3ff"}}}}
+        });
+      }else{ _contractsChart.data.datasets[0].data=cntPerMonth; _contractsChart.update(); }
+
+      const pieLabels = Object.keys(statusCounts), pieData = Object.values(statusCounts);
+      if(!_pieChart){
+        _pieChart = new Chart(pc, {
+          type:"doughnut",
+          data:{ labels:pieLabels, datasets:[{ data:pieData }]},
+          options:{ plugins:{legend:{labels:{color:"#e7ecff"}}}}
+        });
+      }else{ _pieChart.data.labels = pieLabels; _pieChart.data.datasets[0].data=pieData; _pieChart.update(); }
+
+      window._chartsDrawn = true;
     }
 
     // ====== CLIENTS ======
@@ -301,7 +350,12 @@
       );
       filtered.forEach(c=>{
         const tr = document.createElement("tr");
-        tr.innerHTML = <td>${c.id}</td><td>${c.name}</td><td>${c.email}</td><td>${c.phone}</td><td><span class="chip">${c.manager||"-"}</span></td>;
+        tr.innerHTML = `
+          <td>${c.id}</td>
+          <td>${c.name}</td>
+          <td>${c.email}</td>
+          <td>${c.phone}</td>
+          <td><span class="chip">${c.manager||"-"}</span></td>`;
         rows.appendChild(tr);
       });
       $("#cli-empty").style.display = filtered.length? "none":"block";
@@ -311,7 +365,7 @@
       const name=$("#cli-name").value.trim();
       if(!name) return;
       const next = {
-        id:C-${(state.clients.length+1).toString().padStart(3,"0")},
+        id: nextClientId(),
         name,
         email:$("#cli-email").value.trim(),
         phone:$("#cli-phone").value.trim(),
@@ -327,13 +381,18 @@
       const tb = $("#ctr-rows"); tb.innerHTML="";
       state.contracts.forEach(c=>{
         const tr=document.createElement("tr");
-        tr.innerHTML=<td>${c.id}</td><td>${c.customer}</td><td>${money(c.total)}</td><td><span class="chip">${c.status}</span></td>;
+        tr.innerHTML = `
+          <td>${c.id}</td>
+          <td>${c.customer}</td>
+          <td>${money(c.total)}</td>
+          <td><span class="chip">${c.status}</span></td>`;
         tb.appendChild(tr);
       });
     }
     function setMode(m){
       state.mode=m; saveState();
-      $("#mode-badge").textContent = m.charAt(0).toUpperCase()+m.slice(1);
+      const label = (m==="gotówka"?"Gotówka":"Prefinansowanie");
+      $("#mode-badge").textContent = label;
       $("#pref-note").style.display = (m==="prefinansowanie")?"block":"none";
       $("#mode-cash").classList.toggle("active", m==="gotówka");
       $("#mode-pref").classList.toggle("active", m==="prefinansowanie");
@@ -341,6 +400,7 @@
     }
     $("#mode-cash").addEventListener("click",()=>setMode("gotówka"));
     $("#mode-pref").addEventListener("click",()=>setMode("prefinansowanie"));
+
     function calc(){
       const sum=+$("#sum").value||0;
       const disc=+$("#discount").value||0;
@@ -348,13 +408,35 @@
       const rate=+$("#rate").value||0;
       const prov=+$("#prov").value||0;
       const base=Math.max(0,sum-disc);
-      const inst=annuity(base,months,rate);
+      const inst=state.mode==="prefinansowanie" ? annuity(base,months,rate) : 0;
       const provVal=Math.round(base*(prov/100));
       $("#out-base").textContent=money(base);
       $("#out-inst").textContent=money(inst);
       $("#out-prov").textContent=money(provVal);
     }
     ["sum","discount","months","rate","prov"].forEach(id=>$("#"+id).addEventListener("input",calc));
+
+    // PDF prostego podsumowania umowy
+    $("#btn-pdf").addEventListener("click", ()=>{
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.setFontSize(16);
+      doc.text("ARKON CRM - Podsumowanie umowy", 14, 20);
+      doc.setFontSize(11);
+      const mode = state.mode==="prefinansowanie" ? "Prefinansowanie" : "Gotówka";
+      const base = $("#out-base").textContent;
+      const inst = $("#out-inst").textContent;
+      const prov = $("#out-prov").textContent;
+      const lines = [
+        Tryb: ${mode},
+        Podstawa: ${base},
+        Rata / mies.: ${inst},
+        Prowizja: ${prov},
+        Data: ${new Date().toLocaleString("pl-PL")}
+      ];
+      let y=36; lines.forEach(l=>{ doc.text(l,14,y); y+=8; });
+      doc.save("umowa-podsumowanie.pdf");
+    });
 
     // ====== PRODUCTS ======
     const prodCats=["wszystko","fotowoltaika","pompy","piece","hydraulika","ocieplenie"];
@@ -372,7 +454,11 @@
       const list=seedProducts.filter(p=>cat==="wszystko"?true:p.category===cat);
       list.forEach(p=>{
         const tr=document.createElement("tr");
-        tr.innerHTML=<td>${p.sku}</td><td>${p.name}</td><td><span class="chip">${p.category}</span></td><td>${money(p.price)}</td>;
+        tr.innerHTML = `
+          <td>${p.sku}</td>
+          <td>${p.name}</td>
+          <td><span class="chip">${p.category}</span></td>
+          <td>${money(p.price)}</td>`;
         rows.appendChild(tr);
       });
     }
@@ -392,7 +478,7 @@
       ul.addEventListener("change",e=>{
         const i=+e.target.dataset.i;
         if(Number.isFinite(i)){ state.docs[i].done=!state.docs[i].done; saveState(); renderDashboard(); }
-      }, { once:true }); // re-podpinamy przy każdym renderze
+      }, { once:true });
     }
     $("#doc-reset").addEventListener("click",()=>{
       state.docs=state.docs.map(d=>({...d,done:false})); saveState(); renderDocs();
@@ -404,7 +490,7 @@
       state.chat.forEach(m=>{
         const div=document.createElement("div");
         div.className="msg";
-        div.innerHTML=<strong>${m.from}:</strong> <span>${m.text}</span>;
+        div.innerHTML = <strong>${m.from}:</strong> <span>${m.text}</span>;
         box.appendChild(div);
       });
       box.scrollTop=box.scrollHeight;
@@ -416,12 +502,13 @@
 
     // ====== SETTINGS ======
     $("#wipe").addEventListener("click",()=>{
-      if(confirm("Usunąć zapisane dane lokalne?")){ localStorage.removeItem(LSKEY); state=loadState(); boot(); }
+      if(confirm("Usunąć zapisane dane lokalne?")){
+        localStorage.removeItem(LSKEY); state=loadState(); boot();
+      }
     });
 
     // ====== BOOT ======
     function boot(){
-      // ustaw aktywną zakładkę na pulpit
       $$(".tab").forEach(t=>t.classList.remove("active"));
       document.querySelector('.tab[data-tab="dashboard"]').classList.add("active");
       $$("section[id^='tab-']").forEach(s=>s.hidden=true);
@@ -434,6 +521,7 @@
       renderDocs();
       renderChat();
       calc();
+      drawCharts();
     }
     boot();
   </script>
