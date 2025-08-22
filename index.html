@@ -1,933 +1,787 @@
 <!doctype html>
 <html lang="pl">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>ARKON CRM — SPA (Pulpit • Klienci • Komponenty • Dokumenty • Upload • Leady • Chat • Ustawienia • Eksport/Import • Kalkulator)</title>
-<meta name="description" content="Jednoplikiowy panel ARKON CRM z płynną nawigacją między sekcjami (SPA).">
-<style>
-  :root{
-    --bg:#0b1020;--card:#0f1636;--line:#263168;--accent:#3a6df0;
-    --text:#e7ecff;--muted:#a3b3ff;--chip:#1a244d;--field:#0e1330;
-    --good:#2fbf71;--warn:#ffb84d;--bad:#ff6b6b;--grid:#243059;
-    --fade:220ms;
-  }
-  *{box-sizing:border-box}
-  html,body{margin:0;height:100%}
-  body{font:14px/1.45 system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
-  a{color:#cfe0ff;text-decoration:none}
-  .container{max-width:1280px;margin:0 auto;padding:16px}
-
-  /* NAV */
-  .nav{position:sticky;top:0;z-index:20;display:flex;gap:8px;align-items:center;
-       padding:10px 12px;border-bottom:1px solid var(--line);background:rgba(11,16,32,.9);
-       backdrop-filter: blur(6px);}
-  .brand{font-weight:700;letter-spacing:.4px;margin-right:6px}
-  .spacer{flex:1}
-  .tab{padding:6px 10px;border-radius:8px;cursor:pointer;border:1px solid transparent;user-select:none}
-  .tab.active{background:var(--chip);border-color:#324189}
-  .tab:focus-visible{outline:2px solid #6ea1ff;outline-offset:2px}
-
-  /* LAYOUT */
-  .grid{display:grid;gap:16px}
-  .cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
-  .cols-2{grid-template-columns:1fr 1fr}
-  @media (max-width:1100px){ .cols-3,.cols-2{grid-template-columns:1fr} .side{position:static;max-height:none} }
-  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
-  .small{opacity:.85;color:var(--muted);font-size:13px}
-  h1{margin:0 0 10px}
-  h2{margin:0 0 10px;font-size:18px}
-  h3{margin:0 0 8px}
-  .chip{display:inline-block;padding:4px 8px;border-radius:999px;background:var(--chip)}
-  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-  .right{display:flex;gap:8px;justify-content:flex-end}
-  .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
-  input,select,button,textarea{font:inherit}
-  .field{background:var(--field);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:10px 12px;outline:0;width:100%}
-  .btn{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:10px 14px;cursor:pointer}
-  .btn.ghost{background:transparent;border:1px solid var(--accent);color:#cfe0ff}
-  .btn.bad{background:transparent;border:1px solid var(--bad);color:#ffb4b4}
-  .btn.good{background:var(--good)}
-  .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
-  .scroll{overflow:auto}
-  table{width:100%;border-collapse:separate;border-spacing:0}
-  th{font-weight:600;text-align:left;border-bottom:1px solid var(--line);padding:8px 6px;color:var(--muted);font-size:13px;white-space:nowrap}
-  td{border-bottom:1px solid #1a244d;padding:8px 6px;vertical-align:top}
-
-  /* SUBTABS (komponenty) */
-  .subtabs{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 10px}
-  .subtabs .sb{padding:6px 10px;border-radius:999px;border:1px solid #2a3a75;cursor:pointer}
-  .subtabs .sb[aria-selected="true"]{background:#1b2550;border-color:#67a1ff}
-
-  /* CHAT */
-  .chat-box{border:1px solid var(--line);border-radius:8px;padding:12px;min-height:240px;max-height:380px;overflow:auto;background:#0d1330}
-  .bubble{background:#142057;border:1px solid #2a3777;border-radius:10px;padding:8px 10px;margin:6px 0}
-  .bubble .meta{font-size:12px;color:#a8b3ff;opacity:.9;margin-bottom:4px}
-  .dropzone{border:2px dashed #2a3777;border-radius:10px;padding:10px;text-align:center;cursor:pointer}
-  .dropzone.drag{background:#111a3f}
-  .file-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid #2a3777;border-radius:999px;margin:4px 6px 0 0}
-
-  /* PRZEJŚCIA (SPA) */
-  section.page{opacity:0;transform:translateY(6px);pointer-events:none;transition:opacity var(--fade) ease, transform var(--fade) ease}
-  section.page.visible{opacity:1;transform:translateY(0);pointer-events:auto}
-  section.page[hidden]{display:block !important; /* ukrycie kontroluje .visible */}
-  @media print{ .nav,.btn,.dropzone,.right,.subtabs{display:none!important} .container{padding-top:0} section.page{opacity:1!important;transform:none!important} }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ARKON CRM — wersja rozszerzona (1-plikowa)</title>
+  <style>
+    :root{
+      --bg:#0b1020;--card:#0f1636;--line:#263168;--accent:#3a6df0;
+      --text:#e7ecff;--muted:#a3b3ff;--chip:#1a244d;--field:#0e1330;
+      --good:#2fbf71;--warn:#ffb84d;--bad:#ff6b6b;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%}
+    body{font:14px/1.45 system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    a{color:#cfe0ff;text-decoration:none}
+    .container{max-width:1280px;margin:0 auto;padding:16px}
+    .nav{position:sticky;top:0;z-index:10;display:flex;gap:12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--bg)}
+    .brand{font-weight:700;letter-spacing:.4px}
+    .tab{padding:6px 10px;border-radius:8px;cursor:pointer}
+    .tab.active{background:var(--chip)}
+    .grid{display:grid;gap:16px}
+    .cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .cols-2{grid-template-columns:1fr 1fr}
+    @media (max-width:1000px){ .cols-3,.cols-2{grid-template-columns:1fr} .side{position:static;max-height:none} }
+    .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+    .small{opacity:.85;color:var(--muted);font-size:13px}
+    h1{margin:0 0 10px}
+    h2{margin:0 0 10px;font-size:18px}
+    .chip{display:inline-block;padding:4px 8px;border-radius:999px;background:var(--chip)}
+    input,select,button,textarea{font:inherit}
+    .field{background:var(--field);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:10px 12px;outline:0;width:100%}
+    .row{display:flex;gap:8px;flex-wrap:wrap}
+    .btn{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:10px 14px;cursor:pointer}
+    .btn.ghost{background:transparent;border:1px solid var(--accent);color:#cfe0ff}
+    .btn.bad{background:transparent;border:1px solid var(--bad);color:#ffb4b4}
+    .btn.good{background:var(--good)}
+    table{width:100%;border-collapse:collapse}
+    th{font-weight:600;text-align:left;border-bottom:1px solid var(--line);padding:8px 6px;color:var(--muted);font-size:13px;white-space:nowrap}
+    td{border-bottom:1px solid #1a244d;padding:8px 6px;vertical-align:top}
+    .scroll{overflow:auto}
+    .right{display:flex;gap:8px;justify-content:flex-end}
+    .spacer{height:6px}
+    .muted{opacity:.7}
+    .msg{margin-bottom:6px}
+    .msg strong{color:#9ec5ff}
+    .list-reset{list-style:none;margin:0;padding:0}
+    .danger{color:#ffb4b4}
+    .status{padding:2px 8px;border-radius:999px}
+    .status.w-toku{background:#24336b}
+    .status.podpisana{background:#1d3d2f}
+    .status.anulowana{background:#4a1d1d}
+    .layout{display:grid;grid-template-columns:1fr 340px;gap:16px}
+    .side{position:sticky;top:64px;max-height:calc(100vh - 96px);overflow:auto}
+    .cart-row{display:flex;align-items:center;gap:8px}
+    .cart-row input[type="number"]{width:80px}
+    .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
+  </style>
 </head>
 <body>
   <!-- NAV -->
-  <div class="nav" role="navigation" aria-label="Główne">
+  <div class="nav">
     <div class="brand">ARKON CRM</div>
-    <button class="tab active" data-tab="dashboard" tabindex="0">Pulpit</button>
-    <button class="tab" data-tab="clients" tabindex="0">Klienci</button>
-    <button class="tab" data-tab="components" tabindex="0">Komponenty</button>
-    <button class="tab" data-tab="docs" tabindex="0">Dokumenty</button>
-    <button class="tab" data-tab="upload" tabindex="0">Przesył plików</button>
-    <button class="tab" data-tab="leads" tabindex="0">Leady</button>
-    <button class="tab" data-tab="chat" tabindex="0">Komunikator</button>
-    <button class="tab" data-tab="settings" tabindex="0">Ustawienia</button>
-    <button class="tab" data-tab="export" tabindex="0">Eksport/Import</button>
-    <div class="spacer"></div>
-    <a class="tab" href="#calculator" data-tab="calculator">Kalkulator</a>
+    <div class="tab active" data-tab="dashboard" tabindex="0">Pulpit</div>
+    <div class="tab" data-tab="clients" tabindex="0">Klienci</div>
+    <div class="tab" data-tab="contracts" tabindex="0">Umowy</div>
+    <div class="tab" data-tab="products" tabindex="0">Produkty</div>
+    <div class="tab" data-tab="components" tabindex="0">Komponenty</div>
+    <div class="tab" data-tab="docs" tabindex="0">Dokumenty</div>
+    <div class="tab" data-tab="chat" tabindex="0">Komunikator</div>
+    <div class="tab" data-tab="settings" tabindex="0">Ustawienia</div>
   </div>
 
   <div class="container">
-
-    <!-- ====== PULPIT ====== -->
-    <section id="tab-dashboard" class="page visible">
+    <!-- DASHBOARD -->
+    <section id="tab-dashboard" class="grid">
       <h1>Pulpit</h1>
       <div class="grid cols-3">
         <div class="card"><div class="small">Przychód (symulacja)</div><h2 id="db-revenue">0 zł</h2></div>
-        <div class="card"><div class="small">Klienci</div><h2 id="db-clients">0</h2></div>
-        <div class="card"><div class="small">Leady</div><h2 id="db-leads">0</h2></div>
+        <div class="card"><div class="small">Aktywne umowy</div><h2 id="db-open">0</h2></div>
+        <div class="card"><div class="small">Brakujące dokumenty</div><h2 id="db-missing">0</h2></div>
       </div>
       <div class="card small">
-        Skróty: <span class="kbd">/</span> szukaj w Klientach • <span class="kbd">Alt+1..9</span> przełączanie zakładek • eksport/backup w „Eksport/Import”.
+        Porady: <span class="kbd">/</span> fokus wyszukiwania • <span class="kbd">Alt+N</span> nowy klient •
+        <span class="kbd">Alt+U</span> nowa umowa • zapisz/odtwórz dane w Ustawieniach.
       </div>
     </section>
 
-    <!-- ====== KLIENCI ====== -->
-    <section id="tab-clients" class="page" hidden>
+    <!-- CLIENTS -->
+    <section id="tab-clients" class="grid" hidden>
       <h1>Klienci</h1>
-      <div class="grid cols-2">
-        <div class="card">
-          <div class="row" style="margin-bottom:6px">
-            <input id="cli-q" class="field" placeholder="🔎 Szukaj: nazwa, e-mail, telefon, tag…" style="min-width:280px">
-            <select id="cli-status" class="field" style="max-width:200px">
-              <option value="">Status (wszystkie)</option>
-              <option>LEAD</option><option>ZAPYTANIE</option><option>W TOKU</option><option>KLIENT</option><option>UTRACONY</option>
-            </select>
-            <select id="cli-sort" class="field" style="max-width:200px">
-              <option value="name.asc">Sort: Nazwa ↑</option>
-              <option value="name.desc">Sort: Nazwa ↓</option>
-              <option value="created.desc">Sort: Najnowsze</option>
-              <option value="created.asc">Sort: Najstarsze</option>
-            </select>
-            <button id="cli-add" class="btn good">+ Nowy klient</button>
+      <div class="layout">
+        <div class="grid">
+          <div class="card">
+            <div class="row">
+              <input id="cli-q" class="field" placeholder="Szukaj (imię, email, tel, opiekun)..." />
+              <select id="cli-sort" class="field" style="max-width:210px">
+                <option value="name">Sortuj: Nazwa A→Z</option>
+                <option value="created_desc">Sortuj: Najnowsze</option>
+                <option value="manager">Sortuj: Opiekun</option>
+              </select>
+            </div>
+            <div class="spacer"></div>
+            <div class="row">
+              <input id="cli-name" class="field" placeholder="Imię i nazwisko" />
+              <input id="cli-email" class="field" placeholder="E-mail" />
+              <input id="cli-phone" class="field" placeholder="Telefon" />
+              <input id="cli-manager" class="field" placeholder="Opiekun" />
+              <button id="cli-add" class="btn">Dodaj klienta</button>
+            </div>
           </div>
-          <div class="scroll">
-            <table id="cli-table">
+
+          <div class="card scroll">
+            <table>
               <thead>
                 <tr>
-                  <th>▶</th><th>Nazwa</th><th>Status</th><th>Kontakt</th><th>Adres</th><th>Tagi</th>
+                  <th>ID</th>
+                  <th>Nazwa</th>
+                  <th>E-mail</th><th>Telefon</th><th>Opiekun</th>
                 </tr>
               </thead>
-              <tbody id="cli-tbody"></tbody>
+              <tbody id="cli-rows"></tbody>
             </table>
+            <div id="cli-empty" class="muted" style="padding:8px;display:none">Brak wyników…</div>
           </div>
         </div>
-        <aside class="card side">
-          <h3>Edycja klienta</h3>
-          <div class="small muted">Wybierz klienta z listy, by edytować.</div>
-          <div class="grid" style="margin-top:8px">
-            <input id="e_name" class="field" placeholder="Nazwa / Imię i nazwisko">
-            <select id="e_status" class="field">
-              <option>LEAD</option><option>ZAPYTANIE</option><option>W TOKU</option><option>KLIENT</option><option>UTRACONY</option>
-            </select>
-            <input id="e_email" class="field" placeholder="email@domena.pl">
-            <input id="e_phone" class="field" placeholder="+48 …">
-            <input id="e_addr" class="field" placeholder="adres">
-            <input id="e_tags" class="field" placeholder="tagi po przecinku">
-            <textarea id="e_notes" class="field" placeholder="Notatki" rows="4"></textarea>
-            <div class="right">
-              <button id="cli-dup" class="btn ghost">Duplikuj</button>
-              <button id="cli-del" class="btn bad">Usuń</button>
+
+        <!-- PANEL BOCZNY -->
+        <aside class="side">
+          <div class="card" id="cli-side">
+            <h2>Szczegóły klienta</h2>
+            <div id="cli-side-none" class="muted">Wybierz klienta z listy, by zobaczyć szczegóły.</div>
+            <div id="cli-side-body" hidden>
+              <div class="small">ID: <span id="cli-s-id"></span></div>
+              <div style="margin:8px 0 12px"><span class="chip" id="cli-s-manager"></span></div>
+              <div class="small">Kontakt</div>
+              <div id="cli-s-email"></div>
+              <div id="cli-s-phone"></div>
+              <div class="spacer"></div>
+              <div class="small">Notatki</div>
+              <textarea id="cli-s-notes" class="field" rows="5" placeholder="Własne notatki o kliencie…"></textarea>
+              <div class="right" style="margin-top:8px">
+                <button id="cli-s-save" class="btn good">Zapisz notatki</button>
+              </div>
+              <div class="spacer"></div>
+              <div class="small">Umowy klienta</div>
+              <ul id="cli-s-contracts" class="list-reset"></ul>
             </div>
           </div>
         </aside>
       </div>
     </section>
 
-    <!-- ====== KOMPONENTY ====== -->
-    <section id="tab-components" class="page" hidden>
+    <!-- CONTRACTS -->
+    <section id="tab-contracts" class="grid" hidden>
+      <h1>Umowy</h1>
+      <div class="layout">
+        <div class="grid">
+          <div class="card">
+            <h2>Nowa umowa</h2>
+            <div class="row">
+              <select id="ctr-client" class="field" style="min-width:220px"></select>
+              <select id="ctr-type" class="field" style="max-width:220px">
+                <option value="gotówka">Gotówka</option>
+                <option value="prefinansowanie">Prefinansowanie</option>
+              </select>
+              <input id="ctr-discount" class="field" type="number" value="0" placeholder="Rabat (zł)" />
+              <input id="ctr-prov" class="field" type="number" step="0.1" value="4" placeholder="Prowizja %"/>
+              <button id="ctr-create" class="btn">Utwórz z koszyka produktów</button>
+            </div>
+            <div class="small" style="margin-top:8px">Wybierz produkty w zakładce <b>Produkty</b> i/lub <b>Komponenty</b>, dodaj je do koszyka po prawej, a tu zapisz umowę.</div>
+          </div>
+
+          <div class="card scroll">
+            <h2>Lista umów</h2>
+            <table>
+              <thead><tr><th>ID</th><th>Klient</th><th>Kwota</th><th>Typ</th><th>Status</th><th>Akcje</th></tr></thead>
+              <tbody id="ctr-rows"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- panel boczny -->
+        <aside class="side">
+          <div class="card" id="ctr-side">
+            <h2>Szczegóły umowy</h2>
+            <div id="ctr-side-none" class="muted">Wybierz umowę z listy po lewej.</div>
+            <div id="ctr-side-body" hidden>
+              <div class="small">ID: <span id="ctr-s-id"></span></div>
+              <div class="small">Klient: <span id="ctr-s-client"></span></div>
+              <div class="small">Wartość: <span id="ctr-s-total"></span></div>
+              <div class="small">Typ: <span id="ctr-s-type" class="chip"></span></div>
+              <div class="small">Status: <span id="ctr-s-status" class="chip"></span></div>
+              <div class="spacer"></div>
+              <div class="small">Dokumenty</div>
+              <ul id="ctr-docs" class="list-reset"></ul>
+              <div class="right" style="margin-top:8px">
+                <button id="ctr-docs-reset" class="btn ghost">Odznacz wszystko</button>
+                <button id="ctr-status-signed" class="btn good">Oznacz jako podpisaną</button>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- PRODUCTS -->
+    <section id="tab-products" class="grid" hidden>
+      <h1>Produkty</h1>
+      <div class="layout">
+        <div class="grid">
+          <div class="card"><div class="row" id="prod-filters"></div></div>
+          <div class="card scroll">
+            <table>
+              <thead><tr><th>SKU</th><th>Nazwa</th><th>Kategoria</th><th>Cena</th><th>Dodaj</th></tr></thead>
+              <tbody id="prod-rows"></tbody>
+            </table>
+          </div>
+        </div>
+        <aside class="side">
+          <div class="card">
+            <h2>Koszyk oferty</h2>
+            <div id="cart-empty" class="muted">Brak pozycji — dodaj z listy.</div>
+            <div id="cart-list"></div>
+            <div class="spacer"></div>
+            <div class="row">
+              <div class="card" style="flex:1"><div class="small">Suma pozycji</div><h2 id="cart-sum">0 zł</h2></div>
+              <div class="card" style="flex:1"><div class="small">Po rabacie</div><h2 id="cart-sum-disc">0 zł</h2></div>
+            </div>
+            <div class="small muted">Rabat ustawisz przy tworzeniu umowy.</div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- COMPONENTS -->
+    <section id="tab-components" class="grid" hidden>
       <h1>Komponenty</h1>
-      <div class="card">
-        <div class="subtabs" role="tablist" aria-label="Kategorie komponentów">
-          <button class="sb" data-sb="pumps" aria-selected="true">Pompy ciepła</button>
-          <button class="sb" data-sb="boilers">Piece / kotły</button>
-          <button class="sb" data-sb="pv">Fotowoltaika</button>
-          <button class="sb" data-sb="insul">Ocieplenie</button>
-          <button class="sb" data-sb="garage">Bramy garażowe</button>
+      <div class="layout">
+        <div class="grid">
+          <div class="card"><div class="row" id="comp-filters"></div></div>
+          <div class="card scroll">
+            <table>
+              <thead><tr><th>SKU</th><th>Nazwa</th><th>Kategoria</th><th>Cena</th><th>Dodaj</th></tr></thead>
+              <tbody id="comp-rows"></tbody>
+            </table>
+          </div>
         </div>
-        <div class="row" style="margin-bottom:6px">
-          <input id="cmp-q" class="field" placeholder="🔎 Szukaj w aktualnej kategorii…" style="min-width:280px">
-          <button id="cmp-add" class="btn good">+ Dodaj pozycję</button>
-          <button id="cmp-csv" class="btn ghost">CSV eksport</button>
-          <label class="btn ghost">CSV import <input id="cmp-csv-in" type="file" accept=".csv" hidden></label>
-          <button id="cmp-json" class="btn ghost">JSON eksport</button>
-          <label class="btn ghost">JSON import <input id="cmp-json-in" type="file" accept="application/json" hidden></label>
-          <span class="pill">Widocznych: <b id="cmp-vis">0</b></span>
-        </div>
+        <aside class="side">
+          <div class="card">
+            <h2>Koszyk oferty</h2>
+            <div class="small muted">To ten sam koszyk współdzielony z zakładką Produkty.</div>
+            <div id="cart-list-2"></div>
+          </div>
+        </aside>
+      </div>
+    </section>
 
-        <!-- Tabele kategorii -->
-        <div id="cmp-pumps" class="card" style="padding:0">
-          <div class="scroll"><table><thead><tr>
-            <th>Akcje</th><th>Marka</th><th>Model</th><th>Moc [kW]</th><th>Typ</th><th>SCOP</th><th>Cena [zł]</th><th>Uwagi</th>
-          </tr></thead><tbody id="tb-pumps"></tbody></table></div>
-        </div>
-        <div id="cmp-boilers" class="card" style="padding:0;display:none">
-          <div class="scroll"><table><thead><tr>
-            <th>Akcje</th><th>Marka</th><th>Model</th><th>Rodzaj</th><th>Moc [kW]</th><th>Sprawność</th><th>Cena [zł]</th><th>Uwagi</th>
-          </tr></thead><tbody id="tb-boilers"></tbody></table></div>
-        </div>
-        <div id="cmp-pv" class="card" style="padding:0;display:none">
-          <div class="scroll"><table><thead><tr>
-            <th>Akcje</th><th>Marka</th><th>Model</th><th>Moc modułu [W]</th><th>Technologia</th><th>Falownik</th><th>Zestaw [kWp]</th><th>Cena zestawu [zł]</th><th>Uwagi</th>
-          </tr></thead><tbody id="tb-pv"></tbody></table></div>
-        </div>
-        <div id="cmp-insul" class="card" style="padding:0;display:none">
-          <div class="scroll"><table><thead><tr>
-            <th>Akcje</th><th>Pozycja</th><th>Materiał</th><th>λ [W/mK]</th><th>Grubość [cm]</th><th>Cena / m² [zł]</th><th>Uwagi</th>
-          </tr></thead><tbody id="tb-insul"></tbody></table></div>
-        </div>
-        <div id="cmp-garage" class="card" style="padding:0;display:none">
-          <div class="scroll"><table><thead><tr>
-            <th>Akcje</th><th>Marka</th><th>Model</th><th>Wymiar [mm]</th><th>Panel [mm]</th><th>Napęd</th><th>Współ. U</th><th>Cena [zł]</th><th>Uwagi</th>
-          </tr></thead><tbody id="tb-garage"></tbody></table></div>
+    <!-- DOCUMENTS -->
+    <section id="tab-docs" class="grid" hidden>
+      <h1>Dokumenty</h1>
+      <div class="card">
+        <h2>Domyślna lista wymaganych dokumentów</h2>
+        <ul id="doc-list" class="list-reset"></ul>
+        <div class="right" style="margin-top:10px">
+          <button id="doc-add" class="btn ghost">Dodaj pozycję</button>
+          <button id="doc-reset" class="btn ghost">Odznacz wszystko</button>
         </div>
       </div>
     </section>
 
-    <!-- ====== DOKUMENTY ====== -->
-    <section id="tab-docs" class="page" hidden>
-      <h1>Dokumenty do pobrania</h1>
-      <div class="card">
-        <ul class="small">
-          <li><a href="zalacznik_do_instrukcji_wniosku_o_dofinansowanie_wzor_dyspozycji_wyplaty_zaliczki-14-06-2024.pdf" download>📄 Wzór dyspozycji wypłaty zaliczki (PDF)</a></li>
-          <li><a href="UMOWA Z WYKONAWCĄ  arkon.pdf" download>📄 Umowa z wykonawcą (PDF)</a></li>
-          <li><a href="PEŁNOMOCNICTWO.docx" download>📄 Pełnomocnictwo (DOCX)</a></li>
-          <li><a href="OŚWIADCZENIE O DOKONANIU ZAPŁATY.docx" download>📄 Oświadczenie o dokonaniu zapłaty (DOCX)</a></li>
-          <li><a href="OŚWIADCZENIE WSPÓŁWŁAŚCICIELA.docx" download>📄 Oświadczenie współwłaściciela (DOCX)</a></li>
-          <li><a href="OŚWIADCZENIE WSPÓŁMAŁŻONKA.docx" download>📄 Oświadczenie współmałżonka (DOCX)</a></li>
-        </ul>
-        <div class="small muted" style="margin-top:10px">
-          Pliki muszą leżeć obok <code>index.html</code> pod dokładnie taką nazwą.
-        </div>
-      </div>
-    </section>
-
-    <!-- ====== UPLOAD ====== -->
-    <section id="tab-upload" class="page" hidden>
-      <h1>Przesył plików</h1>
-      <div class="card">
-        <div class="row">
-          <select id="up-client" class="field" style="max-width:320px"></select>
-          <select id="up-cat" class="field" style="max-width:320px">
-            <option>Umowa z firmą</option>
-            <option>Audyt</option>
-            <option>Dokument do audytu Czyste Powietrze</option>
-            <option>Audyt rozprowadzenia instalacji</option>
-            <option>Pomiary budynku</option>
-            <option>Rzut budynku</option>
-            <option>Zdjęcia kotłowni</option>
-            <option>Faktura za prąd</option>
-            <option>Zdjęcia falownika</option>
-            <option>Zdjęcia budynku</option>
-          </select>
-          <label class="btn">Dodaj pliki… <input id="up-files" type="file" multiple hidden></label>
-          <button id="up-refresh" class="btn ghost">Odśwież</button>
-        </div>
-        <div class="small muted" style="margin-top:6px">Pliki zapisywane lokalnie (IndexedDB). Eksport w „Eksport/Import”.</div>
-      </div>
-      <div class="card">
-        <div class="row" style="margin-bottom:6px">
-          <input id="up-q" class="field" placeholder="🔎 filtruj po nazwie/kliencie/kategorii…">
-          <button id="up-clear" class="btn ghost">Wyczyść filtr</button>
-        </div>
-        <div class="scroll">
-          <table>
-            <thead><tr>
-              <th>Akcje</th><th>Nazwa</th><th>Klient</th><th>Kategoria</th><th>Typ</th><th>Rozmiar</th><th>Data</th>
-            </tr></thead>
-            <tbody id="up-tbody"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- ====== LEADY ====== -->
-    <section id="tab-leads" class="page" hidden>
-      <h1>Leady</h1>
-      <div class="card">
-        <div class="row">
-          <input id="ld-q" class="field" placeholder="🔎 Szukaj w leadach" style="min-width:260px">
-          <select id="ld-status" class="field">
-            <option value="">Status (wszystkie)</option>
-            <option>NOWY</option><option>KONTAKT</option><option>QUALIFIED</option><option>OFERTA</option><option>WYGRANY</option><option>PRZEGRANY</option>
-          </select>
-          <button id="ld-add" class="btn good">+ Nowy lead</button>
-          <button id="ld-json" class="btn ghost">Eksport JSON</button>
-          <label class="btn ghost">Import JSON <input id="ld-json-in" type="file" accept="application/json" hidden></label>
-        </div>
-        <div class="scroll" style="margin-top:6px">
-          <table>
-            <thead><tr><th>Akcje</th><th>Tytuł</th><th>Klient (opc.)</th><th>Status</th><th>Źródło</th><th>Data</th></tr></thead>
-            <tbody id="ld-tbody"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- ====== CHAT ====== -->
-    <section id="tab-chat" class="page" hidden>
+    <!-- CHAT -->
+    <section id="tab-chat" class="grid" hidden>
       <h1>Komunikator</h1>
       <div class="card">
-        <div id="chat-box" class="chat-box"></div>
-        <div class="dropzone" id="dz">
-          Upuść pliki tutaj lub kliknij, aby wybrać…
-          <input type="file" id="file-input" multiple hidden />
-        </div>
-        <div class="files" id="pending-files"></div>
+        <div id="chat-box" style="border:1px solid var(--line);border-radius:8px;padding:12px;min-height:160px;max-height:300px;overflow:auto;background:#0d1330"></div>
         <div class="row" style="margin-top:8px">
-          <input id="chat-name" class="field" placeholder="Twoje imię (domyślnie: Anon)" style="max-width:240px">
           <input id="chat-text" class="field" placeholder="Napisz wiadomość…" />
           <button id="chat-send" class="btn">Wyślij</button>
         </div>
-        <div class="small muted" style="margin-top:8px">
-          Obecnie lokalnie (IndexedDB). Podpięcie do Supabase — przez osobny skrypt (możemy dodać).
-        </div>
+        <div class="small muted" style="margin-top:8px">Wersja lokalna (bez backendu).</div>
       </div>
     </section>
 
-    <!-- ====== USTAWIENIA ====== -->
-    <section id="tab-settings" class="page" hidden>
+    <!-- SETTINGS -->
+    <section id="tab-settings" class="grid" hidden>
       <h1>Ustawienia</h1>
       <div class="grid cols-2">
+        <div class="card">
+          <h2>Dane</h2>
+          <div class="row">
+            <button id="export" class="btn">Eksportuj JSON</button>
+            <label class="btn ghost">
+              Importuj JSON
+              <input id="import" type="file" accept="application/json" hidden>
+            </label>
+          </div>
+          <div class="small" style="margin-top:10px">
+            Zapis lokalny: <code>localStorage</code>.
+          </div>
+          <div class="row" style="margin-top:8px">
+            <button id="wipe" class="btn bad" title="Usuwa zapis lokalny">Wyczyść zapisane dane</button>
+          </div>
+        </div>
         <div class="card">
           <h2>Druk / PDF</h2>
           <div class="row">
             <button class="btn" onclick="window.print()">Drukuj / Zapisz jako PDF</button>
           </div>
         </div>
-        <div class="card">
-          <h2>Kalkulator</h2>
-          <div class="row">
-            <a class="btn" href="kalkulator.html" target="_blank" rel="noopener">Otwórz w nowej karcie ↗</a>
-          </div>
-        </div>
       </div>
     </section>
-
-    <!-- ====== EKSPORT / IMPORT ====== -->
-    <section id="tab-export" class="page" hidden>
-      <h1>Eksport / Import</h1>
-      <div class="card">
-        <div class="row">
-          <button id="ex-full" class="btn">Eksport — pełny JSON</button>
-          <label class="btn ghost">Import — pełny JSON <input id="im-full" type="file" accept="application/json" hidden></label>
-          <button id="ex-cli-csv" class="btn ghost">Eksport CSV — klienci</button>
-          <button id="wipe-all" class="btn bad">Wyczyść wszystkie dane lokalne</button>
-        </div>
-        <div class="small muted" style="margin-top:8px">
-          Pełny JSON zawiera: klientów, leady, komponenty, wiadomości czatu, metadane plików oraz same pliki (base64 z IndexedDB).
-        </div>
-      </div>
-    </section>
-
-    <!-- ====== KALKULATOR (osadzony) ====== -->
-    <section id="tab-calculator" class="page" hidden>
-      <h1>Kalkulator</h1>
-      <div class="card">
-        <div class="small muted" style="margin-bottom:8px">Poniżej osadzony zewnętrzny kalkulator (możesz podmienić URL):</div>
-        <div style="aspect-ratio:16/9;max-height:70vh;border:1px solid var(--line);border-radius:10px;overflow:hidden">
-          <iframe src="kalkulator.html" title="Kalkulator" style="width:100%;height:100%;border:0;background:#0a0f20"></iframe>
-        </div>
-      </div>
-    </section>
-
   </div>
 
-<script>
-/* ========== UTIL ========== */
-const $  = s => document.querySelector(s);
-const $$ = s => Array.from(document.querySelectorAll(s));
-const uid = ()=> 'ID_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2);
-const bytes = n => n<1024? n+' B' : n<1048576? (n/1024).toFixed(1)+' KB' : n<1073741824? (n/1048576).toFixed(1)+' MB' : (n/1073741824).toFixed(1)+' GB';
-function esc(s){return (s||"").toString().replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]))}
-
-/* ========== SPA ROUTER (hash + płynne przejścia) ========== */
-const LS_TAB='arkon_last_tab_spa';
-const routes = {
-  dashboard: '#tab-dashboard',
-  clients:   '#tab-clients',
-  components:'#tab-components',
-  docs:      '#tab-docs',
-  upload:    '#tab-upload',
-  leads:     '#tab-leads',
-  chat:      '#tab-chat',
-  settings:  '#tab-settings',
-  export:    '#tab-export',
-  calculator:'#tab-calculator'
-};
-let currentKey = 'dashboard';
-
-function setActiveTabButton(key){
-  $$(".nav .tab").forEach(b=>{
-    const btnKey = b.dataset.tab || (b.getAttribute('href')||'').replace('#','');
-    b.classList.toggle('active', btnKey===key);
-  });
-}
-function showPage(key, {push=true}={}){
-  if(!(key in routes)) key='dashboard';
-  if(key===currentKey) return;
-  const prevSel = routes[currentKey];
-  const nextSel = routes[key];
-  const prev = document.querySelector(prevSel);
-  const next = document.querySelector(nextSel);
-
-  // hide previous (fade-out)
-  if(prev){ prev.classList.remove('visible'); }
-
-  // after a tiny delay, show next (fade-in)
-  requestAnimationFrame(()=>{
-    if(next){
-      next.hidden=false;
-      requestAnimationFrame(()=> next.classList.add('visible'));
+  <script>
+    // ====== DANE STARTOWE ======
+    const seedClients = [
+      { id:"C-001", name:"Anna Kowalska", email:"anna@example.com", phone:"600-100-200", manager:"Paweł", notes:"" , created_at:Date.now()-86400000*4},
+      { id:"C-002", name:"Jan Nowak",    email:"jan@example.com",  phone:"600-100-201", manager:"Paweł", notes:"VIP" , created_at:Date.now()-86400000*2},
+      { id:"C-003", name:"Piotr Kamiński", email:"piotr@example.com", phone:"600-100-202", manager:"Kasia", notes:"" , created_at:Date.now()-86400000*1},
+    ];
+    function defaultDocList(){
+      return [
+        "Umowa gotówkowa / do funduszu",
+        "Opinia kominiarza",
+        "Protokół odbioru instalacji",
+        "Oświadczenie o przekazaniu środków",
+        "Umowa z wykonawcą",
+        "Zaświadczenie o dochodach klienta",
+        "Inne załączniki",
+      ];
     }
-  });
+    const seedContracts = [
+      { id:"U-1001", client_id:"C-001", customer:"Anna Kowalska", items:[{sku:"PV-410",qty:12,price:520},{sku:"PV-INV8",qty:1,price:4100}], total:21500, type:"gotówka", status:"W toku", docs:defaultDocList().map(n=>({name:n,done:false})) , created_at:Date.now()-86400000*2},
+      { id:"U-1002", client_id:"C-002", customer:"Jan Nowak",     items:[{sku:"HP-9KW",qty:1,price:15500}], total:42000, type:"prefinansowanie", status:"Zakończona", docs:defaultDocList().map(n=>({name:n,done:true})) , created_at:Date.now()-86400000*1},
+    ];
+    const seedProducts = [
+      { sku:"PV-410",  name:"Panel 410W",               category:"fotowoltaika", price:520 },
+      { sku:"PV-INV8", name:"Inwerter 8kW",             category:"fotowoltaika", price:4100 },
+      { sku:"PV-MNT",  name:"Montaż PV standard",       category:"fotowoltaika", price:2500 },
+      { sku:"HP-9KW",  name:"Pompa ciepła 9kW",         category:"pompy",        price:15500 },
+      { sku:"HP-BUF",  name:"Bufor 100l",               category:"pompy",        price:850 },
+      { sku:"HP-CIRC", name:"Pompa cyrkulacyjna",       category:"pompy",        price:540 },
+      { sku:"PC-25",   name:"Kocioł kondensacyjny 25kW",category:"piece",        price:7800 },
+      { sku:"PC-CHIM", name:"Wkład kominowy",           category:"piece",        price:1200 },
+      { sku:"HY-PEX16",name:"Rury PEX 16 (mb)",         category:"hydraulika",   price:3.8 },
+      { sku:"HY-CU15", name:"Rury miedziane 15 (mb)",   category:"hydraulika",   price:14.5 },
+      { sku:"HY-RAD2", name:"Grzejnik dwukomorowy 120", category:"hydraulika",   price:740 },
+      { sku:"HY-RAD3", name:"Grzejnik trójkomorowy 120",category:"hydraulika",   price:960 },
+      { sku:"OC-STY15",name:"Styropian 15cm (m²)",      category:"ocieplenie",   price:42 },
+      { sku:"OC-ADH",  name:"Klej do styropianu 25kg",  category:"ocieplenie",   price:45 },
+      { sku:"OC-REN",  name:"Tynk silikonowy 25kg",     category:"ocieplenie",   price:120 },
+      { sku:"OC-GUTT", name:"Rynny (mb)",               category:"ocieplenie",   price:35 },
+      { sku:"OC-PARA", name:"Parapety (szt.)",          category:"ocieplenie",   price:95 },
+      { sku:"OC-FLASH",name:"Obróbki blacharskie (mb)", category:"ocieplenie",   price:55 },
+    ];
 
-  // actually hide prev after animation
-  setTimeout(()=>{ if(prev) prev.hidden=true; }, 220);
+    // ====== STAN / PERSIST ======
+    const LSKEY = "arkonCRM_v2";
+    function loadState(){
+      try{
+        const s = JSON.parse(localStorage.getItem(LSKEY) || "{}");
+        return {
+          clients: s.clients || seedClients.slice(),
+          contracts: s.contracts || seedContracts.slice(),
+          docsMaster: s.docsMaster || defaultDocList().map(n=>({name:n,done:false})),
+          chat: s.chat || [{from:"System",text:"Witaj w czacie ARKON 👋",at:Date.now()}],
+          cart: s.cart || [],
+        };
+      }catch{
+        return { clients:seedClients.slice(), contracts:seedContracts.slice(), docsMaster:defaultDocList().map(n=>({name:n,done:false})), chat:[{from:"System",text:"Witaj w czacie ARKON 👋",at:Date.now()}], cart:[] };
+      }
+    }
+    let state = loadState();
+    function saveState(){
+      localStorage.setItem(LSKEY, JSON.stringify(state));
+      renderDashboard();
+    }
 
-  currentKey = key;
-  setActiveTabButton(key);
-  if(push){ location.hash = key; localStorage.setItem(LS_TAB,key); }
-  // focus first focusable
-  const first = next?.querySelector('input,select,textarea,button,[tabindex]');
-  if(first) first.focus({preventScroll:true});
-}
-function bootRouter(){
-  // init hidden state for all except current
-  Object.entries(routes).forEach(([k,sel])=>{
-    const sec=document.querySelector(sel);
-    if(!sec) return;
-    if(k==='dashboard'){ sec.hidden=false; sec.classList.add('visible'); }
-    else { sec.hidden=true; sec.classList.remove('visible'); }
-  });
+    // ====== POMOCNICZE ======
+    const $ = sel => document.querySelector(sel);
+    const $$ = sel => Array.from(document.querySelectorAll(sel));
+    const money = x => (Math.round(x)||0).toLocaleString("pl-PL")+" zł";
+    function statusClass(s){ return (s||'').toString().trim().toLowerCase().replace(/\s+/g,'-'); }
+    function uid(prefix, list){
+      let n = list.length + 1, id;
+      do { id = ${prefix}-${n.toString().padStart(3,"0")}; n++; } while(list.some(x=>x.id===id));
+      return id;
+    }
+    function byId(map,id){ return map.find(x=>x.id===id); }
+    function productBySku(sku){ return seedProducts.find(p=>p.sku===sku); }
+    function escapeHtml(s){ return (s||"").replace(/[&<>"]/g,c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c])); }
 
-  const fromHash=(location.hash||'').replace(/^#/,'');
-  const remember=localStorage.getItem(LS_TAB)||'';
-  const initial = fromHash || remember || 'dashboard';
-  currentKey = 'dashboard'; // will transition from dashboard
-  showPage(initial,{push:false});
-
-  // clicks
-  document.querySelector('.nav').addEventListener('click', (e)=>{
-    const btn = e.target.closest('.tab');
-    if(!btn) return;
-    const attrKey = btn.dataset.tab || (btn.getAttribute('href')||'').replace('#','');
-    if(attrKey && routes[attrKey]){
+    // ====== NAWIGACJA z routingiem hash ======
+    function showTab(key,{pushHash=true}={}){
+      if(!key) return;
+      document.querySelectorAll(".tab").forEach(t =>
+        t.classList.toggle("active", t.dataset.tab === key)
+      );
+      document.querySelectorAll("section[id^='tab-']").forEach(s => s.hidden = true);
+      const sec = document.getElementById("tab-" + key);
+      if (sec) sec.hidden = false;
+      if(pushHash) history.replaceState(null, "", "#" + key);
+    }
+    const nav = document.querySelector(".nav");
+    nav.addEventListener("click", (e) => {
+      const el = e.target.closest(".tab");
+      if (!el) return;
       e.preventDefault();
-      showPage(attrKey);
-    }
-  });
-
-  // keyboard shortcuts Alt+1..9
-  window.addEventListener('keydown',(e)=>{
-    if(e.altKey){
-      const map = ['dashboard','clients','components','docs','upload','leads','chat','settings','export','calculator'];
-      const d = parseInt(e.key,10);
-      if(d>=1 && d<=map.length){ e.preventDefault(); showPage(map[d-1]); }
-    }
-    if(e.key==='/' && document.activeElement.tagName!=='INPUT' && document.activeElement.tagName!=='TEXTAREA'){
-      e.preventDefault();
-      // fokus na wyszukiwarkę klientów jeśli widać tab klientów, wpp. przełącz na klientów
-      if(currentKey!=='clients') showPage('clients');
-      setTimeout(()=>{ $('#cli-q')?.focus(); }, 10);
-    }
-  });
-
-  // hashchange (np. wstecz/przód przeglądarki)
-  window.addEventListener('hashchange', ()=>{
-    const key=(location.hash||'').replace(/^#/,'')||'dashboard';
-    if(key!==currentKey) showPage(key,{push:false});
-  });
-}
-
-/* ========== DANE LOKALNE (prosty seed) ========== */
-const LS_CLIENTS='arkon_clients_spa_v1';
-const LS_LEADS  ='arkon_leads_spa_v1';
-const LS_MSGS   ='arkon_msgs_spa_v1';
-let clients=[], leads=[], messages=[];
-
-function loadJSON(k,def){ try{return JSON.parse(localStorage.getItem(k)||JSON.stringify(def))}catch{return def} }
-function saveJSON(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
-
-/* ===== Klienci (z uproszczoną edycją) ===== */
-let openClientId=null;
-function renderClients(){
-  const q = ($('#cli-q').value||'').toLowerCase().trim();
-  const st = $('#cli-status').value||'';
-  const sort = $('#cli-sort').value||'name.asc';
-
-  let rows = clients.filter(c=>{
-    if(st && c.status!==st) return false;
-    const hay=[c.name,c.email,c.phone,c.address,(c.tags||[]).join(' ')].join(' ').toLowerCase();
-    return !q || hay.includes(q);
-  });
-
-  rows.sort((a,b)=>{
-    switch(sort){
-      case 'name.asc': return a.name.localeCompare(b.name,'pl',{sensitivity:'base'});
-      case 'name.desc': return b.name.localeCompare(a.name,'pl',{sensitivity:'base'});
-      case 'created.desc': return (b.created||0)-(a.created||0);
-      case 'created.asc': return (a.created||0)-(b.created||0);
-      default: return 0;
-    }
-  });
-
-  const tb = $('#cli-tbody'); tb.innerHTML='';
-  rows.forEach(c=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML=`
-      <td><button class="btn ghost o" data-id="${c.id}" title="Otwórz">▶</button></td>
-      <td><b>${esc(c.name)}</b><div class="small">${new Date(c.created||Date.now()).toLocaleString('pl-PL')}</div></td>
-      <td>${esc(c.status)}</td>
-      <td>${esc(c.email||'')}<div class="small">${esc(c.phone||'')}</div></td>
-      <td>${esc(c.address||'')}</td>
-      <td>${(c.tags||[]).map(t=><span class="pill">${esc(t)}</span>).join('')}</td>`;
-    tr.querySelector('.o').addEventListener('click',()=>openClient(c.id));
-    tb.appendChild(tr);
-  });
-
-  // select dla Upload
-  const sel = $('#up-client');
-  sel.innerHTML = <option value="">(bez przypisania)</option> + clients.map(x=><option value="${x.id}">${esc(x.name)}</option>).join('');
-
-  // dashboard
-  $('#db-clients').textContent = clients.length;
-}
-function openClient(id){
-  openClientId=id;
-  const c=clients.find(x=>x.id===id); if(!c) return;
-  $('#e_name').value=c.name||'';
-  $('#e_status').value=c.status||'LEAD';
-  $('#e_email').value=c.email||'';
-  $('#e_phone').value=c.phone||'';
-  $('#e_addr').value=c.address||'';
-  $('#e_tags').value=(c.tags||[]).join(', ');
-  $('#e_notes').value=c.notes||'';
-}
-function bindClientsUI(){
-  $('#cli-q').addEventListener('input', renderClients);
-  $('#cli-status').addEventListener('change', renderClients);
-  $('#cli-sort').addEventListener('change', renderClients);
-  $('#cli-add').addEventListener('click', ()=>{
-    const c={id:uid(),created:Date.now(),name:'Nowy klient',status:'LEAD',email:'',phone:'',address:'',tags:[],notes:''};
-    clients.unshift(c); saveJSON(LS_CLIENTS,clients); renderClients(); openClient(c.id);
-  });
-  $('#cli-del').addEventListener('click', ()=>{
-    if(!openClientId) return;
-    if(confirm('Usunąć klienta?')){
-      clients = clients.filter(x=>x.id!==openClientId);
-      openClientId=null; saveJSON(LS_CLIENTS,clients); renderClients();
-    }
-  });
-  $('#cli-dup').addEventListener('click', ()=>{
-    if(!openClientId) return;
-    const src = clients.find(x=>x.id===openClientId); if(!src) return;
-    const d = JSON.parse(JSON.stringify(src));
-    d.id=uid(); d.name=(src.name||'')+' (kopia)'; d.created=Date.now();
-    clients.unshift(d); saveJSON(LS_CLIENTS,clients); renderClients(); openClient(d.id);
-  });
-  ['#e_name','#e_email','#e_phone','#e_addr','#e_tags','#e_notes'].forEach(sel=>{
-    $(sel).addEventListener('input', ()=>{
-      if(!openClientId) return;
-      const c = clients.find(x=>x.id===openClientId); if(!c) return;
-      c.name=$('#e_name').value.trim();
-      c.status=$('#e_status').value;
-      c.email=$('#e_email').value.trim();
-      c.phone=$('#e_phone').value.trim();
-      c.address=$('#e_addr').value.trim();
-      c.tags=$('#e_tags').value.split(',').map(s=>s.trim()).filter(Boolean);
-      c.notes=$('#e_notes').value;
-      saveJSON(LS_CLIENTS,clients); renderClients();
+      showTab(el.dataset.tab);
     });
-  });
-  $('#e_status').addEventListener('change', ()=>{
-    if(!openClientId) return;
-    const c=clients.find(x=>x.id===openClientId); if(!c) return;
-    c.status=$('#e_status').value; saveJSON(LS_CLIENTS,clients); renderClients();
-  });
-}
-
-/* ===== Komponenty (wspólne tabele + filtry) ===== */
-const CMP_KEYS={pumps:"arkon_cmp_pumps_spa",boilers:"arkon_cmp_boilers_spa",pv:"arkon_cmp_pv_spa",insul:"arkon_cmp_insul_spa",garage:"arkon_cmp_garage_spa"};
-const cmpState={active:"pumps", q:"", data:{pumps:[],boilers:[],pv:[],insul:[],garage:[]}};
-
-function loadCmp(){ for(const k in CMP_KEYS){ cmpState.data[k]=loadJSON(CMP_KEYS[k],[]); } }
-function saveCmp(k){ saveJSON(CMP_KEYS[k], cmpState.data[k]||[]); renderCmp(); }
-
-function renderCmp(){
-  const q=(cmpState.q||'').toLowerCase();
-  const act=cmpState.active;
-  $('#cmp-vis').textContent='0';
-  const filterRow=row=>JSON.stringify(row).toLowerCase().includes(q);
-
-  function draw(tbId, arr, cols){
-    const tb=$(tbId); tb.innerHTML=''; let vis=0;
-    (arr||[]).forEach((r,idx)=>{
-      if(q && !filterRow(r)) return; vis++;
-      const tr=document.createElement('tr');
-      const delBtn=<button class="btn bad" data-del="${idx}">Usuń</button>;
-      tr.innerHTML = <td class="row">${delBtn}</td> + cols.map(col=>{
-        const v=r[col.key]??''; const type=col.type||'text'; const step=col.step||''; const opt=col.opt||[];
-        if(type==='select'){
-          return <td><select data-i="${idx}" data-k="${col.key}" class="field">${opt.map(o=><option ${v===o?'selected':''}>${o}</option>).join('')}</select></td>;
+    document.querySelectorAll(".tab").forEach(tab => {
+      tab.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          showTab(tab.dataset.tab);
         }
-        return `<td><input data-i="${idx}" data-k="${col.key}" class="field" ${type!=='text'?type="${type}":''} ${step?step="${step}":''} value="${esc(v)}"></td>`;
-      }).join('');
-      tb.appendChild(tr);
-    });
-    $('#cmp-vis').textContent=vis;
-    tb.querySelectorAll('input,select').forEach(el=>{
-      el.addEventListener('input', ()=>{
-        const i=+el.dataset.i; const k=el.dataset.k; let v=el.value;
-        if(el.type==='number') v=Number(v)||0;
-        cmpState.data[act][i][k]=v; saveCmp(act);
       });
     });
-    tb.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{
-      const i=+b.dataset.del; if(confirm('Usunąć pozycję?')){ cmpState.data[act].splice(i,1); saveCmp(act); }
-    }));
-  }
-
-  if(act==='pumps'){
-    draw('#tb-pumps', cmpState.data.pumps, [
-      {key:'brand'},{key:'model'},{key:'power',type:'number',step:'0.1'},
-      {key:'type',type:'select',opt:['powietrze','grunt']},
-      {key:'scop',type:'number',step:'0.01'},{key:'price',type:'number',step:'1'},{key:'note'}
-    ]);
-  }else if(act==='boilers'){
-    draw('#tb-boilers', cmpState.data.boilers, [
-      {key:'brand'},{key:'model'},
-      {key:'kind',type:'select',opt:['pellet','gaz','elektryczny','drewno']},
-      {key:'power',type:'number',step:'0.1'},{key:'eff',type:'number',step:'0.01'},
-      {key:'price',type:'number'},{key:'note'}
-    ]);
-  }else if(act==='pv'){
-    draw('#tb-pv', cmpState.data.pv, [
-      {key:'brand'},{key:'model'},{key:'watt',type:'number'},
-      {key:'tech',type:'select',opt:['mono PERC','mono TopCon','heterozłącze','inny']},
-      {key:'inverter'},{key:'set_kwp',type:'number',step:'0.1'},{key:'price',type:'number'},{key:'note'}
-    ]);
-  }else if(act==='insul'){
-    draw('#tb-insul', cmpState.data.insul, [
-      {key:'pos',type:'select',opt:['ściany','strop','podłoga']},
-      {key:'mat',type:'select',opt:['styropian','wełna','pianka PUR','inne']},
-      {key:'lambda',type:'number',step:'0.001'},
-      {key:'thick_cm',type:'number',step:'1'},{key:'price_m2',type:'number'},{key:'note'}
-    ]);
-  }else if(act==='garage'){
-    draw('#tb-garage', cmpState.data.garage, [
-      {key:'brand'},{key:'model'},{key:'size',type:'text'},
-      {key:'panel_mm',type:'number'},{key:'drive',type:'select',opt:['TAK','NIE']},
-      {key:'u',type:'number',step:'0.01'},{key:'price',type:'number'},{key:'note'}
-    ]);
-  }
-
-  // przełącz widoczność tabel
-  $('#cmp-pumps').style.display  = act==='pumps'?'block':'none';
-  $('#cmp-boilers').style.display= act==='boilers'?'block':'none';
-  $('#cmp-pv').style.display     = act==='pv'?'block':'none';
-  $('#cmp-insul').style.display  = act==='insul'?'block':'none';
-  $('#cmp-garage').style.display = act==='garage'?'block':'none';
-}
-function bindCmpUI(){
-  $$('.subtabs .sb').forEach(b=>b.addEventListener('click',()=>{
-    $$('.subtabs .sb').forEach(x=>x.setAttribute('aria-selected','false'));
-    b.setAttribute('aria-selected','true'); cmpState.active=b.dataset.sb; renderCmp();
-  }));
-  $('#cmp-q').addEventListener('input',e=>{ cmpState.q=e.target.value.trim(); renderCmp(); });
-  $('#cmp-add').addEventListener('click',()=>{
-    const a=cmpState.active;
-    const blank={pumps:{brand:'',model:'',power:0,type:'powietrze',scop:3.5,price:0,note:''},
-                 boilers:{brand:'',model:'',kind:'pellet',power:0,eff:0.9,price:0,note:''},
-                 pv:{brand:'',model:'',watt:450,tech:'mono PERC',inverter:'',set_kwp:5.0,price:0,note:''},
-                 insul:{pos:'ściany',mat:'styropian',lambda:0.036,thick_cm:15,price_m2:0,note:''},
-                 garage:{brand:'',model:'',size:'2500x2125',panel_mm:40,drive:'TAK',u:1.3,price:0,note:''}}[a];
-    cmpState.data[a].push(blank); saveCmp(a);
-  });
-  $('#cmp-csv').addEventListener('click',()=>{
-    const a=cmpState.active; const rows=cmpState.data[a]; const cols=Object.keys(rows[0]||{brand:'',model:''});
-    const csv=[cols.join(';')].concat(rows.map(r=>cols.map(k=>csvEsc(r[k])).join(';'))).join('\n');
-    downloadText(komponenty_${a}.csv, csv, 'text/csv;charset=utf-8');
-  });
-  $('#cmp-json').addEventListener('click',()=>downloadText(komponenty_${cmpState.active}.json, JSON.stringify(cmpState.data[cmpState.active],null,2)));
-  $('#cmp-csv-in').addEventListener('change',async e=>{
-    const f=e.target.files[0]; if(!f) return;
-    const txt=await f.text(); const [head,...lines]=txt.split(/\r?\n/).filter(Boolean); const cols=head.split(';');
-    const arr=lines.map(line=>{const v=line.split(';'); const o={}; cols.forEach((k,i)=>o[k]=csvUnesc(v[i]||'')); return o;});
-    cmpState.data[cmpState.active]=arr; saveCmp(cmpState.active); e.target.value='';
-  });
-  $('#cmp-json-in').addEventListener('change',async e=>{
-    const f=e.target.files[0]; if(!f) return;
-    try{ const arr=JSON.parse(await f.text()); if(!Array.isArray(arr)) throw 0; cmpState.data[cmpState.active]=arr; saveCmp(cmpState.active); }
-    catch{ alert('Zły JSON.'); }
-    e.target.value='';
-  });
-}
-function csvEsc(v){ let s=v==null?'':String(v); if(/[;\n"]/.test(s)) s='"'+s.replace(/"/g,'""')+'"'; return s; }
-function csvUnesc(s){ if(s?.startsWith('"')&&s.endsWith('"')) return s.slice(1,-1).replace(/""/g,'"'); return s; }
-function downloadText(name, text, mime){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:mime||'application/octet-stream'})); a.download=name; a.click(); URL.revokeObjectURL(a.href); }
-
-/* ===== IndexedDB — pliki (dla Upload + Chat) ===== */
-let db;
-function dbOpen(){
-  return new Promise((res,rej)=>{
-    const r = indexedDB.open('arkonCRM_spa',1);
-    r.onupgradeneeded = ()=>{ const d=r.result; if(!d.objectStoreNames.contains('files')) d.createObjectStore('files',{keyPath:'id'}); };
-    r.onsuccess=()=>{ db=r.result; res(); };
-    r.onerror =()=>rej(r.error);
-  });
-}
-function dbPut(fileObj){ return new Promise((res,rej)=>{ const tx=db.transaction('files','readwrite'); tx.objectStore('files').put(fileObj); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
-function dbGet(id){ return new Promise((res,rej)=>{ const tx=db.transaction('files','readonly'); const req=tx.objectStore('files').get(id); req.onsuccess=()=>res(req.result); req.onerror=()=>rej(req.error); }); }
-function dbAll(){ return new Promise((res,rej)=>{ const tx=db.transaction('files','readonly'); const req=tx.objectStore('files').getAll(); req.onsuccess=()=>res(req.result||[]); req.onerror=()=>rej(req.error); }); }
-function dbDel(id){ return new Promise((res,rej)=>{ const tx=db.transaction('files','readwrite'); tx.objectStore('files').delete(id); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
-function dbClear(){ return new Promise((res,rej)=>{ const tx=db.transaction('files','readwrite'); tx.objectStore('files').clear(); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
-
-/* ===== Upload ===== */
-const upQ={q:''};
-function fillUploadClientSelect(){ const sel=$('#up-client'); sel.innerHTML=<option value="">(bez przypisania)</option>+clients.map(c=><option value="${c.id}">${esc(c.name)}</option>).join(''); }
-function handleUploadFiles(files){
-  const clientId=$('#up-client').value||null;
-  const clientName=clientId ? (clients.find(c=>c.id===clientId)?.name||'') : '';
-  const cat=$('#up-cat').value||'Inne';
-  Array.from(files||[]).forEach(async f=>{
-    const id=uid();
-    await dbPut({ id, name:f.name, type:f.type||'application/octet-stream', size:f.size, blob:f, at:Date.now(), category:cat, clientId, clientName, origin:'upload' });
-  });
-  renderUploads();
-}
-async function renderUploads(){
-  const q=(upQ.q||'').toLowerCase();
-  const list=await dbAll();
-  const tb=$('#up-tbody'); tb.innerHTML='';
-  list.sort((a,b)=>(b.at||0)-(a.at||0));
-  list.filter(x=>{
-    const hay=[x.name,x.clientName,x.category,x.type].join(' ').toLowerCase();
-    return !q || hay.includes(q);
-  }).forEach(rec=>{
-    const tr=document.createElement('tr');
-    const when= rec.at ? new Date(rec.at).toLocaleString('pl-PL') : '';
-    tr.innerHTML=`<td class="row">
-      <button class="btn ghost" data-dl="${rec.id}">Pobierz</button>
-      <button class="btn bad" data-del="${rec.id}">Usuń</button>
-    </td>
-    <td>${esc(rec.name)}</td>
-    <td>${esc(rec.clientName||'')}</td>
-    <td>${esc(rec.category||'')}</td>
-    <td>${esc(rec.type||'')}</td>
-    <td>${bytes(rec.size||0)}</td>
-    <td>${when}</td>`;
-    tb.appendChild(tr);
-  });
-  tb.querySelectorAll('[data-dl]').forEach(b=>b.addEventListener('click',async ()=>{
-    const rec=await dbGet(b.dataset.dl); if(!rec){ alert('Plik niedostępny.'); return; }
-    const url=URL.createObjectURL(rec.blob); const a=document.createElement('a'); a.href=url; a.download=rec.name; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1200);
-  }));
-  tb.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',async ()=>{ if(!confirm('Usunąć plik?'))return; await dbDel(b.dataset.del); renderUploads(); }));
-}
-function bindUploadUI(){
-  $('#up-files').addEventListener('change',e=>{handleUploadFiles(e.target.files); e.target.value='';});
-  $('#up-refresh').addEventListener('click',renderUploads);
-  $('#up-q').addEventListener('input',e=>{ upQ.q=e.target.value.trim(); renderUploads(); });
-  $('#up-clear').addEventListener('click',()=>{ upQ.q=''; $('#up-q').value=''; renderUploads(); });
-}
-
-/* ===== Leady (proste) ===== */
-function renderLeads(){
-  const q=($('#ld-q').value||'').toLowerCase(); const st=$('#ld-status').value||'';
-  const tb=$('#ld-tbody'); tb.innerHTML='';
-  leads.filter(l=>{
-    if(st && l.status!==st) return false;
-    const hay=[l.title,l.clientName,l.source].join(' ').toLowerCase();
-    return !q || hay.includes(q);
-  }).sort((a,b)=>(b.created||0)-(a.created||0)).forEach((l,idx)=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML=`<td class="row">
-      <button class="btn ghost" data-ed="${idx}">Edytuj</button>
-      <button class="btn bad" data-del="${idx}">Usuń</button>
-    </td>
-    <td>${esc(l.title)}</td>
-    <td>${esc(l.clientName||'')}</td>
-    <td>${esc(l.status)}</td>
-    <td>${esc(l.source||'')}</td>
-    <td>${new Date(l.created||Date.now()).toLocaleString('pl-PL')}</td>`;
-    tb.appendChild(tr);
-  });
-  tb.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{ if(confirm('Usunąć lead?')){ leads.splice(+b.dataset.del,1); saveJSON(LS_LEADS,leads); renderLeads(); } }));
-  tb.querySelectorAll('[data-ed]').forEach(b=>b.addEventListener('click',()=>editLead(+b.dataset.ed)));
-}
-function editLead(i){
-  const l=leads[i]; if(!l) return;
-  const title=prompt('Tytuł', l.title)||l.title;
-  const client=prompt('Klient (opcjonalnie)', l.clientName||'')||l.clientName||'';
-  const status=prompt('Status: NOWY/KONTAKT/QUALIFIED/OFERTA/WYGRANY/PRZEGRANY', l.status)||l.status;
-  const source=prompt('Źródło (np. WWW, FB, tel.)', l.source||'')||l.source||'';
-  leads[i]={...l,title,clientName:client,status,source}; saveJSON(LS_LEADS,leads); renderLeads();
-}
-function bindLeadsUI(){
-  $('#ld-add').addEventListener('click',()=>{ leads.unshift({title:'Nowy lead',clientName:'',status:'NOWY',source:'',created:Date.now()}); saveJSON(LS_LEADS,leads); renderLeads(); });
-  $('#ld-json').addEventListener('click',()=>downloadText('arkon_leady.json', JSON.stringify(leads,null,2)));
-  $('#ld-json-in').addEventListener('change',async e=>{ const f=e.target.files[0]; if(!f) return; try{ const arr=JSON.parse(await f.text()); if(!Array.isArray(arr)) throw 0; leads=arr; saveJSON(LS_LEADS,leads); renderLeads(); }catch{ alert('Zły plik JSON'); } e.target.value=''; });
-  $('#ld-q').addEventListener('input',renderLeads);
-  $('#ld-status').addEventListener('change',renderLeads);
-}
-
-/* ===== Chat (lokalny, z zapisem załączników w IndexedDB) ===== */
-let pendingFiles=[];
-const chatBox = $('#chat-box');
-function loadMsgs(){ return loadJSON(LS_MSGS,[]); }
-function saveMsgs(list){ saveJSON(LS_MSGS,list); }
-function renderChat(){ chatBox.innerHTML=''; messages.forEach(m=>appendMsg(m,false)); chatBox.scrollTop=chatBox.scrollHeight; }
-function appendMsg(m,scroll=true){
-  const dt=new Date(m.at||Date.now()); const time=dt.toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'});
-  const div=document.createElement('div'); div.className='bubble';
-  let html = <div class="meta"><strong>${esc(m.user||'Anon')}</strong> • ${time}</div><div class="text">${esc(m.text||'')}</div>;
-  if(m.files?.length){
-    html += <div style="margin-top:6px"> + m.files.map(f=><a class="file-pill" href="#" data-dlid="${f.id}" title="${esc(f.name)}">📎 ${esc(f.name)} <small>(${bytes(f.size)})</small></a>).join('') + </div>;
-  }
-  div.innerHTML=html; chatBox.appendChild(div); if(scroll) chatBox.scrollTop=chatBox.scrollHeight;
-  div.querySelectorAll('[data-dlid]').forEach(a=>{
-    a.addEventListener('click', async (e)=>{
-      e.preventDefault();
-      const id=a.getAttribute('data-dlid');
-      const rec=await dbGet(id); if(!rec){ alert('Plik niedostępny.'); return; }
-      const url=URL.createObjectURL(rec.blob); const link=document.createElement('a'); link.href=url; link.download=rec.name; document.body.appendChild(link); link.click(); link.remove(); setTimeout(()=>URL.revokeObjectURL(url), 1200);
+    window.addEventListener("hashchange", ()=>{
+      const key = (location.hash||"").replace(/^#/,"") || "dashboard";
+      showTab(key,{pushHash:false});
     });
-  });
-}
-async function sendMessage(){
-  const text = ($('#chat-text').value||'').trim();
-  if(!text && pendingFiles.length===0) return;
-  const user = ($('#chat-name').value||'').trim() || 'Anon';
-  const fileRefs = pendingFiles.map(f=>({id:f.id,name:f.name,type:f.type,size:f.size}));
-  const msg = { id: uid(), user, text, at: Date.now(), files:fileRefs };
-  messages.push(msg); saveMsgs(messages); appendMsg(msg);
-  for(const f of pendingFiles){ await dbPut({ ...f, at:Date.now(), origin:'chat', category:'chat' }); }
-  pendingFiles=[]; renderPendingFiles();
-  $('#chat-text').value=''; $('#chat-text').focus();
-}
-const dz = $('#dz'), fi=$('#file-input'), pendingBox=$('#pending-files');
-dz.addEventListener('click',()=>fi.click());
-dz.addEventListener('dragover',(e)=>{ e.preventDefault(); dz.classList.add('drag'); });
-dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
-dz.addEventListener('drop',(e)=>{ e.preventDefault(); dz.classList.remove('drag'); handleFiles(e.dataTransfer.files); });
-fi.addEventListener('change',()=>{ handleFiles(fi.files); fi.value=''; });
-function renderPendingFiles(){
-  if(!pendingFiles.length){ pendingBox.innerHTML=''; return; }
-  pendingBox.innerHTML = pendingFiles.map((f,i)=><span class="file-pill">📎 ${esc(f.name)} <small>(${bytes(f.size)})</small> <a href="#" data-rm="${i}" title="Usuń">&times;</a></span>).join('');
-  pendingBox.querySelectorAll('[data-rm]').forEach(a=>a.addEventListener('click',(e)=>{ e.preventDefault(); const idx=+a.getAttribute('data-rm'); pendingFiles.splice(idx,1); renderPendingFiles(); }));
-}
-function handleFiles(fileList){
-  const maxPerFile=50*1024*1024;
-  Array.from(fileList||[]).forEach(f=>{
-    if(f.size>maxPerFile){ alert(Plik ${f.name} jest większy niż 50MB); return; }
-    const id=uid(); pendingFiles.push({id,name:f.name,type:f.type||'application/octet-stream',size:f.size,blob:f});
-  });
-  renderPendingFiles();
-}
-$('#chat-send').addEventListener('click', sendMessage);
-$('#chat-text').addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ e.preventDefault(); sendMessage(); }});
 
-/* ===== Eksport/Import pełny (z plikami) ===== */
-function blobToBase64(blob){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res((r.result||'').toString().split(',')[1]||''); r.onerror=()=>rej(r.error); r.readAsDataURL(blob); }); }
-async function exportFull(){
-  const files=await dbAll();
-  const files64=[];
-  for(const f of files){
-    files64.push({ id:f.id, name:f.name, type:f.type, size:f.size, at:f.at||Date.now(), category:f.category||'', clientId:f.clientId||'', clientName:f.clientName||'', origin:f.origin||'', b64: await blobToBase64(f.blob) });
-  }
-  const dump={ version:1, exportedAt:new Date().toISOString(), clients, leads, messages, files:files64 };
-  downloadText('arkon_full_export.json', JSON.stringify(dump,null,2));
-}
-async function importFull(file){
-  try{
-    const txt=await file.text(); const dump=JSON.parse(txt); if(!dump||!dump.version) throw new Error('Zły plik.');
-    await dbClear();
-    for(const f of (dump.files||[])){
-      const bin=Uint8Array.from(atob(f.b64||''), c=>c.charCodeAt(0));
-      await dbPut({ id:f.id, name:f.name, type:f.type, size:f.size, at:f.at, category:f.category, clientId:f.clientId, clientName:f.clientName, origin:f.origin, blob:new Blob([bin],{type:f.type||'application/octet-stream'}) });
+    // ====== DASHBOARD ======
+    function renderDashboard(){
+      const revenue = state.contracts.reduce((s,c)=>s+(c.total||0),0);
+      const open = state.contracts.filter(c=>c.status==="W toku").length;
+      const missing = state.contracts.reduce((s,c)=> s + (c.docs? c.docs.filter(d=>!d.done).length : 0), 0);
+      $("#db-revenue").textContent = money(revenue);
+      $("#db-open").textContent = open;
+      $("#db-missing").textContent = missing;
     }
-    clients=dump.clients||[]; leads=dump.leads||[]; messages=dump.messages||[];
-    saveJSON(LS_CLIENTS,clients); saveJSON(LS_LEADS,leads); saveMsgs(messages);
-    renderClients(); renderLeads(); renderChat(); renderUploads(); refreshDashboard();
-    alert('Zaimportowano.');
-  }catch(e){ alert('Błąd importu: '+(e.message||e)); }
-}
-$('#ex-full').addEventListener('click', exportFull);
-$('#im-full').addEventListener('change', e=>{ const f=e.target.files[0]; if(f) importFull(f); e.target.value=''; });
-$('#ex-cli-csv').addEventListener('click', ()=>{
-  const cols=['id','created','name','status','email','phone','address','tags','notes'];
-  const rows=[cols.join(';')].concat(clients.map(c=>[c.id, new Date(c.created||Date.now()).toISOString(), csvEsc(c.name), csvEsc(c.status), csvEsc(c.email), csvEsc(c.phone), csvEsc(c.address), csvEsc((c.tags||[]).join('|')), csvEsc(c.notes||'')].join(';')));
-  downloadText('arkon_klienci.csv', rows.join('\n'), 'text/csv;charset=utf-8');
-});
-$('#wipe-all').addEventListener('click', async ()=>{
-  if(!confirm('Na pewno wyczyścić wszystkie dane lokalne (klienci, leady, czat, pliki)?')) return;
-  localStorage.clear(); await dbClear();
-  clients=[]; leads=[]; messages=[];
-  saveJSON(LS_CLIENTS,clients); saveJSON(LS_LEADS,leads); saveMsgs(messages);
-  renderClients(); renderLeads(); renderChat(); renderUploads(); refreshDashboard();
-  alert('Wyczyszczono.');
-});
 
-/* ===== Dashboard ===== */
-function refreshDashboard(){
-  $('#db-clients').textContent = (clients||[]).length;
-  $('#db-leads').textContent   = (leads||[]).length;
-  // prosta symulacja — suma cen z komponentów, jeśli dodasz dane
-  const sum = 0;
-  $('#db-revenue').textContent = new Intl.NumberFormat('pl-PL').format(sum)+' zł';
-}
+    // ====== KLIENCI ======
+    let selectedClientId = null;
+    function renderClients(){
+      const q = ($("#cli-q").value||"").toLowerCase();
+      const sort = $("#cli-sort").value;
+      const rows = $("#cli-rows");
+      rows.innerHTML = "";
+      let list = state.clients
+        .filter(r => (r.name+r.email+r.phone+r.manager).toLowerCase().includes(q));
+      if(sort==="name") list.sort((a,b)=>a.name.localeCompare(b.name,"pl"));
+      if(sort==="manager") list.sort((a,b)=>a.manager.localeCompare(b.manager,"pl"));
+      if(sort==="created_desc") list.sort((a,b)=>b.created_at-a.created_at);
+      list.forEach(c=>{
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${c.id}</td>
+          <td><a href="#" data-id="${c.id}" class="cli-link">${c.name}</a></td>
+          <td>${c.email}</td>
+          <td>${c.phone}</td>
+          <td><span class="chip">${c.manager||"-"}</span></td>`;
+        rows.appendChild(tr);
+      });
+      $("#cli-empty").style.display = list.length? "none":"block";
 
-/* ===== BOOT ===== */
-(async function boot(){
-  await dbOpen();
+      rows.querySelectorAll(".cli-link").forEach(a=>{
+        a.addEventListener("click",(e)=>{
+          e.preventDefault();
+          openClientSide(a.dataset.id);
+        });
+      });
+    }
+    $("#cli-q").addEventListener("input", renderClients);
+    $("#cli-sort").addEventListener("change", renderClients);
+    $("#cli-add").addEventListener("click", ()=>{
+      const name=$("#cli-name").value.trim();
+      if(!name) return;
+      const next = {
+        id: uid("C", state.clients),
+        name,
+        email:$("#cli-email").value.trim(),
+        phone:$("#cli-phone").value.trim(),
+        manager:$("#cli-manager").value.trim(),
+        notes:"",
+        created_at:Date.now()
+      };
+      state.clients=[next,...state.clients];
+      ["cli-name","cli-email","cli-phone","cli-manager"].forEach(id=>$("#"+id).value="");
+      saveState(); renderClients(); openClientSide(next.id);
+    });
 
-  // seed danych (tylko przy pierwszym uruchomieniu)
-  clients = loadJSON(LS_CLIENTS, []);
-  if(!clients.length){
-    clients = [
-      {id:uid(), created:Date.now()-86400000*2, name:'Jan Kowalski', status:'LEAD', email:'jan@kowalski.pl', phone:'+48 500 000 111', address:'Przemków', tags:['pompa'], notes:'Preferuje kontakt rano.'},
-      {id:uid(), created:Date.now()-86400000,   name:'Firma XYZ Sp. z o.o.', status:'W TOKU', email:'biuro@xyz.pl', phone:'+48 600 100 200', address:'Legnica', tags:['fotowoltaika','serwis'], notes:'Serwis falownika.'}
-    ];
-    saveJSON(LS_CLIENTS,clients);
-  }
-  leads    = loadJSON(LS_LEADS, []);
-  messages = loadMsgs();
-  loadCmp();
+    function openClientSide(id){
+      selectedClientId = id;
+      const c = byId(state.clients,id);
+      if(!c){ return; }
+      $("#cli-side-none").hidden = true;
+      $("#cli-side-body").hidden = false;
+      $("#cli-s-id").textContent = c.id;
+      $("#cli-s-manager").textContent = c.manager || "-";
+      $("#cli-s-email").textContent = "✉ " + (c.email||"—");
+      $("#cli-s-phone").textContent = "📞 " + (c.phone||"—");
+      $("#cli-s-notes").value = c.notes||"";
+      const ul = $("#cli-s-contracts"); ul.innerHTML="";
+      state.contracts.filter(u=>u.client_id===id).forEach(u=>{
+        const li=document.createElement("li");
+        li.innerHTML = <a href="#" data-id="${u.id}" class="ctr-link">${u.id}</a> – ${u.customer} • <span class="status ${statusClass(u.status)}">${u.status}</span> • ${money(u.total)};
+        ul.appendChild(li);
+      });
+      ul.querySelectorAll(".ctr-link").forEach(a=>{
+        a.addEventListener("click",(e)=>{ e.preventDefault(); openContractSide(a.dataset.id); showTab("contracts"); });
+      });
+    }
+    $("#cli-s-save").addEventListener("click",()=>{
+      if(!selectedClientId) return;
+      const c = byId(state.clients, selectedClientId);
+      c.notes = $("#cli-s-notes").value;
+      saveState();
+    });
 
-  bootRouter();
+    // ====== UMOWY ======
+    let selectedContractId = null;
+    function renderContracts(){
+      const tb = $("#ctr-rows"); tb.innerHTML="";
+      state.contracts.slice().sort((a,b)=>b.created_at-a.created_at).forEach(c=>{
+        const tr=document.createElement("tr");
+        tr.innerHTML = `
+          <td><a href="#" class="ctr-link" data-id="${c.id}">${c.id}</a></td>
+          <td>${c.customer}</td>
+          <td>${money(c.total)}</td>
+          <td><span class="chip">${c.type}</span></td>
+          <td><span class="status ${statusClass(c.status)}">${c.status}</span></td>
+          <td><button class="btn ghost ctr-open" data-id="${c.id}">Szczegóły</button></td>`;
+        tb.appendChild(tr);
+      });
+      tb.querySelectorAll(".ctr-open,.ctr-link").forEach(b=>{
+        b.addEventListener("click",(e)=>{ e.preventDefault(); openContractSide(b.dataset.id); });
+      });
+      const sel=$("#ctr-client"); sel.innerHTML="";
+      state.clients.slice().sort((a,b)=>a.name.localeCompare(b.name,"pl")).forEach(c=>{
+        const o=document.createElement("option");
+        o.value=c.id; o.textContent=${c.name} (${c.id});
+        sel.appendChild(o);
+      });
+    }
+    function openContractSide(id){
+      selectedContractId = id;
+      const c = state.contracts.find(u=>u.id===id);
+      if(!c) return;
+      $("#ctr-side-none").hidden = true;
+      $("#ctr-side-body").hidden = false;
+      $("#ctr-s-id").textContent = c.id;
+      $("#ctr-s-client").textContent = ${c.customer} (${c.client_id});
+      $("#ctr-s-total").textContent = money(c.total);
+      $("#ctr-s-type").textContent = c.type;
+      $("#ctr-s-status").className = "chip " + statusClass(c.status);
+      $("#ctr-s-status").textContent = c.status;
+      const ul=$("#ctr-docs"); ul.innerHTML="";
+      (c.docs||defaultDocList().map(n=>({name:n,done:false}))).forEach((d,i)=>{
+        const li=document.createElement("li");
+        li.innerHTML=`
+          <label style="display:flex;align-items:center;gap:10px;padding:6px 0">
+            <input type="checkbox" ${d.done?"checked":""} data-i="${i}"/>
+            <span ${d.done?'style="text-decoration:line-through;opacity:.7"':""}>${d.name}</span>
+          </label>`;
+        ul.appendChild(li);
+      });
+      ul.addEventListener("change",e=>{
+        const i=+e.target.dataset.i;
+        if(Number.isFinite(i)){
+          c.docs[i].done=!c.docs[i].done; saveState(); renderDashboard(); openContractSide(id);
+        }
+      },{once:true});
+      $("#ctr-docs-reset").onclick = ()=>{ c.docs.forEach(x=>x.done=false); saveState(); openContractSide(id); };
+      $("#ctr-status-signed").onclick = ()=>{ c.status="Podpisana"; saveState(); renderContracts(); openContractSide(id); };
+    }
 
-  // bindy UI
-  bindClientsUI();  renderClients();
-  bindCmpUI();      renderCmp();
-  bindUploadUI();   fillUploadClientSelect(); renderUploads();
-  bindLeadsUI();    renderLeads();
-  renderChat();     refreshDashboard();
-})();
-</script>
+    // ====== PRODUKTY ======
+    const prodCats=["wszystko","fotowoltaika","pompy","piece","hydraulika","ocieplenie"];
+    function renderProductFilters(){
+      const box=$("#prod-filters"); box.innerHTML="";
+      prodCats.forEach(c=>{
+        const b=document.createElement("button");
+        b.className="btn ghost"; b.textContent=c;
+        b.addEventListener("click",()=>renderProducts(c));
+        box.appendChild(b);
+      });
+    }
+    function renderProducts(cat="wszystko"){
+      const rows=$("#prod-rows"); rows.innerHTML="";
+      const list=seedProducts.filter(p=>cat==="wszystko"?true:p.category===cat);
+      list.forEach(p=>{
+        const tr=document.createElement("tr");
+        tr.innerHTML = `
+          <td>${p.sku}</td>
+          <td>${p.name}</td>
+          <td><span class="chip">${p.category}</span></td>
+          <td>${money(p.price)}</td>
+          <td><button class="btn ghost add-prod" data-sku="${p.sku}">Dodaj</button></td>`;
+        rows.appendChild(tr);
+      });
+      rows.querySelectorAll(".add-prod").forEach(btn=>{
+        btn.addEventListener("click",()=>{
+          const sku=btn.dataset.sku; const prod=productBySku(sku);
+          const row = state.cart.find(i=>i.sku===sku);
+          if(row) row.qty++; else state.cart.push({sku,qty:1,price:prod.price});
+          saveState(); renderCart(); renderCartMirror();
+        });
+      });
+    }
+
+    // ====== KOMPONENTY (wydzielone: hydraulika + ocieplenie) ======
+    const compCats=["wszystko","hydraulika","ocieplenie"];
+    function renderComponentFilters(){
+      const box=$("#comp-filters"); box.innerHTML="";
+      compCats.forEach(c=>{
+        const b=document.createElement("button");
+        b.className="btn ghost"; b.textContent=c;
+        b.addEventListener("click",()=>renderComponents(c));
+        box.appendChild(b);
+      });
+    }
+    function renderComponents(cat="wszystko"){
+      const rows=$("#comp-rows"); rows.innerHTML="";
+      const list=seedProducts.filter(p=>{
+        const isComponent=!["fotowoltaika","pompy","piece"].includes(p.category);
+        return isComponent && (cat==="wszystko"?true:p.category===cat);
+      });
+      list.forEach(p=>{
+        const tr=document.createElement("tr");
+        tr.innerHTML = `
+          <td>${p.sku}</td>
+          <td>${p.name}</td>
+          <td><span class="chip">${p.category}</span></td>
+          <td>${money(p.price)}</td>
+          <td><button class="btn ghost add-comp" data-sku="${p.sku}">Dodaj</button></td>`;
+        rows.appendChild(tr);
+      });
+      rows.querySelectorAll(".add-comp").forEach(btn=>{
+        btn.addEventListener("click",()=>{
+          const sku=btn.dataset.sku; const prod=productBySku(sku);
+          const row = state.cart.find(i=>i.sku===sku);
+          if(row) row.qty++; else state.cart.push({sku,qty:1,price:prod.price});
+          saveState(); renderCart(); renderCartMirror();
+        });
+      });
+    }
+
+    // ====== KOSZYK (wspólny) ======
+    function renderCart(){
+      const box=$("#cart-list"); const empty=$("#cart-empty");
+      box.innerHTML="";
+      if(!state.cart.length){ empty.style.display="block"; $("#cart-sum").textContent="0 zł"; $("#cart-sum-disc").textContent="0 zł"; return; }
+      empty.style.display="none";
+      state.cart.forEach((i,idx)=>{
+        const p=productBySku(i.sku);
+        const div=document.createElement("div");
+        div.className="cart-row"; 
+        div.innerHTML = `
+          <div style="flex:1">${p.name} <span class="small chip">${p.sku}</span></div>
+          <input type="number" min="1" value="${i.qty}" data-i="${idx}">
+          <div style="width:110px;text-align:right">${money(i.price*i.qty)}</div>
+          <button class="btn ghost" data-del="${idx}">Usuń</button>`;
+        box.appendChild(div);
+      });
+      box.querySelectorAll('input[type="number"]').forEach(inp=>{
+        inp.addEventListener("input",()=>{
+          const i=+inp.dataset.i; const v=Math.max(1, +inp.value||1);
+          state.cart[i].qty=v; saveState(); renderCart(); renderCartMirror();
+        });
+      });
+      box.querySelectorAll('[data-del]').forEach(btn=>{
+        btn.addEventListener("click",()=>{ const i=+btn.dataset.del; state.cart.splice(i,1); saveState(); renderCart(); renderCartMirror(); });
+      });
+      const sum = state.cart.reduce((s,i)=>s+i.price*i.qty,0);
+      $("#cart-sum").textContent = money(sum);
+      $("#cart-sum-disc").textContent = money(sum);
+    }
+    // lustrzany koszyk w "Komponenty"
+    function renderCartMirror(){
+      const box=$("#cart-list-2"); if(!box) return;
+      box.innerHTML="";
+      if(!state.cart.length){ box.innerHTML='<div class="muted">Koszyk pusty.</div>'; return; }
+      state.cart.forEach((i,idx)=>{
+        const p=productBySku(i.sku);
+        const row=document.createElement("div");
+        row.className="cart-row";
+        row.innerHTML = `
+          <div style="flex:1">${p.name} <span class="small chip">${p.sku}</span></div>
+          <span>${i.qty} × ${money(i.price)}</span>
+          <button class="btn ghost" data-del2="${idx}">Usuń</button>`;
+        box.appendChild(row);
+      });
+      box.querySelectorAll("[data-del2]").forEach(btn=>{
+        btn.addEventListener("click",()=>{ const i=+btn.dataset.del2; state.cart.splice(i,1); saveState(); renderCart(); renderCartMirror(); });
+      });
+    }
+
+    // ====== DOKUMENTY (wzorzec) ======
+    function renderDocsMaster(){
+      const ul=$("#doc-list"); ul.innerHTML="";
+      state.docsMaster.forEach((d,i)=>{
+        const li=document.createElement("li");
+        li.innerHTML=`
+          <label style="display:flex;align-items:center;gap:10px;padding:6px 0">
+            <input type="checkbox" ${d.done?"checked":""} data-i="${i}"/>
+            <input class="field" value="${d.name}" data-name="${i}" />
+          </label>`;
+        ul.appendChild(li);
+      });
+      ul.addEventListener("change",e=>{
+        const i=+e.target.dataset.i;
+        if(Number.isFinite(i)){ state.docsMaster[i].done=!state.docsMaster[i].done; saveState(); }
+      }, { once:true });
+      ul.querySelectorAll('input[data-name]').forEach(inp=>{
+        inp.addEventListener("input",()=>{ state.docsMaster[+inp.dataset.name].name = inp.value; saveState(); });
+      });
+    }
+    $("#doc-reset").addEventListener("click",()=>{
+      state.docsMaster=state.docsMaster.map(d=>({...d,done:false})); saveState(); renderDocsMaster();
+    });
+    $("#doc-add").addEventListener("click",()=>{
+      state.docsMaster.push({name:"Nowy dokument",done:false}); saveState(); renderDocsMaster();
+    });
+
+    // ====== CHAT ======
+    function renderChat(){
+      const box=$("#chat-box"); box.innerHTML="";
+      state.chat.forEach(m=>{
+        const div=document.createElement("div");
+        const dt = new Date(m.at||Date.now());
+        const hh = dt.toLocaleTimeString("pl-PL",{hour:"2-digit",minute:"2-digit"});
+        div.className="msg";
+        div.innerHTML = <strong>[${hh}] ${m.from}:</strong> <span>${escapeHtml(m.text)}</span>;
+        box.appendChild(div);
+      });
+      box.scrollTop=box.scrollHeight;
+    }
+    $("#chat-send").addEventListener("click",()=>{
+      const t=$("#chat-text").value.trim(); if(!t) return;
+      state.chat.push({from:"Ja",text:t,at:Date.now()}); $("#chat-text").value=""; saveState(); renderChat();
+    });
+
+    // ====== USTAWIENIA ======
+    $("#export").addEventListener("click",()=>{
+      const data = JSON.stringify(state,null,2);
+      const blob = new Blob([data],{type:"application/json"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = "arkon-crm-backup.json"; a.click();
+      URL.revokeObjectURL(url);
+    });
+    $("#import").addEventListener("change",(e)=>{
+      const file = e.target.files[0]; if(!file) return;
+      const r = new FileReader();
+      r.onload = () => {
+        try{
+          const obj = JSON.parse(r.result);
+          state = Object.assign(loadState(), obj);
+          saveState(); boot();
+          alert("Import zakończony.");
+        }catch{ alert("Plik nieprawidłowy."); }
+      };
+      r.readAsText(file);
+    });
+    $("#wipe").addEventListener("click",()=>{
+      if(confirm("Usunąć zapisane dane lokalne?")){
+        localStorage.removeItem(LSKEY); state=loadState(); boot();
+      }
+    });
+
+    // ====== SKRÓTY KLAWIATUROWE ======
+    window.addEventListener("keydown",(e)=>{
+      if(e.key==="/" && !["INPUT","TEXTAREA"].includes(document.activeElement.tagName)){ e.preventDefault(); $("#cli-q").focus(); showTab("clients"); }
+      if(e.altKey && (e.key==="n" || e.key==="N")){ e.preventDefault(); showTab("clients"); $("#cli-name").focus(); }
+      if(e.altKey && (e.key==="u" || e.key==="U")){ e.preventDefault(); showTab("contracts"); $("#ctr-create").focus(); }
+    });
+
+    // ====== BOOT ======
+    function boot(){
+      const initial = (location.hash||"").replace(/^#/,"") || "dashboard";
+      showTab(initial,{pushHash:false});
+      renderDashboard();
+      renderClients();
+      renderContracts();
+      renderProductFilters(); renderProducts();
+      renderComponentFilters(); renderComponents();
+      renderCart(); renderCartMirror();
+      renderDocsMaster();
+      renderChat();
+    }
+    boot();
+  </script>
 </body>
 </html>
