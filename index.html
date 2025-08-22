@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ARKON CRM — Pulpit</title>
+<meta name="description" content="ARKON CRM — Pulpit z przejściami do wszystkich podstron (Klienci, Komponenty, Dokumenty, Upload, Leady, Chat, Ustawienia, Eksport/Import, Kalkulator).">
+<style>
+  :root{
+    --bg:#0b1020;--card:#0f1636;--line:#263168;--accent:#3a6df0;
+    --text:#e7ecff;--muted:#a3b3ff;--chip:#1a244d;--field:#0e1330;
+    --good:#2fbf71;--warn:#ffb84d;--bad:#ff6b6b;--grid:#243059;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font:14px/1.45 system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+  a{color:#cfe0ff;text-decoration:none}
+  .container{max-width:1280px;margin:0 auto;padding:16px}
+  .nav{position:sticky;top:0;z-index:10;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--bg)}
+  .brand{font-weight:700;letter-spacing:.4px;margin-right:6px}
+  .tab{padding:6px 10px;border-radius:8px;border:1px solid #263168;background:#0f1636}
+  .tab:hover{border-color:#3a6df0}
+  .grid{display:grid;gap:16px}
+  .cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+  @media (max-width:960px){ .cols-3{grid-template-columns:1fr} .cards{grid-template-columns:1fr} }
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .small{opacity:.85;color:var(--muted);font-size:13px}
+  h1{margin:0 0 10px}
+  h2{margin:0 0 6px;font-size:18px}
+  .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
+  .big{font-size:22px;margin:4px 0 0}
+  .link-card{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:12px;border:1px solid var(--line);background:#0e1533}
+  .link-card b{font-size:16px}
+  .link-card .arr{opacity:.8}
+  .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
+  ul.clean{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+</style>
+</head>
+<body>
+  <!-- NAV (linki do każdej PODSTRONY jako oddzielne pliki) -->
+  <div class="nav" role="navigation" aria-label="Główne">
+    <div class="brand">ARKON CRM</div>
+    <a class="tab" href="index.html">Pulpit</a>
+    <a class="tab" href="klienci.html">Klienci</a>
+    <a class="tab" href="komponenty.html">Komponenty</a>
+    <a class="tab" href="dokumenty.html">Dokumenty</a>
+    <a class="tab" href="upload.html">Przesył plików</a>
+    <a class="tab" href="lidy.html">Leady</a>
+    <a class="tab" href="chat.html">Komunikator</a>
+    <a class="tab" href="ustawienia.html">Ustawienia</a>
+    <a class="tab" href="eksport.html">Eksport/Import</a>
+    <a class="tab" href="kalkulator.html" target="_blank" rel="noopener">Kalkulator ↗️</a>
+  </div>
+
+  <div class="container">
+    <section class="grid">
+      <h1>Pulpit</h1>
+      <div class="grid cols-3">
+        <div class="card"><div class="small">Przychód (symulacja)</div><div class="big" id="db-revenue">0 zł</div></div>
+        <div class="card"><div class="small">Klienci</div><div class="big" id="db-clients">0</div></div>
+        <div class="card"><div class="small">Leady</div><div class="big" id="db-leads">0</div></div>
+      </div>
+
+      <div class="card">
+        <h2>Szybkie przejścia</h2>
+        <ul class="clean cards">
+          <li><a class="link-card" href="klienci.html"><span><b>Klienci</b><div class="small">Dodawanie, filtr, edycja</div></span><span class="arr">→</span></a></li>
+          <li><a class="link-card" href="lidy.html"><span><b>Leady</b><div class="small">Nowe zapytania i statusy</div></span><span class="arr">→</span></a></li>
+          <li><a class="link-card" href="komponenty.html"><span><b>Komponenty</b><div class="small">Pompy, piece, PV, ocieplenie, stolarka</div></span><span class="arr">→</span></a></li>
+          <li><a class="link-card" href="upload.html"><span><b>Przesył plików</b><div class="small">Pliki z przypisaniem do klienta i kategorii</div></span><span class="arr">→</span></a></li>
+          <li><a class="link-card" href="dokumenty.html"><span><b>Dokumenty do pobrania</b><div class="small">Wzory PDF / DOCX</div></span><span class="arr">→</span></a></li>
+          <li><a class="link-card" href="chat.html"><span><b>Komunikator</b><div class="small">Wiadomości + załączniki (lokalnie)</div></span><span class="arr">→</span></a></li>
+          <li><a class="link-card" href="eksport.html"><span><b>Eksport / Import</b><div class="small">Pełny backup + CSV</div></span><span class="arr">→</span></a></li>
+          <li><a class="link-card" href="ustawienia.html"><span><b>Ustawienia</b><div class="small">Druk i kalkulator</div></span><span class="arr">→</span></a></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>Bezpośrednio do podkategorii komponentów</h2>
+        <div class="small" style="margin-bottom:8px">Każda kategoria jest osobną stroną:</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <a class="pill" href="komponenty-pompy.html">Pompy ciepła</a>
+          <a class="pill" href="komponenty-piece.html">Piece / kotły</a>
+          <a class="pill" href="komponenty-fotowoltaika.html">Fotowoltaika</a>
+          <a class="pill" href="komponenty-ocieplenie.html">Ocieplenie</a>
+          <a class="pill" href="komponenty-stolarka.html">Stolarka / bramy</a>
+        </div>
+      </div>
+
+      <div class="card small">
+        Skróty: <span class="kbd">/</span> szukaj w Klientach • <span class="kbd">Alt+N</span> nowy klient •
+        <span class="kbd">Alt+U</span> nowa pozycja (komponenty) • eksport/backup w <em>Eksport/Import</em>.
+      </div>
+    </section>
+  </div>
+
+<script>
+// Czytanie istniejących danych z localStorage (te same klucze co w aplikacji)
+const INT0 = new Intl.NumberFormat('pl-PL',{maximumFractionDigits:0});
+const fmt = n => isFinite(n)? INT0.format(Math.round(n)) : '—';
+
+function getJSON(key, fallback){
+  try{ return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }
+  catch{ return fallback; }
+}
+
+// Klienci / Leady
+const clients = getJSON('arkon_clients_v2', []);
+const leads   = getJSON('arkon_leads_v1', []);
+
+// Komponenty (wszystkie 5 kategorii)
+const cmpKeys = {
+  pumps:   'arkon_cmp_pumps_v1',
+  boilers: 'arkon_cmp_boilers_v1',
+  pv:      'arkon_cmp_pv_v1',
+  insul:   'arkon_cmp_insul_v1',
+  garage:  'arkon_cmp_garage_v1'
+};
+const components = Object.fromEntries(Object.entries(cmpKeys).map(([k,ls]) => [k, getJSON(ls, [])]));
+
+// Dashboard: liczniki
+document.getElementById('db-clients').textContent = clients.length;
+document.getElementById('db-leads').textContent   = leads.length;
+
+// Przychód = suma cen ze wszystkich komponentów (jak wcześniej, dla podglądu)
+const sum = ['pumps','boilers','pv','insul','garage']
+  .flatMap(k => components[k] || [])
+  .reduce((a,r) => a + (Number(r.price || r.price_m2 || 0) || 0), 0);
+
+document.getElementById('db-revenue').textContent = fmt(sum) + ' zł';
+</script>
+</body>
+</html>
