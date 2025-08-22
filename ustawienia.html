@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARKON CRM – Komunikator</title>
+<style>
+  :root{
+    --bg:#0b1020;--card:#0f1636;--line:#263168;--accent:#3a6df0;
+    --text:#e7ecff;--muted:#a3b3ff;--chip:#1a244d;--field:#0e1330;
+    --good:#2fbf71;--bad:#ff6b6b;
+  }
+  body{margin:0;font:15px/1.45 system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+  header{padding:16px;border-bottom:1px solid var(--line);background:var(--card);font-size:18px;font-weight:600}
+  .wrap{max-width:1200px;margin:0 auto;padding:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+  h1{margin:0 0 12px}
+  .chat-box{border:1px solid var(--line);border-radius:10px;padding:12px;min-height:280px;max-height:400px;overflow:auto;background:#0d1330}
+  .bubble{background:#142057;border:1px solid #2a3777;border-radius:10px;padding:8px 10px;margin:6px 0}
+  .bubble .meta{font-size:12px;color:#a8b3ff;margin-bottom:4px}
+  .chat-input{display:flex;gap:8px;margin-top:8px}
+  input,button,select{font:inherit}
+  .field{flex:1;background:var(--field);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:10px}
+  .btn{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:10px 14px;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px solid var(--accent);color:#cfe0ff}
+  .btn.bad{background:transparent;border:1px solid var(--bad);color:var(--bad)}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .dropzone{border:2px dashed #2a3777;border-radius:10px;padding:10px;text-align:center;cursor:pointer;margin-top:10px}
+  .dropzone.drag{background:#111a3f}
+  .file-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid #2a3777;border-radius:999px;margin:4px 6px 0 0}
+  .file-pill small{opacity:.8}
+  .channel{padding:6px 10px;border-radius:8px;cursor:pointer}
+  .channel.active{background:var(--chip)}
+</style>
+</head>
+<body>
+<header>📡 ARKON CRM – Komunikator</header>
+<div class="wrap">
+
+  <!-- Kanały -->
+  <div class="card">
+    <h1>Kanały</h1>
+    <div id="channels" class="row"></div>
+    <div class="row">
+      <input id="newChannel" class="field" placeholder="Nowy kanał…">
+      <button id="addChannel" class="btn">Dodaj</button>
+    </div>
+  </div>
+
+  <!-- Okno czatu -->
+  <div class="card">
+    <h1 id="channelTitle">Kanał: Ogólny</h1>
+    <div id="chat-box" class="chat-box"></div>
+
+    <div class="dropzone" id="dz">
+      Upuść pliki tutaj lub kliknij, aby wybrać…
+      <input type="file" id="file-input" multiple hidden>
+    </div>
+    <div id="pending-files"></div>
+
+    <div class="chat-input">
+      <input id="chat-name" class="field" placeholder="Twoje imię (domyślnie: Anon)" style="max-width:200px">
+      <input id="chat-text" class="field" placeholder="Napisz wiadomość…">
+      <button id="chat-send" class="btn">Wyślij</button>
+    </div>
+  </div>
+
+  <!-- Ustawienia -->
+  <div class="card">
+    <h1>Ustawienia</h1>
+    <div class="row">
+      <button id="export" class="btn ghost">Eksportuj (JSON)</button>
+      <label class="btn ghost">Importuj <input type="file" id="import" hidden></label>
+      <button id="wipe" class="btn bad">Wyczyść wszystko</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ===== helpers ===== */
+const $=s=>document.querySelector(s);
+const $$=s=>Array.from(document.querySelectorAll(s));
+function esc(s){return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+function bytes(n){ if(n<1024) return n+" B"; if(n<1024*1024) return (n/1024).toFixed(1)+" KB"; return (n/1024/1024).toFixed(1)+" MB";}
+
+/* ===== IndexedDB do plików ===== */
+let db;
+function dbOpen(){
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open("arkonChat",1);
+    r.onupgradeneeded=()=>{ if(!r.result.objectStoreNames.contains("files")) r.result.createObjectStore("files",{keyPath:"id"}); };
+    r.onsuccess=()=>{db=r.result; res();}; r.onerror=()=>rej(r.error);
+  });
+}
+function dbPut(f){return new Promise((res,rej)=>{const tx=db.transaction("files","readwrite");tx.objectStore("files").put(f);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});}
+function dbGet(id){return new Promise((res,rej)=>{const tx=db.transaction("files","readonly");const req=tx.objectStore("files").get(id);req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error);});}
+function dbAll(){return new Promise((res,rej)=>{const tx=db.transaction("files","readonly");const req=tx.objectStore("files").getAll();req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error);});}
+function dbClear(){return new Promise((res,rej)=>{const tx=db.transaction("files","readwrite");tx.objectStore("files").clear();tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});}
+
+/* ===== stan ===== */
+let state={ channel:"Ogólny", channels:["Ogólny"], msgs:{} }; // msgs[channel]=[]
+
+function load(){ try{const s=JSON.parse(localStorage.getItem("arkonChat")); if(s) state=s;}catch{} }
+function save(){ localStorage.setItem("arkonChat",JSON.stringify(state)); }
+
+/* ===== UI ===== */
+const chatBox=$("#chat-box");
+function renderChannels(){
+  const box=$("#channels"); box.innerHTML="";
+  state.channels.forEach(c=>{
+    const div=document.createElement("div"); div.textContent=c; div.className="channel"+(c===state.channel?" active":"");
+    div.addEventListener("click",()=>{state.channel=c;save();renderChannels();renderChat();});
+    box.appendChild(div);
+  });
+}
+function renderChat(){
+  chatBox.innerHTML=""; const list=state.msgs[state.channel]||[];
+  list.forEach(m=>appendMsg(m,false));
+  chatBox.scrollTop=chatBox.scrollHeight;
+}
+function appendMsg(m,scroll=true){
+  const dt=new Date(m.at||Date.now()); const time=dt.toLocaleTimeString("pl-PL",{hour:"2-digit",minute:"2-digit"});
+  const div=document.createElement("div"); div.className="bubble";
+  let html=<div class="meta"><b>${esc(m.user)}</b> • ${time}</div><div>${esc(m.text)}</div>;
+  if(m.files&&m.files.length){
+    html+="<div>"+m.files.map(f=><a href="#" data-dlid="${f.id}" class="file-pill">📎 ${esc(f.name)} <small>(${bytes(f.size)})</small></a>).join("")+"</div>";
+  }
+  html+=<div style="margin-top:4px"><a href="#" data-del="${m.id}" style="font-size:12px;color:#ffb4b4">Usuń</a></div>;
+  div.innerHTML=html; chatBox.appendChild(div);
+  div.querySelectorAll("[data-dlid]").forEach(a=>a.addEventListener("click",async e=>{
+    e.preventDefault();const id=a.getAttribute("data-dlid");const rec=await dbGet(id);if(!rec){alert("Brak pliku");return;}
+    const url=URL.createObjectURL(rec.blob);const link=document.createElement("a");link.href=url;link.download=rec.name;link.click();setTimeout(()=>URL.revokeObjectURL(url),2000);
+  }));
+  div.querySelector("[data-del]").addEventListener("click",e=>{
+    e.preventDefault(); delMsg(m.id);
+  });
+  if(scroll) chatBox.scrollTop=chatBox.scrollHeight;
+}
+function delMsg(id){
+  let list=state.msgs[state.channel]||[]; list=list.filter(m=>m.id!==id); state.msgs[state.channel]=list; save(); renderChat();
+}
+
+/* ===== files ===== */
+let pending=[];
+function renderPending(){const box=$("#pending-files"); box.innerHTML=pending.map((f,i)=><span class="file-pill">📎 ${f.name} <small>${bytes(f.size)}</small> <a href="#" data-rm="${i}">x</a></span>).join(""); box.querySelectorAll("[data-rm]").forEach(a=>a.addEventListener("click",e=>{e.preventDefault();pending.splice(+a.getAttribute("data-rm"),1);renderPending();}));}
+function handleFiles(fl){Array.from(fl).forEach(f=>{const id="F_"+Date.now()+"_"+Math.random().toString(36).slice(2);pending.push({id,name:f.name,size:f.size,type:f.type||"application/octet-stream",blob:f});});renderPending();}
+$("#dz").addEventListener("click",()=>$("#file-input").click());
+$("#dz").addEventListener("dragover",e=>{e.preventDefault();$("#dz").classList.add("drag");});
+$("#dz").addEventListener("dragleave",()=>$("#dz").classList.remove("drag"));
+$("#dz").addEventListener("drop",e=>{e.preventDefault();$("#dz").classList.remove("drag");handleFiles(e.dataTransfer.files);});
+$("#file-input").addEventListener("change",()=>{handleFiles($("#file-input").files);$("#file-input").value="";});
+
+/* ===== send msg ===== */
+async function send(){
+  const t=$("#chat-text").value.trim(); if(!t && pending.length===0) return;
+  const u=$("#chat-name").value.trim()||"Anon"; const msg={id:Date.now()+"_"+Math.random().toString(36).slice(2),user:u,text:t,at:Date.now(),files:pending.map(f=>({id:f.id,name:f.name,size:f.size}))};
+  if(!state.msgs[state.channel]) state.msgs[state.channel]=[]; state.msgs[state.channel].push(msg); save(); appendMsg(msg);
+  for(const f of pending){ await dbPut(f); } pending=[]; renderPending(); $("#chat-text").value="";
+}
+$("#chat-send").addEventListener("click",send); $("#chat-text").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();send();}});
+
+/* ===== export/import ===== */
+async function exportAll(){
+  const files=await dbAll(); const files64=[];
+  for(const f of files){const b64=await blobToBase64(f.blob);files64.push({...f,b64});}
+  const dump={channels:state.channels,channel:state.channel,msgs:state.msgs,files:files64};
+  const url=URL.createObjectURL(new Blob([JSON.stringify(dump,null,2)],{type:"application/json"}));
+  const a=document.createElement("a");a.href=url;a.download="chat-export.json";a.click();URL.revokeObjectURL(url);
+}
+function blobToBase64(b){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=()=>rej(r.error);r.readAsDataURL(b);});}
+async function importAll(f){
+  const txt=await f.text(); const dump=JSON.parse(txt); if(!dump) return;
+  await dbClear(); state={channels:dump.channels||["Ogólny"],channel:dump.channel||"Ogólny",msgs:dump.msgs||{}}; save();
+  for(const f of dump.files||[]){const bin=Uint8Array.from(atob(f.b64),c=>c.charCodeAt(0));await dbPut({id:f.id,name:f.name,type:f.type,size:f.size,blob:new Blob([bin],{type:f.type})});}
+  renderChannels();renderChat();
+}
+$("#export").addEventListener("click",exportAll);
+$("#import").addEventListener("change",e=>{const f=e.target.files[0];if(f) importAll(f);});
+$("#wipe").addEventListener("click",async()=>{if(confirm("Wyczyścić wszystko?")){await dbClear();localStorage.removeItem("arkonChat");state={channel:"Ogólny",channels:["Ogólny"],msgs:{}};renderChannels();renderChat();}});
+
+/* ===== channels ===== */
+$("#addChannel").addEventListener("click",()=>{const c=$("#newChannel").value.trim();if(!c) return; if(!state.channels.includes(c)){state.channels.push(c);} state.channel=c;save();renderChannels();renderChat();$("#newChannel").value="";});
+
+/* ===== boot ===== */
+(async function(){ await dbOpen(); load(); if(!state.channels.includes(state.channel)) state.channel="Ogólny"; renderChannels(); renderChat(); })();
+</script>
+</body>
+</html>
