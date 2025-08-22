@@ -48,7 +48,7 @@
     .list-reset{list-style:none;margin:0;padding:0}
     .danger{color:#ffb4b4}
     .status{padding:2px 8px;border-radius:999px}
-    /* >>> poprawione klasy statusu (bez spacji) */
+    /* klasy statusu (bez spacji) */
     .status.w-toku{background:#24336b}
     .status.podpisana{background:#1d3d2f}
     .status.anulowana{background:#4a1d1d}
@@ -64,13 +64,13 @@
   <!-- NAV -->
   <div class="nav">
     <div class="brand">ARKON CRM</div>
-    <div class="tab active" data-tab="dashboard">Pulpit</div>
-    <div class="tab" data-tab="clients">Klienci</div>
-    <div class="tab" data-tab="contracts">Umowy</div>
-    <div class="tab" data-tab="products">Produkty</div>
-    <div class="tab" data-tab="docs">Dokumenty</div>
-    <div class="tab" data-tab="chat">Komunikator</div>
-    <div class="tab" data-tab="settings">Ustawienia</div>
+    <div class="tab active" data-tab="dashboard" tabindex="0">Pulpit</div>
+    <div class="tab" data-tab="clients" tabindex="0">Klienci</div>
+    <div class="tab" data-tab="contracts" tabindex="0">Umowy</div>
+    <div class="tab" data-tab="products" tabindex="0">Produkty</div>
+    <div class="tab" data-tab="docs" tabindex="0">Dokumenty</div>
+    <div class="tab" data-tab="chat" tabindex="0">Komunikator</div>
+    <div class="tab" data-tab="settings" tabindex="0">Ustawienia</div>
   </div>
 
   <div class="container">
@@ -376,16 +376,31 @@
     // ====== NAWIGACJA (delegacja + bezpieczny switch) ======
     function showTab(key){
       if(!key) return;
-      document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active", t.dataset.tab===key));
-      document.querySelectorAll("section[id^='tab-']").forEach(s=>s.hidden = true);
-      const sec = document.getElementById("tab-"+key);
-      if(sec) sec.hidden = false;
+      document.querySelectorAll(".tab").forEach(t =>
+        t.classList.toggle("active", t.dataset.tab === key)
+      );
+      document.querySelectorAll("section[id^='tab-']").forEach(s => s.hidden = true);
+      const sec = document.getElementById("tab-" + key);
+      if (sec) sec.hidden = false;
     }
-    document.querySelector(".nav").addEventListener("click",(e)=>{
-      const btn = e.target.closest(".tab");
-      if(!btn) return;
+    const nav = document.querySelector(".nav");
+    // klik (odporność na TextNode)
+    nav.addEventListener("click", (e) => {
+      const t = e.target;
+      const el = t && t.nodeType === 1 ? t : t.parentElement; // Element, nie TextNode
+      const btn = el && (el.classList.contains("tab") ? el : el.closest(".tab"));
+      if (!btn) return;
       e.preventDefault();
       showTab(btn.dataset.tab);
+    });
+    // klawiatura
+    document.querySelectorAll(".tab").forEach(tab => {
+      tab.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          showTab(tab.dataset.tab);
+        }
+      });
     });
 
     // ====== DASHBOARD ======
@@ -658,7 +673,7 @@
       state.chat.forEach(m=>{
         const div=document.createElement("div");
         const dt = new Date(m.at||Date.now());
-        const hh = dt.toLocaleTimeString("pl-PL",{hour:"2-digit",minute:"2-digit"});
+               const hh = dt.toLocaleTimeString("pl-PL",{hour:"2-digit",minute:"2-digit"});
         div.className="msg";
         div.innerHTML = <strong>[${hh}] ${m.from}:</strong> <span>${escapeHtml(m.text)}</span>;
         box.appendChild(div);
