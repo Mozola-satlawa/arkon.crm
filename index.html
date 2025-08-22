@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ARKON CRM — demo 1-plikowe</title>
+  <style>
+    :root{
+      --bg:#0b1020;--card:#0f1636;--line:#263168;--accent:#3a6df0;
+      --text:#e7ecff;--muted:#a3b3ff;--chip:#1a244d;--field:#0e1330;
+    }
+    html,body{margin:0;height:100%}
+    body{font:14px/1.45 system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    .container{max-width:1200px;margin:0 auto;padding:16px}
+    .nav{position:sticky;top:0;z-index:10;display:flex;gap:12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--bg)}
+    .brand{font-weight:700;letter-spacing:.4px}
+    .tab{padding:6px 10px;border-radius:8px;cursor:pointer}
+    .tab.active{background:var(--chip)}
+    .grid{display:grid;gap:16px}
+    .cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    @media (max-width:900px){.cols-3{grid-template-columns:1fr}}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+    .small{opacity:.8;color:var(--muted);font-size:13px}
+    h1{margin:0 0 10px}
+    h2{margin:0 0 10px;font-size:18px}
+    .chip{display:inline-block;padding:4px 8px;border-radius:999px;background:var(--chip)}
+    input,select,button,textarea{font:inherit}
+    .field{background:var(--field);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:10px 12px;outline:0;width:100%}
+    .row{display:flex;gap:8px;flex-wrap:wrap}
+    .btn{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:10px 14px;cursor:pointer}
+    .btn.ghost{background:transparent;border:1px solid var(--accent);color:#cfe0ff}
+    table{width:100%;border-collapse:collapse}
+    th{font-weight:600;text-align:left;border-bottom:1px solid var(--line);padding:8px 6px;color:var(--muted);font-size:13px}
+    td{border-bottom:1px solid #1a244d;padding:8px 6px}
+    .scroll{overflow:auto}
+    .right{display:flex;gap:8px;justify-content:flex-end}
+    .spacer{height:6px}
+    .muted{opacity:.7}
+    .msg{margin-bottom:6px}
+    .msg strong{color:#9ec5ff}
+    .list-reset{list-style:none;margin:0;padding:0}
+    .danger{color:#ffb4b4}
+  </style>
+</head>
+<body>
+  <!-- NAV -->
+  <div class="nav">
+    <div class="brand">ARKON CRM</div>
+    <div class="tab active" data-tab="dashboard">Pulpit</div>
+    <div class="tab" data-tab="clients">Klienci</div>
+    <div class="tab" data-tab="contracts">Umowy</div>
+    <div class="tab" data-tab="products">Produkty</div>
+    <div class="tab" data-tab="docs">Dokumenty</div>
+    <div class="tab" data-tab="chat">Komunikator</div>
+    <div class="tab" data-tab="settings">Ustawienia</div>
+  </div>
+
+  <div class="container">
+    <!-- DASHBOARD -->
+    <section id="tab-dashboard" class="grid">
+      <h1>Pulpit</h1>
+      <div class="grid cols-3">
+        <div class="card">
+          <div class="small">Przychód (symulacja)</div>
+          <h2 id="db-revenue">0 zł</h2>
+        </div>
+        <div class="card">
+          <div class="small">Aktywne umowy</div>
+          <h2 id="db-open">0</h2>
+        </div>
+        <div class="card">
+          <div class="small">Brakujące dokumenty</div>
+          <h2 id="db-missing">0</h2>
+        </div>
+      </div>
+    </section>
+
+    <!-- CLIENTS -->
+    <section id="tab-clients" class="grid" hidden>
+      <h1>Klienci</h1>
+      <div class="card">
+        <div class="row">
+          <input id="cli-q" class="field" placeholder="Szukaj (imię, email, tel, opiekun)..." />
+          <input id="cli-name" class="field" placeholder="Imię i nazwisko" />
+          <input id="cli-email" class="field" placeholder="E-mail" />
+          <input id="cli-phone" class="field" placeholder="Telefon" />
+          <input id="cli-manager" class="field" placeholder="Opiekun" />
+          <button id="cli-add" class="btn">Dodaj klienta</button>
+        </div>
+      </div>
+      <div class="card scroll">
+        <table>
+          <thead>
+            <tr><th>ID</th><th>Nazwa</th><th>E-mail</th><th>Telefon</th><th>Opiekun</th></tr>
+          </thead>
+          <tbody id="cli-rows"></tbody>
+        </table>
+        <div id="cli-empty" class="muted" style="padding:8px;display:none">Brak wyników…</div>
+      </div>
+    </section>
+
+    <!-- CONTRACTS -->
+    <section id="tab-contracts" class="grid" hidden>
+      <h1>Umowy</h1>
+      <div class="card">
+        <h2>Kalkulator umowy</h2>
+        <div class="small">Tryb:</div>
+        <div class="row">
+          <button class="btn ghost" id="mode-cash">Gotówka</button>
+          <button class="btn ghost" id="mode-pref">Prefinansowanie</button>
+          <span id="mode-badge" class="chip">Gotówka</span>
+        </div>
+        <div class="spacer"></div>
+        <div class="row">
+          <input id="sum" class="field" type="number" value="20000" placeholder="Wartość brutto (zł)" />
+          <input id="discount" class="field" type="number" value="0" placeholder="Rabat (zł)" />
+          <input id="months" class="field" type="number" value="60" placeholder="Okres (mies.)" />
+          <input id="rate" class="field" type="number" step="0.1" value="7.2" placeholder="Oprocentowanie % (rok)" />
+          <input id="prov" class="field" type="number" step="0.1" value="4" placeholder="Prowizja %"/>
+        </div>
+        <div class="grid cols-3" style="margin-top:12px">
+          <div class="card"><div class="small">Podstawa</div><h2 id="out-base">0 zł</h2></div>
+          <div class="card"><div class="small">Rata / mies.</div><h2 id="out-inst">0 zł</h2></div>
+          <div class="card"><div class="small">Prowizja</div><h2 id="out-prov">0 zł</h2></div>
+        </div>
+        <div id="pref-note" class="small" style="margin-top:8px;display:none">
+          <span class="chip">Prefinansowanie</span> – pamiętaj o: opinii kominiarza, odbiorze, oświadczeniach i zaświadczeniach o dochodach.
+        </div>
+      </div>
+
+      <div class="card scroll">
+        <h2>Lista umów (demo)</h2>
+        <table>
+          <thead>
+            <tr><th>ID</th><th>Klient</th><th>Kwota</th><th>Status</th></tr>
+          </thead>
+        <tbody id="ctr-rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- PRODUCTS -->
+    <section id="tab-products" class="grid" hidden>
+      <h1>Produkty i komponenty</h1>
+      <div class="card">
+        <div class="row" id="prod-filters"></div>
+      </div>
+      <div class="card scroll">
+        <table>
+          <thead>
+            <tr><th>SKU</th><th>Nazwa</th><th>Kategoria</th><th>Cena</th></tr>
+          </thead>
+          <tbody id="prod-rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- DOCUMENTS -->
+    <section id="tab-docs" class="grid" hidden>
+      <h1>Dokumenty</h1>
+      <div class="card">
+        <h2>Lista wymaganych dokumentów</h2>
+        <ul id="doc-list" class="list-reset"></ul>
+        <div class="right" style="margin-top:10px">
+          <button id="doc-reset" class="btn ghost">Odznacz wszystko</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- CHAT -->
+    <section id="tab-chat" class="grid" hidden>
+      <h1>Komunikator</h1>
+      <div class="card">
+        <div id="chat-box" style="border:1px solid var(--line);border-radius:8px;padding:12px;min-height:120px;max-height:260px;overflow:auto;background:#0d1330"></div>
+        <div class="row" style="margin-top:8px">
+          <input id="chat-text" class="field" placeholder="Napisz wiadomość…" />
+          <button id="chat-send" class="btn">Wyślij</button>
+        </div>
+        <div class="small muted" style="margin-top:8px">* Demo lokalne (bez backendu). Docelowo: Supabase Realtime.</div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="tab-settings" class="grid" hidden>
+      <h1>Ustawienia</h1>
+      <div class="card">
+        <div class="row">
+          <button class="btn" onclick="window.print()">Drukuj / PDF</button>
+          <button id="wipe" class="btn ghost danger" title="Usuwa zapis lokalny">Wyczyść zapisane dane (localStorage)</button>
+        </div>
+        <div class="small" style="margin-top:10px">
+          To wersja 1-plikowa. Gdy będziesz gotowa: dodamy logowanie (role: admin/handlowiec),
+          bazę danych oraz magazyn skanów (Supabase), generowanie PDF i czat realtime.
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // ====== DANE STARTOWE ======
+    const seedClients = [
+      { id:"C-001", name:"Anna Kowalska", email:"anna@example.com", phone:"600-100-200", manager:"Paweł" },
+      { id:"C-002", name:"Jan Nowak",    email:"jan@example.com",  phone:"600-100-201", manager:"Paweł" },
+      { id:"C-003", name:"Piotr Kamiński", email:"piotr@example.com", phone:"600-100-202", manager:"Kasia" },
+    ];
+    const seedContracts = [
+      { id:"U-1001", customer:"Anna Kowalska", total:21500, status:"W toku" },
+      { id:"U-1002", customer:"Jan Nowak",     total:42000, status:"Zakończona" },
+    ];
+    const seedProducts = [
+      { sku:"PV-410",  name:"Panel 410W",               category:"fotowoltaika", price:520 },
+      { sku:"PV-INV8", name:"Inwerter 8kW",             category:"fotowoltaika", price:4100 },
+      { sku:"PV-MNT",  name:"Montaż PV standard",       category:"fotowoltaika", price:2500 },
+      { sku:"HP-9KW",  name:"Pompa ciepła 9kW",         category:"pompy",        price:15500 },
+      { sku:"HP-BUF",  name:"Bufor 100l",               category:"pompy",        price:850 },
+      { sku:"HP-CIRC", name:"Pompa cyrkulacyjna",       category:"pompy",        price:540 },
+      { sku:"PC-25",   name:"Kocioł kondensacyjny 25kW",category:"piece",        price:7800 },
+      { sku:"PC-CHIM", name:"Wkład kominowy",           category:"piece",        price:1200 },
+      { sku:"HY-PEX16",name:"Rury PEX 16",              category:"hydraulika",   price:3.8 },
+      { sku:"HY-CU15", name:"Rury miedziane 15",        category:"hydraulika",   price:14.5 },
+      { sku:"HY-RAD2", name:"Grzejnik dwukomorowy 120", category:"hydraulika",   price:740 },
+      { sku:"HY-RAD3", name:"Grzejnik trójkomorowy 120",category:"hydraulika",   price:960 },
+      { sku:"OC-STY15",name:"Styropian 15cm (m²)",      category:"ocieplenie",   price:42 },
+      { sku:"OC-ADH",  name:"Klej do styropianu 25kg",  category:"ocieplenie",   price:45 },
+      { sku:"OC-REN",  name:"Tynk silikonowy 25kg",     category:"ocieplenie",   price:120 },
+      { sku:"OC-GUTT", name:"Rynny (mb)",               category:"ocieplenie",   price:35 },
+      { sku:"OC-PARA", name:"Parapety (szt.)",          category:"ocieplenie",   price:95 },
+      { sku:"OC-FLASH",name:"Obróbki blacharskie (mb)", category:"ocieplenie",   price:55 },
+    ];
+    const defaultDocList = [
+      "Umowa gotówkowa",
+      "Umowa do funduszu (prefinansowanie)",
+      "Opinia kominiarza",
+      "Protokół odbioru instalacji",
+      "Oświadczenie o przekazaniu środków",
+      "Umowa z wykonawcą",
+      "Zaświadczenie o dochodach klienta",
+      "Inne załączniki",
+    ];
+
+    // ====== STAN / PERSIST ======
+    const LSKEY = "arkonCRM";
+    function loadState(){
+      try{
+        const s = JSON.parse(localStorage.getItem(LSKEY) || "{}");
+        return {
+          clients: s.clients || seedClients.slice(),
+          contracts: s.contracts || seedContracts.slice(),
+          docs: (s.docs || defaultDocList.map(n=>({name:n,done:false}))),
+          chat: s.chat || [{from:"System",text:"Witaj w czacie ARKON 👋"}],
+          mode: s.mode || "gotówka"
+        };
+      }catch{ return {clients:seedClients.slice(),contracts:seedContracts.slice(),docs:defaultDocList.map(n=>({name:n,done:false})),chat:[{from:"System",text:"Witaj w czacie ARKON 👋"}],mode:"gotówka"} }
+    }
+    let state = loadState();
+    function saveState(){
+      localStorage.setItem(LSKEY, JSON.stringify(state));
+      renderDashboard(); // szybkie odświeżenie wskaźników
+    }
+
+    // ====== POMOCNICZE ======
+    const $ = sel => document.querySelector(sel);
+    const $$ = sel => Array.from(document.querySelectorAll(sel));
+    function money(x){ return (x||0).toLocaleString("pl-PL")+" zł"; }
+    function annuity(P, months, annualPct){
+      const r = (annualPct/100)/12;
+      if (!P||!months) return 0;
+      if (r===0) return Math.round(P/months);
+      const a = r*Math.pow(1+r,months)/(Math.pow(1+r,months)-1);
+      return Math.round(P*a);
+    }
+
+    // ====== NAV ======
+    $$(".tab").forEach(el=>{
+      el.addEventListener("click", ()=>{
+        $$(".tab").forEach(t=>t.classList.remove("active"));
+        el.classList.add("active");
+        const key = el.dataset.tab;
+        $$("section[id^='tab-']").forEach(s => s.hidden = true);
+        $("#tab-"+key).hidden = false;
+      });
+    });
+
+    // ====== DASHBOARD ======
+    function renderDashboard(){
+      const revenue = state.contracts.reduce((s,c)=>s+(c.total||0),0);
+      const open = state.contracts.filter(c=>c.status==="W toku").length;
+      const missing = state.docs.filter(d=>!d.done).length;
+      $("#db-revenue").textContent = money(revenue);
+      $("#db-open").textContent = open;
+      $("#db-missing").textContent = missing;
+    }
+
+    // ====== CLIENTS ======
+    function renderClients(){
+      const q = ($("#cli-q").value||"").toLowerCase();
+      const rows = $("#cli-rows");
+      rows.innerHTML = "";
+      const filtered = state.clients.filter(r =>
+        (r.name+r.email+r.phone+r.manager).toLowerCase().includes(q)
+      );
+      filtered.forEach(c=>{
+        const tr = document.createElement("tr");
+        tr.innerHTML = <td>${c.id}</td><td>${c.name}</td><td>${c.email}</td><td>${c.phone}</td><td><span class="chip">${c.manager||"-"}</span></td>;
+        rows.appendChild(tr);
+      });
+      $("#cli-empty").style.display = filtered.length? "none":"block";
+    }
+    $("#cli-q").addEventListener("input", renderClients);
+    $("#cli-add").addEventListener("click", ()=>{
+      const name=$("#cli-name").value.trim();
+      if(!name) return;
+      const next = {
+        id:C-${(state.clients.length+1).toString().padStart(3,"0")},
+        name,
+        email:$("#cli-email").value.trim(),
+        phone:$("#cli-phone").value.trim(),
+        manager:$("#cli-manager").value.trim()
+      };
+      state.clients=[next,...state.clients];
+      $("#cli-name").value=$("#cli-email").value=$("#cli-phone").value=$("#cli-manager").value="";
+      saveState(); renderClients();
+    });
+
+    // ====== CONTRACTS & CALC ======
+    function renderContracts(){
+      const tb = $("#ctr-rows"); tb.innerHTML="";
+      state.contracts.forEach(c=>{
+        const tr=document.createElement("tr");
+        tr.innerHTML=<td>${c.id}</td><td>${c.customer}</td><td>${money(c.total)}</td><td><span class="chip">${c.status}</span></td>;
+        tb.appendChild(tr);
+      });
+    }
+    function setMode(m){
+      state.mode=m; saveState();
+      $("#mode-badge").textContent = m.charAt(0).toUpperCase()+m.slice(1);
+      $("#pref-note").style.display = (m==="prefinansowanie")?"block":"none";
+      $("#mode-cash").classList.toggle("active", m==="gotówka");
+      $("#mode-pref").classList.toggle("active", m==="prefinansowanie");
+      calc();
+    }
+    $("#mode-cash").addEventListener("click",()=>setMode("gotówka"));
+    $("#mode-pref").addEventListener("click",()=>setMode("prefinansowanie"));
+    function calc(){
+      const sum=+$("#sum").value||0;
+      const disc=+$("#discount").value||0;
+      const months=+$("#months").value||0;
+      const rate=+$("#rate").value||0;
+      const prov=+$("#prov").value||0;
+      const base=Math.max(0,sum-disc);
+      const inst=annuity(base,months,rate);
+      const provVal=Math.round(base*(prov/100));
+      $("#out-base").textContent=money(base);
+      $("#out-inst").textContent=money(inst);
+      $("#out-prov").textContent=money(provVal);
+    }
+    ["sum","discount","months","rate","prov"].forEach(id=>$("#"+id).addEventListener("input",calc));
+
+    // ====== PRODUCTS ======
+    const prodCats=["wszystko","fotowoltaika","pompy","piece","hydraulika","ocieplenie"];
+    function renderProductFilters(){
+      const box=$("#prod-filters"); box.innerHTML="";
+      prodCats.forEach(c=>{
+        const b=document.createElement("button");
+        b.className="btn ghost"; b.textContent=c;
+        b.addEventListener("click",()=>renderProducts(c));
+        box.appendChild(b);
+      });
+    }
+    function renderProducts(cat="wszystko"){
+      const rows=$("#prod-rows"); rows.innerHTML="";
+      const list=seedProducts.filter(p=>cat==="wszystko"?true:p.category===cat);
+      list.forEach(p=>{
+        const tr=document.createElement("tr");
+        tr.innerHTML=<td>${p.sku}</td><td>${p.name}</td><td><span class="chip">${p.category}</span></td><td>${money(p.price)}</td>;
+        rows.appendChild(tr);
+      });
+    }
+
+    // ====== DOCS ======
+    function renderDocs(){
+      const ul=$("#doc-list"); ul.innerHTML="";
+      state.docs.forEach((d,i)=>{
+        const li=document.createElement("li");
+        li.innerHTML=`
+          <label style="display:flex;align-items:center;gap:10px;padding:6px 0">
+            <input type="checkbox" ${d.done?"checked":""} data-i="${i}"/>
+            <span ${d.done?'style="text-decoration:line-through;opacity:.7"':""}>${d.name}</span>
+          </label>`;
+        ul.appendChild(li);
+      });
+      ul.addEventListener("change",e=>{
+        const i=+e.target.dataset.i;
+        if(Number.isFinite(i)){ state.docs[i].done=!state.docs[i].done; saveState(); renderDashboard(); }
+      }, { once:true }); // re-podpinamy przy każdym renderze
+    }
+    $("#doc-reset").addEventListener("click",()=>{
+      state.docs=state.docs.map(d=>({...d,done:false})); saveState(); renderDocs();
+    });
+
+    // ====== CHAT ======
+    function renderChat(){
+      const box=$("#chat-box"); box.innerHTML="";
+      state.chat.forEach(m=>{
+        const div=document.createElement("div");
+        div.className="msg";
+        div.innerHTML=<strong>${m.from}:</strong> <span>${m.text}</span>;
+        box.appendChild(div);
+      });
+      box.scrollTop=box.scrollHeight;
+    }
+    $("#chat-send").addEventListener("click",()=>{
+      const t=$("#chat-text").value.trim(); if(!t) return;
+      state.chat.push({from:"Ja",text:t}); $("#chat-text").value=""; saveState(); renderChat();
+    });
+
+    // ====== SETTINGS ======
+    $("#wipe").addEventListener("click",()=>{
+      if(confirm("Usunąć zapisane dane lokalne?")){ localStorage.removeItem(LSKEY); state=loadState(); boot(); }
+    });
+
+    // ====== BOOT ======
+    function boot(){
+      // ustaw aktywną zakładkę na pulpit
+      $$(".tab").forEach(t=>t.classList.remove("active"));
+      document.querySelector('.tab[data-tab="dashboard"]').classList.add("active");
+      $$("section[id^='tab-']").forEach(s=>s.hidden=true);
+      $("#tab-dashboard").hidden=false;
+
+      renderDashboard();
+      renderClients();
+      renderContracts(); setMode(state.mode);
+      renderProductFilters(); renderProducts();
+      renderDocs();
+      renderChat();
+      calc();
+    }
+    boot();
+  </script>
+</body>
+</html>
