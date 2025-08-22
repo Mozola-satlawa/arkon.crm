@@ -1,4 +1,3 @@
-<!doctype html>
 <html lang="pl">
 <head>
 <meta charset="utf-8" />
@@ -466,12 +465,12 @@ function renderCmp(){
       vis++;
       const tr=document.createElement("tr");
       const delBtn=<button class="btn bad" data-del="${idx}">Usuń</button>;
-      tr.innerHTML = <td class="row">${delBtn}</td> + cols.map(col=>{
+      tr.innerHTML = `<td class="row">${delBtn}</td>` + cols.map(col=>{
         const v=r[col.key]??""; const type=col.type||"text"; const step=col.step||""; const opt=col.opt||[];
         if(type==="select"){
-          return <td><select data-i="${idx}" data-k="${col.key}" class="field">${opt.map(o=><option ${v===o?'selected':''}>${o}</option>).join("")}</select></td>;
+          return `<td><select data-i="${idx}" data-k="${col.key}" class="field">${opt.map(o=>`<option ${v===o?'selected':''}>${o}</option>`).join("")}</select></td>`;
         }
-        return `<td><input data-i="${idx}" data-k="${col.key}" class="field" ${type!=="text"?type="${type}":''} ${step?step="${step}":''} value="${esc(v)}"></td>`;
+        return `<td><input data-i="${idx}" data-k="${col.key}" class="field" ${type!=="text"?`type="${type}"`:''} ${step?`step="${step}"`:''} value="${esc(v)}"></td>`;
       }).join("");
       tb.appendChild(tr);
     });
@@ -540,8 +539,8 @@ function bindCmpUI(){
                  garage:{brand:"",model:"",size:"2500x2125",panel_mm:40,drive:"TAK",u:1.3,price:0,note:""} }[a];
     cmpState.data[a].push(blank); saveCmp(a);
   });
-  $("#cmp-csv").addEventListener("click",()=>{ const a=cmpState.active; const rows=cmpState.data[a]; const cols=Object.keys(rows[0]||{brand:"",model:""}); const out=[cols.join(";")].concat(rows.map(r=>cols.map(k=>csvEsc(r[k])).join(";"))); downloadText(komponenty_${a}.csv, out.join("\n"), "text/csv;charset=utf-8"); });
-  $("#cmp-json").addEventListener("click",()=>{ const a=cmpState.active; downloadText(komponenty_${a}.json, JSON.stringify(cmpState.data[a],null,2)); });
+  $("#cmp-csv").addEventListener("click",()=>{ const a=cmpState.active; const rows=cmpState.data[a]; const cols=Object.keys(rows[0]||{brand:"",model:""}); const out=[cols.join(";")].concat(rows.map(r=>cols.map(k=>csvEsc(r[k])).join(";"))); downloadText(`komponenty_${a}.csv`, out.join("\n"), "text/csv;charset=utf-8"); });
+  $("#cmp-json").addEventListener("click",()=>{ const a=cmpState.active; downloadText(`komponenty_${a}.json`, JSON.stringify(cmpState.data[a],null,2)); });
   $("#cmp-csv-in").addEventListener("change",async e=>{
     const f=e.target.files[0]; if(!f) return; const txt=await f.text(); const [head,...lines]=txt.split(/\r?\n/).filter(Boolean); const cols=head.split(";"); const arr=lines.map(line=>{const v=line.split(";"); const o={}; cols.forEach((k,i)=>o[k]=csvUnesc(v[i]||"")); return o;}); cmpState.data[cmpState.active]=arr; saveCmp(cmpState.active); e.target.value="";
   });
@@ -659,9 +658,9 @@ function appendMsg(m,scroll=true){
   const dt = new Date(m.at||Date.now());
   const time = dt.toLocaleTimeString("pl-PL",{hour:"2-digit",minute:"2-digit"});
   const div=document.createElement("div"); div.className="bubble";
-  let html = <div class="meta"><strong>${esc(m.user||"Anon")}</strong> • ${time}</div><div class="text">${esc(m.text||"")}</div>;
+  let html = `<div class="meta"><strong>${esc(m.user||"Anon")}</strong> • ${time}</div><div class="text">${esc(m.text||"")}</div>`;
   if(m.files && m.files.length){
-    html += <div style="margin-top:6px"> + m.files.map(f=><a class="file-pill" href="#" data-dlid="${f.id}" title="${esc(f.name)}"><span>📎</span>${esc(f.name)} <small>(${bytes(f.size)})</small></a>).join("") + </div>;
+    html += `<div style="margin-top:6px">` + m.files.map(f=>`<a class="file-pill" href="#" data-dlid="${f.id}" title="${esc(f.name)}"><span>📎</span>${esc(f.name)} <small>(${bytes(f.size)})</small></a>`).join("") + `</div>`;
   }
   div.innerHTML = html; chatBox.appendChild(div); if(scroll) chatBox.scrollTop=chatBox.scrollHeight;
   div.querySelectorAll("[data-dlid]").forEach(a=>{
@@ -701,7 +700,7 @@ function renderPendingFiles(){
 function handleFiles(fileList){
   const maxPerFile = 50 * 1024 * 1024; // 50MB
   Array.from(fileList||[]).forEach(f=>{
-    if(f.size>maxPerFile){ alert(Plik ${f.name} jest większy niż 50MB); return; }
+    if(f.size>maxPerFile){ alert(`Plik (${f.name}) jest większy niż 50MB`); return; }
     const id = uid();
     pendingFiles.push({ id, name:f.name, type:f.type||"application/octet-stream", size:f.size, blob:f });
   });
