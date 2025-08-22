@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARKON — Komponenty: Ocieplenie</title>
+<meta name="description" content="Komponenty ocieplenia: styropian, wełna, PIR/PUR, XPS, celuloza, pianka PUR, aerożel. Edycja, filtry, kalkulatory, import/eksport CSV/JSON.">
+<style>
+  :root{
+    --bg:#0b1020; --grad1:#0b112b; --grad2:#0e163c; --card:#10173a; --line:#263168; --ink:#e7ecff;
+    --muted:#aeb8da; --accent:#4cc9f0; --ok:#2fbf71; --warn:#ffb84d; --bad:#ff6b6b; --chip:#1a244d;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:linear-gradient(180deg,var(--grad1),var(--grad2));color:var(--ink);font:14px/1.5 system-ui,Segoe UI,Roboto,Arial}
+  a{color:#cfe0ff;text-decoration:none}
+  header{padding:14px 16px;border-bottom:1px solid var(--line);background:#0f1434}
+  header h1{margin:0;font-size:22px}
+  nav{background:#141b43;border-bottom:1px solid var(--line);display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px}
+  nav a{padding:8px 12px;border:1px solid #2a3777;border-radius:999px}
+  nav a:hover{background:#1a244d}
+  .wrap{max-width:1400px;margin:0 auto;padding:14px}
+  .toolbar,.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+  .btn{background:#223161;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
+  .btn.ghost{background:transparent;border-style:dashed}
+  .btn.bad{background:#3a1f2a;border-color:#7b3341}
+  .btn.ok{background:#194d34;border-color:var(--ok)}
+  input,select,textarea{background:#0e1433;border:1px solid #28356c;border-radius:10px;padding:8px 10px;color:var(--ink);font:inherit}
+  input::placeholder{color:#aeb8da99}
+  .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+  .muted{color:var(--muted)}
+  .grid{display:grid;gap:12px}
+  @media(min-width:1100px){ .cols-2{grid-template-columns:2fr 1fr} }
+  table{width:100%;border-collapse:separate;border-spacing:0}
+  th,td{padding:8px;border-bottom:1px solid #1a244d;text-align:left;vertical-align:top}
+  th{font-size:12px;color:#aeb8da}
+  td input, td select{width:100%}
+  .right{display:flex;gap:8px;justify-content:flex-end;align-items:center}
+  .small{font-size:12px;color:#aeb8da}
+  .chip{display:inline-flex;gap:6px;align-items:center;padding:6px 10px;border-radius:999px;background:#0d1530;border:1px dashed #2b3a77;color:#cfe1ff}
+  .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
+  .hl{background:#162055}
+  .sticky{position:sticky;top:0;background:var(--card)}
+  .warn{color:#ffd89c}
+  .ok{color:#97f5c0}
+  @media print{ nav,.toolbar,.filters,.sticky,.btn{display:none!important} }
+</style>
+</head>
+<body>
+<header>
+  <h1>Komponenty • Ocieplenie</h1>
+  <div class="muted">Pełny katalog pozycji ociepleniowych z edycją inline, filtrami, kalkulatorami i eksportem/importem.</div>
+</header>
+
+<nav>
+  <a href="index.html">Pulpit</a>
+  <a href="klienci.html">Klienci</a>
+  <a href="komponenty.html">Komponenty</a>
+  <a href="komponenty-pompy.html">Pompy ciepła</a>
+  <a href="komponenty-piece.html">Piece / Kotły</a>
+  <a href="komponenty-pv.html">Fotowoltaika</a>
+  <a href="komponenty-stolarka.html">Stolarka</a>
+  <a href="komponenty-ocieplenie.html" class="hl">Ocieplenie</a>
+  <a href="dokumenty.html">Dokumenty</a>
+  <a href="upload.html">Przesył plików</a>
+  <a href="chat.html">Komunikator</a>
+  <a href="ustawienia.html">Ustawienia</a>
+</nav>
+
+<div class="wrap">
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <button id="add" class="btn ok">+ Dodaj pozycję</button>
+    <select id="preset">
+      <option value="">Szablony (dodaj z predefiniowanych)…</option>
+    </select>
+    <button id="addPreset" class="btn">➕ Dodaj z szablonu</button>
+    <button id="exportJSON" class="btn ghost">Eksport JSON</button>
+    <label class="btn ghost">Import JSON<input id="importJSON" type="file" accept="application/json" hidden></label>
+    <button id="exportCSV" class="btn ghost">CSV</button>
+    <span class="pill">Łącznie: <b id="countAll">0</b></span>
+    <span class="pill">Widocznych: <b id="countVis">0</b></span>
+    <span class="pill">Szybkie skróty: <span class="kbd">Alt+U</span> nowa pozycja • <span class="kbd">/</span> fokus szukaj</span>
+  </div>
+
+  <!-- FILTRY / KALKULATOR -->
+  <div class="grid cols-2">
+    <div class="card filters">
+      <input id="q" placeholder="🔎 szukaj (materiał, marka, model, uwagi)…" style="min-width:260px">
+      <select id="f_pos">
+        <option value="">Pozycja (wszystkie)</option>
+        <option>ściany</option><option>strop</option><option>podłoga</option><option>dach</option><option>poddasze</option><option>fundament</option><option>fasada</option><option>taras</option><option>inne</option>
+      </select>
+      <select id="f_mat">
+        <option value="">Materiał (wszystkie)</option>
+        <option>styropian (EPS)</option><option>styropian (grafit)</option><option>XPS</option><option>wełna skalna</option><option>wełna szklana</option><option>PIR</option><option>PUR</option><option>celuloza</option><option>pianka PUR natrysk</option><option>aerożel</option><option>korek</option>
+      </select>
+      <input id="f_thk" type="text" placeholder="Grubość cm (np. 10-20)">
+      <input id="f_lmb" type="text" placeholder="λ W/mK (np. 0.030-0.040)">
+      <input id="f_price" type="text" placeholder="Cena/m² zł (np. 50-200)">
+      <button id="clearFilters" class="btn ghost" type="button">Wyczyść</button>
+    </div>
+
+    <div class="card">
+      <div class="grid" style="grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div>
+          <div class="small muted">Kalkulator R/U (tylko warstwa izolacji)</div>
+          <input id="calc_lambda" type="number" step="0.001" placeholder="λ [W/mK]">
+        </div>
+        <div>
+          <div class="small muted">&nbsp;</div>
+          <input id="calc_thk" type="number" step="1" placeholder="grubość [cm]">
+        </div>
+        <div class="right">
+          <button id="calcBtn" class="btn">Oblicz</button>
+        </div>
+      </div>
+      <div class="small">R = d/λ, gdzie d [m]. U(izolacji) = 1/R. Wynik orientacyjny (bez oporów przejmowania, warstw itp.).</div>
+      <div id="calcOut" class="small" style="margin-top:6px"></div>
+    </div>
+  </div>
+
+  <!-- TABELA -->
+  <div class="card">
+    <div class="sticky" style="padding:6px 0">
+      <div class="small muted">Edycja inline. Liczone: <code>cena_m3</code>=<i>cena_m2 / (grubość[m])</i>. Przy imporcie CSV/JSON dopasujemy pola po kluczach.</div>
+    </div>
+    <div style="overflow:auto">
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th>Akcje</th>
+            <th>Pozycja</th>
+            <th>Materiał</th>
+            <th>Marka</th>
+            <th>Model/Seria</th>
+            <th>λ [W/mK]</th>
+            <th>Grubość [cm]</th>
+            <th>Gęstość [kg/m³]</th>
+            <th>Wytrz. [kPa]</th>
+            <th>μ (paroprzep.)</th>
+            <th>Klasa ogniowa</th>
+            <th>Cena / m² [zł]</th>
+            <th>Cena / m³ [zł]</th>
+            <th>Uwagi</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PODSUMOWANIE -->
+  <div class="card">
+    <div class="grid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="chip">Średnia λ: <b id="agg_lambda">—</b></div>
+      <div class="chip">Śr. cena/m²: <b id="agg_cena">—</b></div>
+      <div class="chip">Śr. grubość: <b id="agg_thk">—</b></div>
+      <div class="chip">Pozycji: <b id="agg_cnt">0</b></div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===== helpers ===== */
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const INT0 = new Intl.NumberFormat('pl-PL',{maximumFractionDigits:0});
+const INT2 = new Intl.NumberFormat('pl-PL',{minimumFractionDigits:2, maximumFractionDigits:2});
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function parseRange(txt){
+  if(!txt) return [null,null];
+  const m = String(txt).replace(',','.').split('-').map(s=>s.trim()).map(Number);
+  if(m.length===1 && !isNaN(m[0])) return [m[0],m[0]];
+  if(m.length>=2) return [isNaN(m[0])?null:m[0], isNaN(m[1])?null:m[1]];
+  return [null,null];
+}
+function between(v, lo, hi){
+  if(lo!=null && v<lo) return false;
+  if(hi!=null && v>hi) return false;
+  return true;
+}
+function downloadText(name, text, mime){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([text],{type:mime||'application/json'}));
+  a.download=name; a.click(); URL.revokeObjectURL(a.href);
+}
+
+/* ===== storage ===== */
+const LS_KEY = 'arkon_components_insulation_v3';
+let rows = loadRows();
+function loadRows(){
+  try{ return JSON.parse(localStorage.getItem(LS_KEY)||'[]'); }catch{ return []; }
+}
+function saveRows(){ localStorage.setItem(LS_KEY, JSON.stringify(rows)); render(); }
+
+/* ===== presets (szablony) ===== */
+const PRESETS = [
+  // EPS / grafit
+  {pos:'fasada', mat:'styropian (grafit)', brand:'Austrotherm', model:'EPS Grey 031', lambda:0.031, thk_cm:20, dens:13, kpa:80, mu:20, fire:'E', price_m2:120, note:'ETICS; frez; fasada'},
+  {pos:'fasada', mat:'styropian (EPS)',    brand:'Swisspor',    model:'EPS 70-040',   lambda:0.040, thk_cm:20, dens:12, kpa:70, mu:20, fire:'E', price_m2:82,  note:'tani; biała fasada'},
+  {pos:'podłoga',mat:'styropian (EPS)',    brand:'Austrotherm', model:'EPS 100-038',  lambda:0.038, thk_cm:12, dens:18, kpa:100,mu:20, fire:'E', price_m2:59,  note:'podłogi na gruncie'},
+  {pos:'fundament',mat:'XPS',              brand:'Ursa',        model:'XPS N-III',    lambda:0.034, thk_cm:10, dens:32, kpa:300,mu:100,fire:'E', price_m2:95,  note:'fundamenty, cokoły'},
+  // MW
+  {pos:'ściany', mat:'wełna skalna',       brand:'Rockwool',    model:'FrontRock 031',lambda:0.031, thk_cm:15, dens:135,kpa:40, mu:1,  fire:'A1',price_m2:119, note:'ETICS premium'},
+  {pos:'ściany', mat:'wełna szklana',      brand:'Isover',      model:'Multimax 030', lambda:0.030, thk_cm:15, dens:30, kpa:15, mu:1,  fire:'A1',price_m2:112, note:'szklana; λ 0.030'},
+  {pos:'poddasze',mat:'wełna szklana',     brand:'Isover',      model:'Uni-Mata',     lambda:0.033, thk_cm:20, dens:18, kpa:10, mu:1,  fire:'A1',price_m2:65,  note:'miękka mata poddasza'},
+  // PIR / PUR
+  {pos:'dach',   mat:'PIR',                 brand:'Recticel',   model:'Eurothane',    lambda:0.023, thk_cm:12, dens:32, kpa:150,mu:50, fire:'B-s2,d0',price_m2:145,note:'płaski dach'},
+  {pos:'podłoga',mat:'PIR',                 brand:'Synthos',    model:'PIR Floor',    lambda:0.024, thk_cm:10, dens:32, kpa:150,mu:50, fire:'B-s2,d0',price_m2:125,note:'wysoka izolacyjność'},
+  // inne
+  {pos:'ściany', mat:'korek',               brand:'Amorim',     model:'Cork Board',   lambda:0.040, thk_cm:10, dens:110,kpa:80, mu:10, fire:'E',  price_m2:145,note:'eko; akustyka'},
+  {pos:'ściany', mat:'aerożel',             brand:'Aspen',      model:'Spaceloft',    lambda:0.015, thk_cm:1,  dens:150,kpa:20, mu:10, fire:'C-s1,d0',price_m2:220, note:'ultracienkie'}
+];
+
+function fillPresets(){
+  const sel = $('#preset');
+  PRESETS.forEach((p,i)=>{
+    const o=document.createElement('option');
+    o.value = String(i);
+    o.textContent = `${p.mat} • ${p.brand} ${p.model} • ${p.thk_cm}cm λ=${p.lambda}`;
+    sel.appendChild(o);
+  });
+}
+fillPresets();
+
+/* ===== seed if empty ===== */
+if(!rows.length){
+  rows = PRESETS.slice(); // start from presets
+  saveRows();
+}
+
+/* ===== filters state ===== */
+const filt = { q:'', pos:'', mat:'', thk:'', lmb:'', price:'' };
+
+/* ===== render ===== */
+function render(){
+  // filters
+  const [thkLo,thkHi] = parseRange(filt.thk);
+  const [lLo, lHi]    = parseRange(filt.lmb);
+  const [pLo, pHi]    = parseRange(filt.price);
+
+  const data = rows.filter(r=>{
+    const hay = [r.pos,r.mat,r.brand,r.model,r.note].map(x=>(x||'').toString().toLowerCase()).join(' ');
+    if(filt.q && !hay.includes(filt.q.toLowerCase())) return false;
+    if(filt.pos && r.pos!==filt.pos) return false;
+    if(filt.mat && r.mat!==filt.mat) return false;
+    if(filt.thk){
+      const v = Number(r.thk_cm||0);
+      if(!between(v, thkLo, thkHi)) return false;
+    }
+    if(filt.lmb){
+      const v = Number(r.lambda||0);
+      if(!between(v, lLo, lHi)) return false;
+    }
+    if(filt.price){
+      const v = Number(r.price_m2||0);
+      if(!between(v, pLo, pHi)) return false;
+    }
+    return true;
+  });
+
+  // counts
+  $('#countAll').textContent = rows.length;
+  $('#countVis').textContent = data.length;
+
+  // table
+  const tb = $('#tbody'); tb.innerHTML='';
+  data.forEach((r,idx)=>{
+    const tr=document.createElement('tr');
+    const cm3 = calcPriceM3(r);
+    tr.innerHTML = `
+      <td class="right">
+        <button class="btn ghost" data-act="dup" data-i="${idx}">Kopia</button>
+        <button class="btn bad" data-act="del" data-i="${idx}">Usuń</button>
+      </td>
+      <td><select data-k="pos" data-i="${idx}">
+        ${['ściany','strop','podłoga','dach','poddasze','fundament','fasada','taras','inne'].map(v=>`<option ${r.pos===v?'selected':''}>${v}</option>`).join('')}
+      </select></td>
+      <td><select data-k="mat" data-i="${idx}">
+        ${['styropian (EPS)','styropian (grafit)','XPS','wełna skalna','wełna szklana','PIR','PUR','celuloza','pianka PUR natrysk','aerożel','korek'].map(v=>`<option ${r.mat===v?'selected':''}>${v}</option>`).join('')}
+      </select></td>
+      <td><input data-k="brand" data-i="${idx}" value="${esc(r.brand||'')}"></td>
+      <td><input data-k="model" data-i="${idx}" value="${esc(r.model||'')}"></td>
+      <td><input data-k="lambda" data-i="${idx}" type="number" step="0.001" value="${r.lambda??''}"></td>
+      <td><input data-k="thk_cm" data-i="${idx}" type="number" step="1" value="${r.thk_cm??''}"></td>
+      <td><input data-k="dens" data-i="${idx}" type="number" step="1" value="${r.dens??''}"></td>
+      <td><input data-k="kpa" data-i="${idx}" type="number" step="1" value="${r.kpa??''}"></td>
+      <td><input data-k="mu" data-i="${idx}" type="number" step="1" value="${r.mu??''}"></td>
+      <td><input data-k="fire" data-i="${idx}" value="${esc(r.fire||'')}"></td>
+      <td><input data-k="price_m2" data-i="${idx}" type="number" step="1" value="${r.price_m2??''}"></td>
+      <td><input disabled value="${isFinite(cm3)? INT2.format(cm3) : '—'}"></td>
+      <td><input data-k="note" data-i="${idx}" value="${esc(r.note||'')}"></td>
+    `;
+    tb.appendChild(tr);
+  });
+
+  // binds
+  tb.querySelectorAll('input,select').forEach(el=>{
+    const k = el.getAttribute('data-k');
+    const i = +el.getAttribute('data-i');
+    if(!k && el.disabled) return; // calculated cell
+    el.addEventListener('input', ()=>{
+      const r = rows[i]; if(!r) return;
+      let v = el.value;
+      if(['lambda','thk_cm','dens','kpa','mu','price_m2'].includes(k)) v = Number(v);
+      r[k] = v;
+      saveRows();
+    });
+  });
+  tb.querySelectorAll('[data-act="del"]').forEach(b=>b.addEventListener('click',()=>{
+    const i = +b.getAttribute('data-i');
+    if(confirm('Usunąć pozycję?')){ rows.splice(i,1); saveRows(); }
+  }));
+  tb.querySelectorAll('[data-act="dup"]').forEach(b=>b.addEventListener('click',()=>{
+    const i = +b.getAttribute('data-i');
+    const copy = JSON.parse(JSON.stringify(rows[i]));
+    rows.splice(i+1,0,copy); saveRows();
+  }));
+
+  // aggregates
+  const agg = {cnt:data.length, lambda:avg(data.map(r=>num(r.lambda))), thk:avg(data.map(r=>num(r.thk_cm))), cena:avg(data.map(r=>num(r.price_m2)))};
+  $('#agg_cnt').textContent = agg.cnt;
+  $('#agg_lambda').textContent = isFinite(agg.lambda)? agg.lambda.toFixed(3) : '—';
+  $('#agg_thk').textContent = isFinite(agg.thk)? agg.thk.toFixed(1)+' cm' : '—';
+  $('#agg_cena').textContent = isFinite(agg.cena)? INT2.format(agg.cena)+' zł' : '—';
+}
+function num(v){ v=Number(v); return isFinite(v)?v:NaN; }
+function avg(arr){ const nums=arr.filter(v=>isFinite(v)); return nums.length? nums.reduce((a,b)=>a+b,0)/nums.length : NaN; }
+function calcPriceM3(r){
+  const t = Number(r.thk_cm||0)/100; const p = Number(r.price_m2||0);
+  if(!t || !p) return NaN;
+  return p / t;
+}
+
+/* ===== bind filters ===== */
+$('#q').addEventListener('input', e=>{ filt.q = e.target.value.trim(); render(); });
+$('#f_pos').addEventListener('change', e=>{ filt.pos = e.target.value; render(); });
+$('#f_mat').addEventListener('change', e=>{ filt.mat = e.target.value; render(); });
+$('#f_thk').addEventListener('input', e=>{ filt.thk = e.target.value.trim(); render(); });
+$('#f_lmb').addEventListener('input', e=>{ filt.lmb = e.target.value.trim(); render(); });
+$('#f_price').addEventListener('input', e=>{ filt.price = e.target.value.trim(); render(); });
+$('#clearFilters').addEventListener('click', ()=>{
+  filt.q=filt.pos=filt.mat=filt.thk=filt.lmb=filt.price='';
+  $('#q').value=''; $('#f_pos').value=''; $('#f_mat').value=''; $('#f_thk').value=''; $('#f_lmb').value=''; $('#f_price').value='';
+  render();
+});
+
+/* ===== toolbar actions ===== */
+$('#add').addEventListener('click', ()=>{
+  rows.push({pos:'ściany',mat:'styropian (EPS)',brand:'',model:'',lambda:0.036,thk_cm:10,dens:'',kpa:'',mu:'',fire:'E',price_m2:0,note:''});
+  saveRows();
+});
+$('#addPreset').addEventListener('click', ()=>{
+  const i = +($('#preset').value||'-1'); if(i<0) return alert('Wybierz szablon.');
+  rows.push(JSON.parse(JSON.stringify(PRESETS[i])));
+  saveRows();
+});
+$('#exportJSON').addEventListener('click', ()=>{
+  downloadText('arkon_komponenty_ocieplenie.json', JSON.stringify(rows,null,2));
+});
+$('#importJSON').addEventListener('change', async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  try{
+    const txt = await f.text();
+    const arr = JSON.parse(txt);
+    if(!Array.isArray(arr)) throw new Error('Zły format JSON (oczekiwana tablica).');
+    rows = arr; saveRows();
+    alert('Zaimportowano.');
+  }catch(err){ alert('Błąd importu: '+(err.message||err)); }
+  e.target.value='';
+});
+$('#exportCSV').addEventListener('click', ()=>{
+  const cols=['pos','mat','brand','model','lambda','thk_cm','dens','kpa','mu','fire','price_m2','note'];
+  const out=[cols.join(';')].concat(rows.map(r=>cols.map(k=>csvEsc(r[k])).join(';')));
+  downloadText('arkon_komponenty_ocieplenie.csv', out.join('\n'), 'text/csv;charset=utf-8');
+});
+function csvEsc(v){ let s=(v==null?'':String(v)); if(/[;\n"]/.test(s)) s='"'+s.replace(/"/g,'""')+'"'; return s; }
+
+/* ===== kalkulator ===== */
+$('#calcBtn').addEventListener('click', ()=>{
+  const l = Number($('#calc_lambda').value); const tcm = Number($('#calc_thk').value);
+  if(!l || !tcm){ $('#calcOut').textContent='Podaj λ i grubość.'; return; }
+  const d = tcm/100;
+  const R = d / l;
+  const U = 1 / R;
+  $('#calcOut').innerHTML = `R = <b>${R.toFixed(3)} m²K/W</b> • U(izolacji) ≈ <b>${U.toFixed(3)} W/m²K</b>`;
+});
+
+/* ===== shortcuts ===== */
+window.addEventListener('keydown', (e)=>{
+  if(e.key==='/' && !e.ctrlKey && !e.metaKey){ e.preventDefault(); $('#q').focus(); }
+  if(e.altKey && (e.key==='u' || e.key==='U')){ e.preventDefault(); $('#add').click(); }
+});
+
+/* ===== init ===== */
+render();
+</script>
+</body>
+</html>
