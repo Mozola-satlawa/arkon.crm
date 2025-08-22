@@ -1,0 +1,896 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kalkulator Czyste Powietrze – ARKON</title>
+<meta name="description" content="Kalkulator dotacji Czyste Powietrze 2025: źródło ciepła, ocieplenie, stolarka, limity dotacji na m2, VAT 8/23%, zapis, CSV, druk.">
+<style>
+  :root{ --bg:#0b1020; --p1:#121a34; --p2:#172142; --ink:#e8edff; --muted:#aeb8da; --accent:#4cc9f0; --ok:#2b8a57; --grid:#243059; }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{ margin:0;background:linear-gradient(180deg,#0a0f1e,#0c1230 60%,#0a0f1e); color:var(--ink); font:16px/1.5 system-ui,Segoe UI,Roboto,Arial,sans-serif; }
+  .wrap{max-width:1200px;margin:auto;padding:24px 16px 120px}
+  header{display:flex;gap:12px;align-items:center;margin-bottom:10px}
+  .logo{width:64px;height:64px;border-radius:12px;display:grid;place-items:center;background:#0e1538;border:1px solid #1f2a55;overflow:hidden}
+  .logo img{width:100%;height:100%;object-fit:cover;background:#0e1538}
+  h1{font-size:22px;margin:0}
+  .muted{color:var(--muted);font-size:13px}
+  .panel{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid #1c2750;border-radius:14px;padding:16px;margin:12px 0;box-shadow:0 10px 30px #0006}
+  .grid{display:grid;gap:12px}
+  @media(min-width:960px){.cols-3{grid-template-columns:1fr 1fr 1fr}.cols-2{grid-template-columns:1fr 1fr}}
+  label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+  input,select,button{font:500 15px/1.2 system-ui,Segoe UI,Roboto,Arial;color:var(--ink)}
+  input,select{width:100%;background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:10px;outline:none}
+  input:focus,select:focus{border-color:#3b4fa0;box-shadow:0 0 0 3px #3b4fa033}
+  input.num{text-align:right}
+  button{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:12px;padding:10px 12px;cursor:pointer}
+  button.ghost{background:transparent;border:1px dashed #3a4ca3}
+  button.ok{background:#194d34;border-color:var(--ok)}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+  .tab-btn[aria-selected="true"]{background:#1b2550;border-color:#67a1ff;box-shadow:0 0 0 2px #67a1ff44}
+  .tab-btn{background:#233261;border:1px solid #3a4ca3;border-radius:999px;padding:10px 14px}
+  .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:8px 10px;margin:4px 8px 0 0;font-size:13px;color:#aeb8da}
+  .right{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  .hidden{display:none}
+  table{width:100%;border-collapse:separate;border-spacing:0}
+  th,td{padding:10px;border-bottom:1px solid var(--grid);text-align:left;vertical-align:middle}
+  th.num,td.num{text-align:right}
+  .num{font-variant-numeric:tabular-nums}
+  [aria-live="polite"]{outline:none}
+  .cap-badge{display:inline-block;margin-left:8px;padding:2px 8px;border:1px solid #ff7b7b;border-radius:999px;font-size:11px;color:#ffdada;background:#3a0e14}
+  .dim{opacity:.6}
+
+  /* Footer */
+  .site-footer{max-width:1200px;margin:16px auto 24px; color:#a9b6e6}
+  .site-footer .inner{display:flex;gap:16px;align-items:center;padding:12px 16px;border:1px solid #1c2750;border-radius:12px;background:linear-gradient(180deg,#0e1740,#0f1a4a)}
+  .site-footer .f-logo{width:42px;height:42px;border-radius:10px;background:#0e1538;display:grid;place-items:center;overflow:hidden}
+  .site-footer .f-logo img{width:100%;height:100%;object-fit:cover}
+  .site-footer .f-text{font-size:13px;line-height:1.35}
+  .site-footer .f-text b{color:#dfe6ff}
+
+  /* PRINT */
+  @media print{
+    @page{ size:A4 landscape; margin:10mm; }
+    html,body{-webkit-print-color-adjust:exact; print-color-adjust:exact; background:#fff}
+    body{color:#000;font:11px/1.3 system-ui,Segoe UI,Roboto,Arial}
+    .wrap{max-width:none;margin:0;padding:0}
+    header{margin:0 0 6px 0}
+    h1{font-size:16px}
+    .muted{color:#000;font-size:11px}
+    .logo{width:42px;height:42px;border-radius:8px;border:1px solid #000}
+    .panel{box-shadow:none;border:1px solid #888;background:#fff;margin:6px 0;padding:8px}
+    .tabs,.right button,.tab-btn,.login-overlay{display:none!important}
+    .pill{border-color:#888;color:#000;background:#fff;font-size:10px;padding:4px 8px}
+    table{table-layout:fixed; width:100%}
+    th,td{border-bottom:1px solid #bbb;padding:5px 6px}
+    thead th{font-size:10px}
+    tbody td{font-size:10px}
+    .num{font-variant-numeric:tabular-nums}
+    #tbodyMain, #tbodyEnv{font-size:10px}
+    #tab-main th:nth-child(1), #tab-env th:nth-child(1){width:24px}
+    #tab-main th:nth-child(2){width:210px}
+    #tab-main th:nth-child(3){width:90px}
+    #tab-main th:nth-child(4){width:90px}
+    #tab-main th:nth-child(5){width:95px}
+    #tab-main th:nth-child(6){width:95px}
+    #tab-main th:nth-child(7){width:90px}
+    #tab-main th:nth-child(8){width:90px}
+    #tab-main th:nth-child(9){width:95px}
+    #tab-env th:nth-child(2){width:210px}
+    #tab-env th:nth-child(3){width:70px}
+    #tab-env th:nth-child(4){width:110px}
+    #tab-env th:nth-child(5){width:110px}
+    #tab-env th:nth-child(6){width:95px}
+    #tab-env th:nth-child(7){width:95px}
+    #tab-env th:nth-child(8){width:95px}
+    #tab-env th:nth-child(9){width:95px}
+    #tab-env th:nth-child(10){width:95px}
+    th,td{word-wrap:break-word;overflow-wrap:anywhere}
+    tr{page-break-inside:avoid}
+    #tbodyMain tr:not(.is-selected), #tbodyEnv tr:not(.is-selected){display:none}
+    input, select {border:0;background:transparent;padding:0}
+    .site-footer{color:#000}
+    .site-footer .inner{background:#fff;border-color:#bbb}
+    .print-signs{display:block}
+  }
+</style>
+</head>
+<body>
+<!-- LOGIN -->
+<div id="login" class="login-overlay" aria-modal="true" role="dialog" aria-labelledby="loginTitle">
+  <div class="login-box">
+    <div class="login-title">
+      <!-- LOGO PNG Base64 (placeholder) -->
+      <div class="logo" aria-hidden="true">
+        <!-- ARKON LOGO PNG (BASE64) – PODMIEŃ, JEŚLI CHCESZ -->
+        <img alt="ARKON" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAAQCAYAAAB49Y7QAAAACXBIWXMAAAsSAAALEgHS3X78AAAAPElEQVR4nO3OsQkAQAwEwZL//2aWQwE0QeB0xwqG8xgk7u+FAAD8Jr8wHh8rCkZgO1FQqf8mF3dwcHBwcHBwcHBweE9QmU+Qp6wq7mPAAAAAElFTkSuQmCC">
+      </div>
+      <div>
+        <div id="loginTitle" style="font-weight:800">Panel dostępu • Arkon</div>
+        <div class="muted">Wpisz nazwę i hasło, aby otworzyć kalkulator.</div>
+      </div>
+    </div>
+    <div class="login-grid">
+      <div>
+        <label for="lgUser">Nazwa użytkownika</label>
+        <input id="lgUser" placeholder="Arkon" autocomplete="username">
+      </div>
+      <div>
+        <label for="lgPass">Hasło</label>
+        <input id="lgPass" placeholder="Arkon2025" type="password" autocomplete="current-password">
+      </div>
+      <div class="right">
+        <button id="btnLogin" class="ok" type="button">Zaloguj</button>
+      </div>
+      <div id="lgMsg" class="muted" aria-live="polite"></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap" id="app" style="filter:blur(4px);pointer-events:none">
+  <header>
+    <!-- LOGO PNG Base64 (placeholder) -->
+    <div class="logo" aria-hidden="true">
+      <!-- ARKON LOGO PNG (BASE64) – PODMIEŃ, JEŚLI CHCESZ -->
+      <img alt="ARKON" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAAQCAYAAAB49Y7QAAAACXBIWXMAAAsSAAALEgHS3X78AAAAPElEQVR4nO3OsQkAQAwEwZL//2aWQwE0QeB0xwqG8xgk7u+FAAD8Jr8wHh8rCkZgO1FQqf8mF3dwcHBwcHBwcHBweE9QmU+Qp6wq7mPAAAAAElFTkSuQmCC">
+    </div>
+    <div>
+      <h1>Kalkulator dotacji • Czyste Powietrze 2025</h1>
+      <div class="muted">Źródło ciepła + ocieplenie/stolarka. Jedno źródło ciepła, limity m², VAT <span id="vatLive">8</span>%, zapis/CSV/druk.</div>
+    </div>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Zakładki kalkulatora">
+    <button class="tab-btn" role="tab" aria-selected="true" aria-controls="tab-main" id="tabbtn-main" type="button">Główne (Źródło ciepła)</button>
+    <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-env" id="tabbtn-env" type="button">Ocieplenie / Stolarka</button>
+  </div>
+
+  <!-- METRYCZKA -->
+  <section class="panel" aria-labelledby="metryczkaTitle">
+    <h2 id="metryczkaTitle" class="muted" style="margin:0 0 8px 0">Metryczka</h2>
+    <div class="grid cols-3">
+      <div>
+        <label for="typ">Typ gospodarstwa</label>
+        <select id="typ"><option value="">— wybierz —</option><option>JEDNO</option><option>WIELO</option></select>
+      </div>
+      <div>
+        <label for="doch_mies">Miesięczny dochód na osobę [zł]</label>
+        <input id="doch_mies" inputmode="decimal" placeholder="np. 2100">
+      </div>
+      <div>
+        <label for="doch_roczny">Roczny dochód wnioskodawcy [zł]</label>
+        <input id="doch_roczny" inputmode="decimal" placeholder="np. 120000">
+      </div>
+      <div>
+        <label for="swiadczenia">Świadczenia (MOPS/GOPS)</label>
+        <select id="swiadczenia"><option value="">— wybierz —</option><option>TAK</option><option>NIE</option></select>
+      </div>
+      <div>
+        <span class="muted" style="display:block;margin-bottom:6px">Tryb cen, które wpisuję</span>
+        <div class="pill" role="radiogroup" aria-label="Tryb cen">
+          <label><input type="radio" name="pm" value="NETTO" checked> NETTO</label>
+          <label style="margin-left:10px"><input type="radio" name="pm" value="BRUTTO"> BRUTTO (VAT <span id="vatRadio">8</span>%)</label>
+        </div>
+      </div>
+      <div>
+        <label for="vatSel">VAT (dla kwot BRUTTO)</label>
+        <select id="vatSel">
+          <option value="0.08" selected>8% (mieszkaniowe)</option>
+          <option value="0.23">23% (inne)</option>
+        </select>
+      </div>
+      <div class="pill">Poziom: <b id="poziom">—</b></div>
+      <div class="pill">Procent: <b id="procent">—</b></div>
+    </div>
+  </section>
+
+  <!-- PODSUMOWANIE -->
+  <section class="panel" aria-labelledby="sumTitle">
+    <h2 id="sumTitle" class="muted" style="margin:0 0 8px 0">Podsumowanie</h2>
+    <div aria-live="polite">
+      <span class="pill">Wybrane (źródło): <b id="selCountMain">0</b></span>
+      <span class="pill">Wybrane (ocieplenie): <b id="selCountEnv">0</b></span>
+      <span class="pill">Suma dotacji: <b id="sumGrantAll">0</b> zł</span>
+      <span class="pill">Min. wymagany wydatek (netto): <b id="sumNeedAll">—</b> zł</span>
+      <span class="pill">Suma dopłaty (brutto): <b id="sumCopayAll">0</b> zł</span>
+      <span class="pill">Limit globalny: <b id="globalCap">—</b> zł</span>
+      <span class="pill">Limit użyty? <b id="globalCapUsed">—</b></span>
+      <span class="pill">Limit ocieplenie/stolarka: <b id="envCap">—</b> zł</span>
+      <span class="pill">Limit O/S użyty? <b id="envCapUsed">—</b></span>
+    </div>
+    <div class="right" style="margin-top:10px">
+      <button id="btnSave" class="ghost" type="button">Zapisz</button>
+      <button id="btnLoad" class="ghost" type="button">Wczytaj</button>
+      <button id="btnPrint" class="ghost" type="button">Drukuj</button>
+      <button id="btnCSVAll" class="ghost" type="button">CSV (łączny)</button>
+    </div>
+  </section>
+
+  <!-- ŹRÓDŁO CIEPŁA -->
+  <section id="tab-main" role="tabpanel" aria-labelledby="tabbtn-main">
+    <section class="panel">
+      <div class="muted" style="margin-bottom:8px">
+        Dotacja = min(koszt NETTO × % , limit dla aktywnego poziomu). Dopuszczalne tylko jedno źródło ciepła – wybranie innego odznacza poprzednie.
+      </div>
+      <div class="right" style="margin-bottom:6px">
+        <button id="btnPresetMain" class="ghost" type="button">Przywróć domyślne</button>
+        <button id="btnAutoNeedMain" class="ghost" type="button">Auto: 100% limitu</button>
+        <button id="btnCSVMain" class="ghost" type="button">CSV (główne)</button>
+      </div>
+      <div style="overflow:auto">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Wybierz</th>
+              <th scope="col">Komponent / Wariant</th>
+              <th scope="col" class="num">Koszt (Twoja kwota)</th>
+              <th scope="col" class="num">Limit (aktywny)</th>
+              <th scope="col" class="num">Min. wydatek (netto)</th>
+              <th scope="col" class="num">Min. wydatek (brutto)</th>
+              <th scope="col" class="num">Dotacja</th>
+              <th scope="col" class="num">Koszt brutto</th>
+              <th scope="col" class="num">Dopłata (brutto)</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyMain"></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="6" class="num"><b>SUMA (główne)</b></td>
+              <td class="num" id="sumMain">0</td>
+              <td class="num" id="sumMainGross">0</td>
+              <td class="num" id="sumMainCopay">0</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+  </section>
+
+  <!-- OCIEPLENIE / STOLARKA -->
+  <section id="tab-env" class="hidden" role="tabpanel" aria-labelledby="tabbtn-env">
+    <section class="panel">
+      <div class="muted">Dotacja = min( koszt NETTO × % , pow_m2 × stawka_dotacji_netto_na_m2 ). Ceny brutto liczone z VAT <span id="vatLive2">8</span>%.</div>
+    </section>
+    <section class="panel">
+      <div class="right" style="margin-bottom:6px">
+        <button id="btnPresetEnv" class="ghost" type="button">Przywróć domyślne</button>
+        <button id="btnAutoNeedEnv" class="ghost" type="button">Auto: 100% stawki</button>
+        <button id="btnCSVEnv" class="ghost" type="button">CSV (ocieplenie)</button>
+      </div>
+      <div style="overflow:auto">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Wybierz</th>
+              <th scope="col">Pozycja</th>
+              <th scope="col" class="num">Pow. [m2]</th>
+              <th scope="col" class="num">Twoja cena / m2 (NETTO/BRUTTO)</th>
+              <th scope="col" class="num">Maks. dotacja / m2 (NETTO)</th>
+              <th scope="col" class="num">Koszt NETTO</th>
+              <th scope="col" class="num">Limit z m2</th>
+              <th scope="col" class="num">Dotacja</th>
+              <th scope="col" class="num">Koszt BRUTTO</th>
+              <th scope="col" class="num">Dopłata (brutto)</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyEnv"></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="7" class="num"><b>SUMA (ocieplenie/stolarka)</b></td>
+              <td class="num" id="sumEnvGrant">0</td>
+              <td class="num" id="sumEnvGross">0</td>
+              <td class="num" id="sumEnvCopay">0</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+  </section>
+</div>
+
+<!-- STOPKA -->
+<footer class="site-footer" aria-label="Dane firmy">
+  <div class="inner">
+    <div class="f-logo" aria-hidden="true">
+      <!-- ARKON LOGO PNG (BASE64) – PODMIEŃ, JEŚLI CHCESZ -->
+      <img alt="ARKON" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAAQCAYAAAB49Y7QAAAACXBIWXMAAAsSAAALEgHS3X78AAAAPElEQVR4nO3OsQkAQAwEwZL//2aWQwE0QeB0xwqG8xgk7u+FAAD8Jr8wHh8rCkZgO1FQqf8mF3dwcHBwcHBwcHBweE9QmU+Qp6wq7mPAAAAAElFTkSuQmCC">
+    </div>
+    <div class="f-text">
+      <b>ARKON – Przedsiębiorstwo Wielobranżowe</b><br>
+      59‑170 Przemków • ul. Fabryczna 12 C • NIP: 5020038830 • KRS: 0000255361<br>
+      tel. 76 831 90 30 • e‑mail: biuro@arkon.com.pl
+    </div>
+  </div>
+</footer>
+
+<!-- PODPISY – tylko w wydruku -->
+<div class="print-signs" style="max-width:1200px;margin:24px auto 40px;padding:0 16px">
+  <div style="display:flex;gap:40px;margin-top:24px">
+    <div style="flex:1;border-top:1px solid #333;padding-top:6px;text-align:center;font-size:12px">Podpis klienta</div>
+    <div style="flex:1;border-top:1px solid #333;padding-top:6px;text-align:center;font-size:12px">Podpis przedstawiciela ARKON</div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===== helpers ===== */
+function q(s){ return document.querySelector(s); }
+function qa(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); }
+var INT = new Intl.NumberFormat('pl-PL',{maximumFractionDigits:0});
+function fmt(n){ return isFinite(n) ? INT.format(Math.round(n)) : '—'; }
+function toNum(v){
+  if (typeof v !== 'string') return Number(v) || 0;
+  var s = v.replace(/\u00A0/g,' ').replace(/\s+/g,'').replace(/\./g,'').replace(',', '.');
+  var n = parseFloat(s); return isFinite(n) ? n : 0;
+}
+function debounce(fn,ms){ var t; ms=ms||180; return function(){ var a=arguments; clearTimeout(t); t=setTimeout(function(){ fn.apply(null,a); },ms); }; }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+
+/* ===== VAT – przełączanie 8%/23% ===== */
+var VAT = 0.08;
+function setVAT(v){
+  VAT = Number(v) || 0.08;
+  q('#vatLive').textContent = Math.round(VAT*100);
+  q('#vatLive2').textContent = Math.round(VAT*100);
+  q('#vatRadio').textContent = Math.round(VAT*100);
+  recomputeAllRows();
+  updateAggregates();
+  autosave();
+}
+q('#vatSel').addEventListener('change', function(){ setVAT(this.value); });
+
+/* Główna formuła */
+function calcGrant(net, pct, limit){
+  var pctGrant = net * (pct || 0);
+  var cap = limit || 0;
+  var grant = Math.min(pctGrant, cap);
+  var gross = net * (1 + VAT);
+  var copay = Math.max(0, gross - grant);
+  var hit = pctGrant > cap + 1e-9;
+  return {grant:grant, gross:gross, copay:copay, hit:hit};
+}
+
+/* ===== login (UI tylko) ===== */
+(function(){
+  var okUser='Arkon', okPass='Arkon2025';
+  if (sessionStorage.getItem('arkon_ok')==='1'){ unlock(); return; }
+  q('#btnLogin').addEventListener('click', tryLogin);
+  q('#lgPass').addEventListener('keydown', function(e){ if(e.key==='Enter') tryLogin(); });
+  function tryLogin(){
+    var u=q('#lgUser').value.trim(), p=q('#lgPass').value;
+    if (u===okUser && p===okPass){ sessionStorage.setItem('arkon_ok','1'); unlock(); }
+    else q('#lgMsg').textContent='Błędna nazwa lub hasło.';
+  }
+  function unlock(){ q('#login').style.display='none'; var app=q('#app'); app.style.filter='none'; app.style.pointerEvents='auto'; }
+})();
+
+/* ===== level / state ===== */
+var state = { level:{name:'BRAK', pct:0}, priceMode:'NETTO', mainRows:[], envRows:[] };
+
+function calcLevel(o){
+  var t=(o.typ||'').toUpperCase();
+  var ben=(o.swiadczenia||'').toUpperCase()==='TAK';
+  var m=toNum(o.mies), r=toNum(o.roczny);
+  if (ben || (t==='JEDNO' && m>0 && m<=1800) || (t==='WIELO' && m>0 && m<=1300)) return {name:'NAJWYŻSZY', pct:1};
+  if ((t==='JEDNO' && m>0 && m<=3150) || (t==='WIELO' && m>0 && m<=2250)) return {name:'PODWYŻSZONY', pct:0.7};
+  if (r>0 && r<=135000) return {name:'PODSTAWOWY', pct:0.4};
+  return {name:'BRAK', pct:0};
+}
+function refreshLevel(){
+  state.level = calcLevel({ typ:q('#typ').value, mies:q('#doch_mies').value, roczny:q('#doch_roczny').value, swiadczenia:q('#swiadczenia').value });
+  q('#poziom').textContent=state.level.name;
+  q('#procent').textContent=state.level.pct? String((state.level.pct*100).toFixed(0))+'%' : '—';
+  recomputeAllRows();
+  updateAggregates();
+  autosave();
+}
+var debRefreshLevel = debounce(refreshLevel, 180);
+['#typ','#doch_mies','#doch_roczny','#swiadczenia'].forEach(function(sel){
+  q(sel).addEventListener('input', debRefreshLevel);
+  q(sel).addEventListener('change', refreshLevel);
+});
+qa('input[name="pm"]').forEach(function(r){
+  r.addEventListener('change', function(){
+    state.priceMode=r.value;
+    recomputeAllRows();
+    updateAggregates();
+    autosave();
+  });
+});
+
+/* ===== dane GŁÓWNE ===== */
+var DATA_MAIN = [
+  {id:'PC',  name:'Pompa ciepła', heat:true, globalCat:null, variants:[
+    {label:'powietrze/woda – standard',     lim:{P:12600,M:22000,T:31500}, globalCat:'pc_air'},
+    {label:'powietrze/woda – wyższa klasa', lim:{P:14080,M:24640,T:35200}, globalCat:'pc_air'},
+    {label:'powietrze/powietrze',           lim:{P: 4480,M: 7840,T:11200}, globalCat:'pc_air'},
+    {label:'gruntowa – wyższa klasa',       lim:{P:18000,M:31500,T:45000}, globalCat:'pc_ground'},
+    {label:'dolne źródło (odwierty)',       lim:{P: 8000,M:14000,T:20000}, globalCat:'pc_ground'}
+  ]},
+  {id:'SIEC',name:'Podłączenie do sieci ciepłowniczej (z przyłączem)', heat:true, variants:[
+    {label:'standard', lim:{P:9800,M:15575,T:22250}, globalCat:'piec'}
+  ]},
+  {id:'GAZ', name:'Kocioł zgazowujący drewno (podw. standard)', heat:true, variants:[
+    {label:'standard', lim:{P:8200,M:14350,T:20500}, globalCat:'piec'}
+  ]},
+  {id:'PEL', name:'Kocioł na pellet (podw. standard)', heat:true, variants:[
+    {label:'standard', lim:{P:8200,M:14350,T:20500}, globalCat:'piec'}
+  ]},
+  {id:'ELE', name:'Ogrzewanie elektryczne', heat:true, variants:[
+    {label:'standard', lim:{P:4480,M:7840,T:11200}, globalCat:'piec'}
+  ]},
+  {id:'INST',name:'Instalacja CO + CWU', heat:false, variants:[
+    {label:'standard', lim:{P:8200,M:14350,T:20500}}
+  ]},
+  {id:'PLUK',name:'Płukanie instalacji', heat:false, variants:[
+    {label:'standard', lim:{P:2000,M:2000,T:2000}}
+  ]},
+  {id:'AUD', name:'Audyt energetyczny', heat:false, variants:[{label:'standard', lim:{P:480,M:840,T:1200}}]},
+  {id:'SCH', name:'Świadectwo charakterystyki', heat:false, variants:[{label:'standard', lim:{P:160,M:280,T:400}}]},
+  {id:'REC', name:'Rekuperacja (zestaw)', heat:false, variants:[{label:'zestaw', lim:{P:6680,M:11690,T:16700}}]}
+];
+
+function limActive(lim){
+  if (state.level.name==='PODSTAWOWY') return lim.P || 0;
+  if (state.level.name==='PODWYŻSZONY') return lim.M || 0;
+  if (state.level.name==='NAJWYŻSZY')   return lim.T || 0;
+  return 0;
+}
+function buildMain(){
+  var tb=q('#tbodyMain'); tb.innerHTML=''; state.mainRows=[];
+  DATA_MAIN.forEach(function(comp, idx){
+    var tr=document.createElement('tr');
+    var row={compIdx:idx, heat:comp.heat, sel:false, vIdx:0, costInput:0, _costNet:0,_grant:0,_gross:0,_copay:0,_need:0,_needGross:0, _hit:false, els:{}, tr:tr};
+
+    var tdSel=document.createElement('td'); var sel=document.createElement('input'); sel.type='checkbox'; sel.setAttribute('aria-label','Wybierz wiersz'); tdSel.appendChild(sel);
+    var tdName=document.createElement('td');
+    var title=document.createElement('div'); title.textContent=comp.name;
+    var selVar=document.createElement('select'); selVar.setAttribute('aria-label','Wariant');
+    comp.variants.forEach(function(v,i){ var o=document.createElement('option'); o.value=i; o.textContent=v.label; selVar.appendChild(o); });
+    tdName.appendChild(title); tdName.appendChild(selVar);
+
+    var tdCost=document.createElement('td'); tdCost.className='num';
+    var cost=document.createElement('input'); cost.className='num'; cost.inputMode='decimal'; cost.placeholder='0'; cost.setAttribute('aria-label','Koszt'); tdCost.appendChild(cost);
+
+    var tdLim=document.createElement('td'); tdLim.className='num';
+    var tdNeed=document.createElement('td'); tdNeed.className='num';
+    var tdNeedGross=document.createElement('td'); tdNeedGross.className='num';
+    var tdGrant=document.createElement('td'); tdGrant.className='num';
+    var tdGross=document.createElement('td'); tdGross.className='num';
+    var tdCopay=document.createElement('td'); tdCopay.className='num';
+
+    tr.appendChild(tdSel); tr.appendChild(tdName); tr.appendChild(tdCost); tr.appendChild(tdLim); tr.appendChild(tdNeed); tr.appendChild(tdNeedGross); tr.appendChild(tdGrant); tr.appendChild(tdGross); tr.appendChild(tdCopay);
+    tb.appendChild(tr);
+
+    row.els={sel:sel,selVar:selVar,cost:cost,tdLim:tdLim,tdNeed:tdNeed,tdNeedGross:tdNeedGross,tdGrant:tdGrant,tdGross:tdGross,tdCopay:tdCopay};
+    state.mainRows.push(row);
+
+    function syncSelectedClass(){ tr.classList.toggle('is-selected', row.sel); }
+
+    sel.addEventListener('change', function(){
+      row.sel=sel.checked; syncSelectedClass();
+      if (row.sel && comp.heat){
+        state.mainRows.forEach(function(r,j){ if(j!==idx && DATA_MAIN[r.compIdx].heat){ r.sel=false; r.els.sel.checked=false; r.tr.classList.remove('is-selected'); recalcMainRow(j); } });
+      }
+      recalcMainRow(idx);
+      updateAggregates();
+      autosave();
+    });
+    selVar.addEventListener('change', function(){
+      row.vIdx=Number(selVar.value);
+      recalcMainRow(idx);
+      updateAggregates();
+      autosave();
+    });
+    cost.addEventListener('input', function(){
+      row.costInput=toNum(cost.value);
+      debRecalcMainRow(idx)();
+      debUpdateAggregates();
+    });
+    cost.addEventListener('change', autosave);
+  });
+}
+function debRecalcMainRow(i){ return debounce(function(){ recalcMainRow(i); },140); }
+
+/* ===== ocieplenie/stolarka ===== */
+var RATES_M2 = {
+  sciany: { P:180, M:210, T:250 },
+  strop:  { P: 80, M:140, T:200 },
+  podloga:{ P: 80, M:100, T:150 },
+  okna:   { P:650, M:1050, T:1500 },
+  drzwi:  { P:2000, M:2500, T:3000 },
+  bramy:  { P: 600, M:1050, T:1500 }
+};
+function rateForKey(key){
+  if (state.level.name==='PODSTAWOWY') return (RATES_M2[key]||{}).P||0;
+  if (state.level.name==='PODWYŻSZONY') return (RATES_M2[key]||{}).M||0;
+  if (state.level.name==='NAJWYŻSZY')   return (RATES_M2[key]||{}).T||0;
+  return 0;
+}
+var DATA_ENV = [
+  {key:'sciany', name:'Ocieplenie ścian zewnętrznych'},
+  {key:'strop',  name:'Ocieplenie dachu / stropodachu'},
+  {key:'podloga',name:'Ocieplenie podłogi na gruncie'},
+  {key:'okna',   name:'Stolarka okienna'},
+  {key:'drzwi',  name:'Drzwi zewnętrzne'},
+  {key:'bramy',  name:'Brama garażowa'}
+];
+function buildEnv(){
+  var tb=q('#tbodyEnv'); tb.innerHTML=''; state.envRows=[];
+  DATA_ENV.forEach(function(it,idx){
+    var tr=document.createElement('tr');
+    var r={ key:it.key, sel:false, m2:0, ownRate:0, costNet:0, _grant:0,_gross:0,_copay:0,_hit:false, els:{}, tr:tr };
+
+    var tdSel=document.createElement('td'); var sel=document.createElement('input'); sel.type='checkbox'; sel.setAttribute('aria-label','Wybierz pozycję'); tdSel.appendChild(sel);
+    var tdName=document.createElement('td'); tdName.textContent=it.name;
+
+    var tdM2=document.createElement('td'); tdM2.className='num'; var m2=document.createElement('input'); m2.className='num'; m2.inputMode='decimal'; m2.placeholder='0'; m2.setAttribute('aria-label','Powierzchnia m2'); tdM2.appendChild(m2);
+    var tdOwn=document.createElement('td'); tdOwn.className='num'; var own=document.createElement('input'); own.className='num'; own.inputMode='decimal'; own.placeholder='0'; own.setAttribute('aria-label','Twoja cena za m2'); tdOwn.appendChild(own);
+
+    var tdRate=document.createElement('td'); tdRate.className='num';
+    var tdCost=document.createElement('td'); tdCost.className='num';
+    var tdCap=document.createElement('td'); tdCap.className='num';
+    var tdGrant=document.createElement('td'); tdGrant.className='num';
+    var tdGross=document.createElement('td'); tdGross.className='num';
+    var tdCopay=document.createElement('td'); tdCopay.className='num';
+
+    tr.appendChild(tdSel); tr.appendChild(tdName); tr.appendChild(tdM2); tr.appendChild(tdOwn); tr.appendChild(tdRate); tr.appendChild(tdCost); tr.appendChild(tdCap); tr.appendChild(tdGrant); tr.appendChild(tdGross); tr.appendChild(tdCopay);
+    tb.appendChild(tr);
+
+    r.els={sel:sel,m2:m2,ownRate:own,tdRateMax:tdRate,tdCostNet:tdCost,tdLimit:tdCap,tdGrant:tdGrant,tdGross:tdGross,tdCopay:tdCopay};
+    state.envRows.push(r);
+
+    function syncSelectedClass(){ tr.classList.toggle('is-selected', r.sel); }
+
+    sel.addEventListener('change', function(){
+      r.sel=sel.checked; syncSelectedClass();
+      recalcEnvRow(idx);
+      updateAggregates();
+      autosave();
+    });
+    m2.addEventListener('input', function(){
+      r.m2=toNum(m2.value);
+      debRecalcEnvRow(idx)();
+      debUpdateAggregates();
+    });
+    own.addEventListener('input', function(){
+      r.ownRate=toNum(own.value);
+      debRecalcEnvRow(idx)();
+      debUpdateAggregates();
+    });
+    m2.addEventListener('change', autosave);
+    own.addEventListener('change', autosave);
+  });
+}
+function debRecalcEnvRow(i){ return debounce(function(){ recalcEnvRow(i); },140); }
+
+/* ===== row recalcs ===== */
+function setGrantCell(td, value, hit){
+  td.innerHTML = fmt(value) + (hit ? ' <span class="cap-badge">LIMIT</span>' : '');
+}
+function recalcMainRow(i){
+  var r=state.mainRows[i]; if(!r) return;
+  var comp=DATA_MAIN[r.compIdx]; var v=comp.variants[r.vIdx];
+  var lim = limActive(v.lim);
+  r.els.tdLim.textContent = fmt(lim);
+
+  var net = state.priceMode==='BRUTTO' ? (r.costInput/(1+VAT)) : r.costInput;
+  var need  = state.level.pct>0 ? Math.ceil(lim/state.level.pct) : 0;
+  var needGross = need ? need*(1+VAT) : 0;
+
+  var res = calcGrant(net, state.level.pct, lim);
+  r._costNet=net; r._grant=res.grant; r._gross=res.gross; r._copay=res.copay; r._need=need; r._needGross=needGross; r._hit=res.hit;
+
+  if (!r.sel){
+    r.els.tdNeed.textContent = '—';
+    r.els.tdNeedGross.textContent = '—';
+    r.els.tdGrant.innerHTML = '—';
+    r.els.tdGross.textContent = '—';
+    r.els.tdCopay.textContent = '—';
+  } else {
+    r.els.tdNeed.textContent = need?fmt(need):'—';
+    r.els.tdNeedGross.textContent = need?fmt(needGross):'—';
+    setGrantCell(r.els.tdGrant, res.grant, res.hit);
+    r.els.tdGross.textContent = fmt(res.gross);
+    r.els.tdCopay.textContent = fmt(res.copay);
+  }
+}
+function recalcEnvRow(i){
+  var r=state.envRows[i]; if(!r) return;
+  var per = rateForKey(r.key) || 0;
+  r.els.tdRateMax.textContent = fmt(per);
+
+  var ownNet = state.priceMode==='BRUTTO' ? (r.ownRate/(1+VAT)) : r.ownRate;
+  var costNet = (r.m2||0) * (ownNet||0);
+  var cap = (r.m2||0) * per;
+
+  var res = calcGrant(costNet, state.level.pct, cap);
+  r.costNet=costNet; r._grant=res.grant; r._gross=res.gross; r._copay=res.copay; r._hit=res.hit;
+
+  if (!r.sel){
+    r.els.tdCostNet.textContent = '—';
+    r.els.tdLimit.textContent = fmt(cap);
+    r.els.tdGrant.innerHTML = '—';
+    r.els.tdGross.textContent = '—';
+    r.els.tdCopay.textContent = '—';
+  } else {
+    r.els.tdCostNet.textContent = fmt(costNet);
+    r.els.tdLimit.textContent = fmt(cap);
+    setGrantCell(r.els.tdGrant, res.grant, res.hit);
+    r.els.tdGross.textContent = fmt(res.gross);
+    r.els.tdCopay.textContent = fmt(res.copay);
+  }
+}
+
+/* ===== totals / summary ===== */
+function getTotalsMain(){
+  var sumGrant=0,sumGross=0,sumCopay=0,countSel=0;
+  state.mainRows.forEach(function(r){ if(r.sel){ sumGrant+=r._grant||0; sumGross+=r._gross||0; sumCopay+=r._copay||0; countSel++; } });
+  return {sumGrant:sumGrant,sumGross:sumGross,sumCopay:sumCopay,countSel:countSel};
+}
+function getTotalsEnv(){
+  var sumGrant=0,sumGross=0,sumCopay=0,countSel=0;
+  state.envRows.forEach(function(r){ if(r.sel){ sumGrant+=r._grant||0; sumGross+=r._gross||0; sumCopay+=r._copay||0; countSel++; } });
+  return {sumGrant:sumGrant,sumGross:sumGross,sumCopay:sumCopay,countSel:countSel};
+}
+
+/* ===== limity: globalne + Ocieplenie/Stolarka ===== */
+var GLOBAL_CAPS = { piec:125600, pc_air:140300, pc_ground:170000 }; // pc_air poprawione na 140 300
+function currentGlobalCategory(){
+  for (var i=0;i<state.mainRows.length;i++){
+    var r=state.mainRows[i]; if(!r.sel) continue;
+    var comp=DATA_MAIN[r.compIdx]; if(!comp.heat) continue;
+    var v=comp.variants[r.vIdx]||{}; return v.globalCat || comp.globalCat || 'piec';
+  }
+  return null;
+}
+/* Limit sekcji Ocieplenie/Stolarka – wg Twoich wytycznych */
+var ENV_CAPS = { 'NAJWYŻSZY':83000, 'PODWYŻSZONY':58100, 'PODSTAWOWY':33200 };
+
+function renderTotals(){
+  var m=getTotalsMain(), e=getTotalsEnv();
+  q('#sumMain').textContent=fmt(m.sumGrant);
+  q('#sumMainGross').textContent=fmt(m.sumGross);
+  q('#sumMainCopay').textContent=fmt(m.sumCopay);
+  q('#selCountMain').textContent=m.countSel;
+
+  q('#sumEnvGrant').textContent=fmt(e.sumGrant);
+  q('#sumEnvGross').textContent=fmt(e.sumGross);
+  q('#sumEnvCopay').textContent=fmt(e.sumCopay);
+  q('#selCountEnv').textContent=e.countSel;
+}
+
+/* === PODMIANA: renderSummary – dopłata liczona po limitach === */
+function renderSummary(){
+  var m = getTotalsMain();
+  var e = getTotalsEnv();
+
+  // 1) Przytnij Ocieplenie/Stolarka do limitu sekcji
+  var envRawGrant = e.sumGrant || 0;
+  var envCap      = ENV_CAPS[state.level.name] || 0;
+  var envGrant    = envCap ? Math.min(envRawGrant, envCap) : envRawGrant;
+
+  // UI: limit sekcji + czy użyty
+  if (q('#envCap'))     q('#envCap').textContent = envCap ? fmt(envCap) : '—';
+  if (q('#envCapUsed')) q('#envCapUsed').textContent = envCap ? (envRawGrant > envCap ? 'TAK' : 'NIE') : '—';
+
+  // Po przycięciu sekcji – aktualizuj sumę dotacji i dopłatę sekcji
+  if (q('#sumEnvGrant')) q('#sumEnvGrant').textContent = fmt(envGrant);
+  var envCopayCapped = (e.sumGross || 0) - envGrant;
+  if (q('#sumEnvCopay')) q('#sumEnvCopay').textContent = fmt(envCopayCapped);
+
+  // 2) Subtotal dotacji (główne + O/S po przycięciu sekcji)
+  var subtotalGrant = (m.sumGrant || 0) + envGrant;
+
+  // 3) Limit globalny wg wybranego źródła ciepła
+  var cat   = currentGlobalCategory();
+  var gCap  = cat ? (GLOBAL_CAPS[cat] || 0) : 0;
+  var totalGrant = gCap ? Math.min(subtotalGrant, gCap) : subtotalGrant;
+  var capUsed = gCap > 0 && subtotalGrant > gCap;
+
+  // 4) Suma kosztów BRUTTO wszystkiego
+  var totalGross = (m.sumGross || 0) + (e.sumGross || 0);
+
+  // 5) KOŃCOWA dopłata = totalGross - totalGrant
+  var totalCopay = Math.max(0, totalGross - totalGrant);
+
+  // 6) Min. wymagany wydatek netto (informacyjnie)
+  var need = 0;
+  state.mainRows.forEach(function(r){
+    if(r.sel && state.level.pct>0){
+      var lim = limActive(DATA_MAIN[r.compIdx].variants[r.vIdx].lim);
+      need += Math.ceil(lim/state.level.pct);
+    }
+  });
+  state.envRows.forEach(function(r){
+    if(r.sel && state.level.pct>0){
+      var capRow = (r.m2||0) * (rateForKey(r.key)||0);
+      need += Math.ceil(capRow/state.level.pct);
+    }
+  });
+
+  // 7) UI
+  if (q('#sumGrantAll'))  q('#sumGrantAll').textContent = fmt(totalGrant);
+  if (q('#sumCopayAll'))  q('#sumCopayAll').textContent = fmt(totalCopay);
+  if (q('#sumNeedAll'))   q('#sumNeedAll').textContent  = state.level.pct ? fmt(need) : '—';
+
+  if (q('#globalCap'))     q('#globalCap').textContent = gCap ? fmt(gCap) : '—';
+  if (q('#globalCapUsed')) q('#globalCapUsed').textContent = gCap ? (capUsed ? 'TAK' : 'NIE') : '—';
+}
+
+function updateAggregates(){ renderTotals(); renderSummary(); }
+var debUpdateAggregates = debounce(updateAggregates, 160);
+
+/* ===== recompute all rows ===== */
+function recomputeAllRows(){
+  state.mainRows.forEach(function(_,i){ recalcMainRow(i); });
+  state.envRows.forEach(function(_,i){ recalcEnvRow(i); });
+}
+
+/* ===== preset / auto ===== */
+function presetMain(){
+  state.mainRows.forEach(function(r,i){
+    r.sel=false; r.els.sel.checked=false; r.tr.classList.remove('is-selected');
+    r.vIdx=0; r.els.selVar.value='0';
+    r.costInput=0; r.els.cost.value='';
+    recalcMainRow(i);
+  });
+  updateAggregates();
+  autosave();
+}
+function presetEnv(){
+  state.envRows.forEach(function(r,i){
+    r.sel=false; r.els.sel.checked=false; r.tr.classList.remove('is-selected');
+    r.m2=0; r.els.m2.value='';
+    r.ownRate=0; r.els.ownRate.value='';
+    recalcEnvRow(i);
+  });
+  updateAggregates();
+  autosave();
+}
+function autoNeedMain(){
+  state.mainRows.forEach(function(r,i){
+    if(!r.sel) return;
+    var lim = limActive(DATA_MAIN[r.compIdx].variants[r.vIdx].lim);
+    if(state.level.pct>0){
+      var needNet = Math.ceil(lim/state.level.pct);
+      r.costInput = state.priceMode==='BRUTTO' ? needNet*(1+VAT) : needNet;
+      r.els.cost.value = String(Math.round(r.costInput));
+      recalcMainRow(i);
+    }
+  });
+  updateAggregates();
+  autosave();
+}
+function autoNeedEnv(){
+  state.envRows.forEach(function(r,i){
+    if(!r.sel) return;
+    var per = rateForKey(r.key)||0;
+    if(state.level.pct>0){
+      var needPerM2Net = per/(state.level.pct||1);
+      r.ownRate = Math.round(state.priceMode==='BRUTTO' ? needPerM2Net*(1+VAT) : needPerM2Net);
+      r.els.ownRate.value = String(r.ownRate);
+      recalcEnvRow(i);
+    }
+  });
+  updateAggregates();
+  autosave();
+}
+
+/* ===== CSV ===== */
+function csvEscape(v){ var s=String(v==null ? '' : v); return /[",;\n]/.test(s)? '"' + s.replace(/"/g,'""') + '"' : s; }
+function downloadCSV(name, rows){
+  var csv = rows.map(function(r){ return r.map(csvEscape).join(';'); }).join('\n');
+  var blob = new Blob([csv], { type:'text/csv;charset=utf-8' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name.endsWith('.csv') ? name : (name + '.csv');
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function exportCSVMain(){
+  var out=[['Wybrany','Komponent','Wariant','Koszt netto','Limit (aktywny)','Min. wydatek netto','Min. wydatek brutto','Dotacja','Koszt brutto (VAT '+Math.round(VAT*100)+'%)','Dopłata','Limit użyty?']];
+  state.mainRows.forEach(function(r){
+    var comp=DATA_MAIN[r.compIdx], v=comp.variants[r.vIdx], lim=limActive(v.lim);
+    out.push([ r.sel?'TAK':'NIE', comp.name, v.label, Math.round(r._costNet||0), lim, r.sel?(r._need||''):'', r.sel?Math.round(r._needGross||0):'', Math.round(r._grant||0), Math.round(r._gross||0), Math.round(r._copay||0), r._hit?'TAK':'NIE' ]);
+  });
+  downloadCSV('cp2025_glowne_'+todayStr(), out);
+}
+function exportCSVEnv(){
+  var out=[['Wybrany','Pozycja','Pow m2 x cena_m2','Koszt netto','Limit z m2','Dotacja','Koszt brutto (VAT '+Math.round(VAT*100)+'%)','Dopłata','Limit użyty?']];
+  state.envRows.forEach(function(r,i){
+    var base=DATA_ENV[i]; var cap=Math.round((r.m2||0)*(rateForKey(r.key)||0));
+    out.push([ r.sel?'TAK':'NIE', base.name, String(r.m2||0)+' m2 x '+String(r.ownRate||0), Math.round(r.costNet||0), cap, Math.round(r._grant||0), Math.round(r._gross||0), Math.round(r._copay||0), r._hit?'TAK':'NIE' ]);
+  });
+  downloadCSV('cp2025_ocieplenie_'+todayStr(), out);
+}
+function exportCSVAll(){
+  var out=[['Sekcja','Nazwa','Opis','Koszt netto','Limit (aktywny)','Dotacja','Koszt brutto (VAT '+Math.round(VAT*100)+'%)','Dopłata','Limit użyty?']];
+  state.mainRows.forEach(function(r){
+    var comp=DATA_MAIN[r.compIdx], v=comp.variants[r.vIdx], lim=limActive(v.lim);
+    out.push(['Glowne', comp.name, v.label, Math.round(r._costNet||0), lim, Math.round(r._grant||0), Math.round(r._gross||0), Math.round(r._copay||0), r._hit?'TAK':'NIE']);
+  });
+  state.envRows.forEach(function(r,i){
+    var base=DATA_ENV[i], cap=Math.round((r.m2||0)*(rateForKey(r.key)||0));
+    out.push(['Ocieplenie', base.name, String(r.m2||0)+' m2 x '+String(r.ownRate||0), Math.round(r.costNet||0), cap, Math.round(r._grant||0), Math.round(r._gross||0), Math.round(r._copay||0), r._hit?'TAK':'NIE']);
+  });
+  downloadCSV('cp2025_laczny_'+todayStr(), out);
+}
+
+/* ===== SAVE / LOAD / PRINT ===== */
+function saveAll(){
+  var data={
+    typ:q('#typ').value, mies:q('#doch_mies').value, roczny:q('#doch_roczny').value, swiad:q('#swiadczenia').value,
+    pm:state.priceMode, vat:VAT,
+    main: state.mainRows.map(function(r){ return {sel:r.sel, vIdx:r.vIdx, cost:r.costInput}; }),
+    env:  state.envRows.map(function(r){ return {sel:r.sel, m2:r.m2, ownRate:r.ownRate}; })
+  };
+  localStorage.setItem('cp2025_arkon', JSON.stringify(data));
+}
+function loadAll(){
+  var raw=localStorage.getItem('cp2025_arkon'); if(!raw){ alert('Brak zapisu'); return; }
+  var d;
+  try{ d=JSON.parse(raw); }catch(e){ alert('Nieprawidłowy zapis.'); return; }
+  q('#typ').value=d.typ||''; q('#doch_mies').value=d.mies||''; q('#doch_roczny').value=d.roczny||''; q('#swiadczenia').value=d.swiad||'';
+  state.priceMode = d.pm==='BRUTTO' ? 'BRUTTO' : 'NETTO';
+  qa('input[name="pm"]').forEach(function(r){ r.checked=(r.value===state.priceMode); });
+
+  if (typeof d.vat!=='undefined'){ setVAT(d.vat); q('#vatSel').value=String(d.vat); }
+
+  if (d.main && d.main.forEach) {
+    d.main.forEach(function(m,i){
+      var r=state.mainRows[i]; if(!r) return;
+      r.sel=!!m.sel; r.els.sel.checked=r.sel; r.tr.classList.toggle('is-selected', r.sel);
+      r.vIdx=Number(m.vIdx||0); r.els.selVar.value=String(r.vIdx);
+      r.costInput=toNum(m.cost); r.els.cost.value=r.costInput?String(r.costInput):'';
+      recalcMainRow(i);
+    });
+  }
+  if (d.env && d.env.forEach) {
+    d.env.forEach(function(e,i){
+      var r=state.envRows[i]; if(!r) return;
+      r.sel=!!e.sel; r.els.sel.checked=r.sel; r.tr.classList.toggle('is-selected', r.sel);
+      r.m2=toNum(e.m2); r.els.m2.value=r.m2?String(r.m2):'';
+      r.ownRate=toNum(e.ownRate); r.els.ownRate.value=r.ownRate?String(r.ownRate):'';
+      recalcEnvRow(i);
+    });
+  }
+
+  refreshLevel();
+}
+function printAll(){ window.print(); }
+var autosave = debounce(saveAll, 250);
+
+/* ===== init & UI events ===== */
+function init(){
+  setVAT(q('#vatSel').value);
+  qa('.tab-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      qa('.tab-btn').forEach(function(b){ b.setAttribute('aria-selected','false'); });
+      btn.setAttribute('aria-selected','true');
+      var tab=btn.id==='tabbtn-main'?'main':'env';
+      q('#tab-main').classList.toggle('hidden', tab!=='main');
+      q('#tab-env').classList.toggle('hidden', tab!=='env');
+    });
+  });
+  buildMain(); buildEnv(); refreshLevel();
+
+  q('#btnPresetMain').addEventListener('click', presetMain);
+  q('#btnAutoNeedMain').addEventListener('click', autoNeedMain);
+  q('#btnCSVMain').addEventListener('click', exportCSVMain);
+
+  q('#btnPresetEnv').addEventListener('click', presetEnv);
+  q('#btnAutoNeedEnv').addEventListener('click', autoNeedEnv);
+  q('#btnCSVEnv').addEventListener('click', exportCSVEnv);
+
+  q('#btnCSVAll').addEventListener('click', exportCSVAll);
+  q('#btnSave').addEventListener('click', saveAll);
+  q('#btnLoad').addEventListener('click', loadAll);
+  q('#btnPrint').addEventListener('click', printAll);
+}
+init();
+</script>
+</body>
+</html>
