@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Szablon umowy ARKON (edytowalny)</title>
+<meta name="description" content="Szablon umowy ARKON do wypełniania z tagami {{...}} i wydruku.">
+<style>
+  :root{ --bg:#0b1020; --card:#0f1636; --ink:#e8edff; --muted:#aeb8da; --line:#263168; --accent:#3a6df0; }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
+  nav{position:sticky;top:0;z-index:10;background:#10173c;border-bottom:1px solid var(--line);padding:10px 12px}
+  nav a{color:#cfe1ff;text-decoration:none;margin-right:12px}
+  .wrap{max-width:900px;margin:18px auto;padding:0 16px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+  .btn{background:var(--accent);border:0;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px solid var(--accent);color:#cfe1ff}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .small{color:var(--muted);font-size:13px}
+  .doc{background:#0e1433;border:1px solid #2b3a77;border-radius:12px;padding:18px}
+  h1{margin:0 0 8px}
+  h2{margin:16px 0 8px;font-size:18px}
+  .muted{color:var(--muted)}
+  [contenteditable="true"]{outline:2px dashed #2b3a77;border-radius:8px;padding:6px}
+  code.tag{background:#101a45;border:1px solid #2b3a77;border-radius:6px;padding:2px 6px}
+  @media print{
+    nav,.toolbar,.card.hints{display:none!important}
+    body{background:#fff;color:#000}
+    .doc{background:#fff;border:0;padding:0}
+    a{color:#000;text-decoration:none}
+  }
+</style>
+</head>
+<body>
+  <nav>
+    <a href="index.html">← Menu główne</a>
+    <a href="klienci.html">Klienci</a>
+    <a href="upload.html">Upload</a>
+    <a href="umowy.html">Edytor umów</a>
+  </nav>
+
+  <div class="wrap">
+    <div class="card hints">
+      <h1>Szablon umowy ARKON</h1>
+      <div class="small">
+        Ten plik to <b>edytowalny szablon</b>. Zawiera znaczniki (merge‑tagi), które mogą zostać
+        automatycznie zastąpione danymi klienta w pliku <b>umowy.html</b>:
+        <code class="tag">{{client.name}}</code> <code class="tag">{{client.address}}</code>
+        <code class="tag">{{project.name}}</code> <code class="tag">{{today}}</code>
+        itd. W tym pliku możesz również <b>wkleić pełną treść swojej umowy</b>, do której posiadasz prawa.
+      </div>
+      <div class="toolbar">
+        <button class="btn" onclick="window.print()">Drukuj / PDF</button>
+        <button class="btn ghost" onclick="toggleHelp()">Pokaż/ukryj tagi</button>
+      </div>
+    </div>
+
+    <!-- WŁAŚCIWA TREŚĆ UMOWY -->
+    <div id="contract" class="doc" contenteditable="true">
+      <h2 style="text-align:center;margin-top:0">UMOWA O WYKONANIE USŁUG / DOSTAWĘ</h2>
+      <p><b>Data i miejsce:</b> {{city}}, dnia {{today}}</p>
+
+      <p><b>Strony:</b><br>
+      <b>Zamawiający (Klient):</b> {{client.name}}, adres: {{client.address}}, e‑mail: {{client.email}}, tel: {{client.phone}}.<br>
+      <b>Wykonawca:</b> ARKON sp. z o.o., NIP: {{company.nip}}, REGON: {{company.regon}}, siedziba: {{company.address}}.</p>
+
+      <p><b>Przedmiot umowy:</b> Realizacja projektu: „{{project.name}}” (etap: {{project.stage}}) zgodnie z ofertą nr {{contract.no}} z dnia {{contract.date}} o wartości {{contract.value}} zł brutto.</p>
+
+      <h3>§1 Postanowienia ogólne</h3>
+      <p>(Tutaj wklej swoją pełną treść paragrafów. Zachowaj numerację i śródtytuły. Możesz używać list numerowanych i podpunktów.)</p>
+
+      <h3>§2 Warunki płatności</h3>
+      <ol>
+        <li>Zaliczka w wysokości {{payments.deposit}} zł płatna do {{payments.deposit_date}}.</li>
+        <li>Pozostała kwota płatna po odbiorze końcowym.</li>
+      </ol>
+
+      <h3>§3 Terminy</h3>
+      <p>Planowany termin rozpoczęcia: {{dates.start}}. Planowany termin zakończenia: {{dates.end}}.</p>
+
+      <h3>§4 Gwarancja / Rękojmia</h3>
+      <p>Okres gwarancji: {{warranty.months}} miesięcy. Warunki gwarancji wg karty gwarancyjnej i przepisów prawa.</p>
+
+      <h3>§5 Odstąpienie od umowy</h3>
+      <p>(Wklej pełny zapis dotyczący odstąpienia od umowy i trybu wykonania tego prawa zgodnie z posiadanym wzorcem.)</p>
+
+      <h3>§6 Ochrona danych</h3>
+      <p>(Wklej klauzulę RODO / przetwarzania danych, jeśli jest przewidziana.)</p>
+
+      <h3>§7 Postanowienia końcowe</h3>
+      <p>(Pozostałe klauzule, sąd właściwy, liczba egzemplarzy itd.)</p>
+
+      <p style="margin-top:28px;display:flex;justify-content:space-between;gap:40px">
+        <span>..............................................<br>Podpis Zamawiającego</span>
+        <span>..............................................<br>Podpis Wykonawcy</span>
+      </p>
+    </div>
+
+    <div class="card small" style="margin-top:12px">
+      Podstawiane tagi: <code class="tag">{{client.*}}</code>, <code class="tag">{{project.*}}</code>,
+      <code class="tag">{{contract.*}}</code>, <code class="tag">{{payments.*}}</code>,
+      <code class="tag">{{dates.*}}</code>, <code class="tag">{{warranty.*}}</code>,
+      <code class="tag">{{company.*}}</code>, <code class="tag">{{today}}</code>, <code class="tag">{{city}}</code>,
+      oraz pola własne: <code class="tag">{{custom.NAZWA_POLA}}</code>.
+    </div>
+  </div>
+
+<script>
+function toggleHelp(){
+  const c=document.querySelector('.card.hints');
+  c.style.display = c.style.display==='none' ? '' : 'none';
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARKON — Edytor umów (merge z danymi klienta)</title>
+<meta name="description" content="Edytor instancji umowy: wczytaj szablon, podstaw dane klienta, zapisz do klienta i do Upload, wydrukuj.">
+<style>
+  :root{ --bg:#0b1020; --p1:#121a34; --p2:#172142; --ink:#e8edff; --muted:#aeb8da; --accent:#4cc9f0; --ok:#2b8a57; --grid:#243059; --card:#0f1533; --line:#1c2750; --bad:#ff6b6b; }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#0a0f1e,#0c1230 60%,#0a0f1e);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
+  nav{background:#172142;display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line)}
+  nav a{color:#cfe1ff;text-decoration:none;padding:8px 12px;border-radius:999px;border:1px solid #2a3a75}
+  nav a:hover{background:#223160}
+  .wrap{max-width:1200px;margin:auto;padding:16px}
+  .grid{display:grid;gap:12px}
+  @media(min-width:1100px){ .cols-2{grid-template-columns:1fr 380px} }
+  .card{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;padding:14px}
+  .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px dashed #3a4ca3}
+  .btn.bad{background:#3a1f2a;border-color:#7b3341}
+  .btn.ok{background:#194d34;border-color:var(--ok)}
+  input,select,textarea{background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:8px 10px;color:var(--ink);font:inherit}
+  textarea{min-height:80px}
+  .doc{background:#0e1433;border:1px solid #2b3a77;border-radius:12px;padding:18px;min-height:65vh}
+  .small{color:var(--muted);font-size:13px}
+  .muted{color:var(--muted)}
+  [contenteditable="true"]{outline:2px dashed #2b3a77;border-radius:8px;padding:6px}
+  .kv{display:grid;grid-template-columns:140px 1fr;gap:8px;align-items:center}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .right{display:flex;gap:8px;justify-content:flex-end}
+  @media print{
+    nav,.card.meta,.card.toolbar{display:none!important}
+    body{background:#fff;color:#000}
+    .doc{background:#fff;border:0;padding:0}
+  }
+</style>
+</head>
+<body>
+  <nav>
+    <a href="index.html">← Menu główne</a>
+    <a href="klienci.html">Klienci</a>
+    <a href="upload.html">Upload</a>
+    <a href="umowa_arkon_szablon.html" target="_blank" rel="noopener">Szablon ↗</a>
+  </nav>
+
+  <div class="wrap grid cols-2">
+    <!-- dokument -->
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <h2 style="margin:0">Instancja umowy</h2>
+        <div class="row">
+          <button class="btn" onclick="window.print()">Drukuj / PDF</button>
+          <button class="btn ok" id="btnSaveUpload">Zapisz do Upload (HTML)</button>
+        </div>
+      </div>
+      <div id="doc" class="doc" contenteditable="true">Wczytaj szablon, aby zacząć…</div>
+    </div>
+
+    <!-- panel metadanych / źródło -->
+    <aside class="card meta">
+      <h3 style="margin:0 0 6px">Źródło i dane</h3>
+      <div class="kv">
+        <label>Szablon</label>
+        <select id="templateSelect">
+          <option value="templates/umowy/umowa_arkon_szablon.html">umowa_arkon_szablon.html</option>
+          <option value="umowa_arkon_szablon.html">umowa_arkon_szablon.html (lokalnie)</option>
+        </select>
+        <label>Miasto</label><input id="f_city" placeholder="np. Głogów">
+        <label>Data</label><input id="f_date" type="date">
+        <label>Nr umowy</label><input id="f_no" placeholder="np. U-2025/001">
+        <label>Wartość [zł]</label><input id="f_value" type="number" step="1">
+        <label>Zaliczka [zł]</label><input id="f_deposit" type="number" step="1">
+        <label>Termin zaliczki</label><input id="f_deposit_date" type="date">
+        <label>Start</label><input id="f_start" type="date">
+        <label>Koniec</label><input id="f_end" type="date">
+        <label>Gwarancja [mies.]</label><input id="f_warranty" type="number" step="1" value="24">
+      </div>
+
+      <div class="row" style="margin-top:8px">
+        <button id="btnLoad" class="btn">Wczytaj szablon</button>
+        <button id="btnMerge" class="btn">Podstaw dane</button>
+      </div>
+
+      <h3 style="margin:12px 0 6px">Powiązanie</h3>
+      <div class="kv">
+        <label>clientId</label><input id="f_clientId" placeholder="z URL, jeśli otwarte z Klienci">
+        <label>projectId</label><input id="f_projectId" placeholder="opcjonalnie z URL">
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button id="btnSaveClient" class="btn ghost">Zapisz szkic przy kliencie</button>
+      </div>
+
+      <p class="small" style="margin-top:10px">
+        Parametry z URL: <code>?clientId=…&projectId=…&template=…</code><br>
+        Dane klienta pobierane są z <code>localStorage['arkon_clients_v1']</code>.
+      </p>
+    </aside>
+  </div>
+
+<script>
+'use strict';
+
+/* ===== helpers ===== */
+const $ = s => document.querySelector(s);
+const INT = new Intl.NumberFormat('pl-PL',{maximumFractionDigits:0});
+
+function getParams(){
+  const u = new URL(location.href);
+  return Object.fromEntries(u.searchParams.entries());
+}
+function fmtDate(ts){ return new Date(ts).toLocaleDateString('pl-PL'); }
+
+/* ===== load client/project ===== */
+const LS_CLIENTS = 'arkon_clients_v1';
+let clients = [];
+try{ clients = JSON.parse(localStorage.getItem(LS_CLIENTS)||'[]'); }catch{ clients = []; }
+
+const params = getParams();
+if(params.clientId) $('#f_clientId').value = params.clientId;
+if(params.projectId) $('#f_projectId').value = params.projectId;
+if(params.template)  $('#templateSelect').value = params.template;
+
+/* ===== map danych do tagów ===== */
+function buildDataMap(){
+  const client = (clients||[]).find(c=>c.id === $('#f_clientId').value) || {};
+  const project = (client.projects||[]).find(p=>p.id === $('#f_projectId').value) || {};
+  const map = {
+    today: new Date().toLocaleDateString('pl-PL'),
+    city: $('#f_city').value || '',
+    client: {
+      name: client.name||'', address: client.address||'', email: client.email||'', phone: client.phone||''
+    },
+    project: {
+      name: project.name||'', stage: project.stage||''
+    },
+    company: { nip:'', regon:'', address:'' },
+    contract: { no: $('#f_no').value||'', value: $('#f_value').value||'', date: $('#f_date').value||'' },
+    payments: { deposit: $('#f_deposit').value||'', deposit_date: $('#f_deposit_date').value||'' },
+    dates: { start: $('#f_start').value||'', end: $('#f_end').value||'' },
+    warranty: { months: $('#f_warranty').value||'' },
+    custom: client.custom || {}
+  };
+  return map;
+}
+
+/* ===== merge tagów ===== */
+function mergeTemplate(html, data){
+  return html.replace(/{{\s*([\w\.]+)\s*}}/g, (_, path)=>{
+    const parts = path.split('.');
+    let cur = data;
+    for(const p of parts){ if(cur && typeof cur==='object' && p in cur){ cur = cur[p]; } else { return ''; } }
+    return cur==null? '' : String(cur);
+  });
+}
+
+/* ===== IO: szablon ===== */
+async function loadTemplate(src){
+  try{
+    const res = await fetch(src, {cache:'no-store'});
+    if(!res.ok) throw 0;
+    return await res.text();
+  }catch(e){
+    // fallback minimalny
+    return `
+      <h2 style="text-align:center">UMOWA (demo)</h2>
+      <p>Miejscowość: {{city}}, dnia {{today}}</p>
+      <p>Klient: {{client.name}}, {{client.address}}, {{client.email}}, {{client.phone}}</p>
+      <p>Projekt: {{project.name}} — Umowa nr {{contract.no}} z dnia {{contract.date}} na kwotę {{contract.value}} zł.</p>
+    `;
+  }
+}
+
+/* ===== IndexedDB Upload ===== */
+let db;
+function dbOpen(){
+  return new Promise((resolve,reject)=>{
+    const r = indexedDB.open('arkonCRM_local', 2);
+    r.onupgradeneeded = ()=>{ const d=r.result; if(!d.objectStoreNames.contains('files')) d.createObjectStore('files',{keyPath:'id'}); };
+    r.onsuccess = ()=>{ db=r.result; resolve(); };
+    r.onerror   = ()=>reject(r.error);
+  });
+}
+function dbPut(fileObj){
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction('files','readwrite');
+    tx.objectStore('files').put(fileObj);
+    tx.oncomplete=()=>resolve();
+    tx.onerror=()=>reject(tx.error);
+  });
+}
+
+/* ===== actions ===== */
+$('#btnLoad').addEventListener('click', async()=>{
+  const src = $('#templateSelect').value;
+  const html = await loadTemplate(src);
+  $('#doc').innerHTML = html;
+});
+
+$('#btnMerge').addEventListener('click', ()=>{
+  const data = buildDataMap();
+  const html = mergeTemplate($('#doc').innerHTML, data);
+  $('#doc').innerHTML = html;
+});
+
+$('#btnSaveUpload').addEventListener('click', async()=>{
+  await dbOpen();
+  const name = `Umowa_${($('#f_no').value||'bez-nr').replace(/\s+/g,'_')}.html`;
+  const blob = new Blob([`<!doctype html><meta charset="utf-8">`+$('#doc').innerHTML], {type:'text/html'});
+  const clientId = $('#f_clientId').value || null;
+  const clientName = (clients.find(c=>c.id===clientId)||{}).name || '';
+  const rec = { id:'ID_'+Date.now().toString(36), name, type:'text/html', size: blob.size, blob, at:Date.now(), category:'Umowy', clientId, clientName, origin:'umowy' };
+  await dbPut(rec);
+  alert('Zapisano w Upload → kategoria „Umowy”.');
+});
+
+$('#btnSaveClient').addEventListener('click', ()=>{
+  const cid = $('#f_clientId').value; if(!cid){ alert('Brak clientId.'); return; }
+  const i = clients.findIndex(c=>c.id===cid); if(i<0){ alert('Nie znaleziono klienta.'); return; }
+  const html = $('#doc').innerHTML;
+  clients[i].contracts = clients[i].contracts||[];
+  clients[i].contracts.unshift({
+    id: 'C_'+Date.now().toString(36),
+    no: $('#f_no').value||'',
+    date: $('#f_date').value||'',
+    value: Number($('#f_value').value||0),
+    savedAt: Date.now(),
+    projectId: $('#f_projectId').value||'',
+    html
+  });
+  localStorage.setItem(LS_CLIENTS, JSON.stringify(clients));
+  alert('Zapisano szkic umowy przy kliencie.');
+});
+
+// auto‑boot from params
+(async function boot(){
+  if(params.template){ $('#templateSelect').value = params.template; }
+  if($('#templateSelect').value) $('#btnLoad').click();
+  if(params.clientId){ $('#btnMerge').click(); }
+})();
+</script>
+</body>
+</html>
