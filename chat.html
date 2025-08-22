@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ARKON — Chat wewnętrzny (wieloosobowy, harmonogram, odczyty, pliki)</title>
+<meta name="description" content="Chat ARKON: grupy odbiorców, harmonogram wysyłki, odczyty per-odbiorca, załączniki, emotki, IndexedDB.">
+<style>
+  :root{
+    --bg:#0b1020; --panel:#0f1636; --panel2:#0e1533; --ink:#e7ecff; --muted:#aeb8da;
+    --line:#263168; --chip:#1a244d; --accent:#3a6df0; --ok:#2fbf71; --bad:#ff6b6b; --warn:#ffb84d;
+    --emil:#5bd1ff; --adrian:#aef578; --szef:#ff7ad6; --grey:#8aa0d6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#0a0f1e,#0c1230 60%,#0a0f1e);color:var(--ink);font:14px/1.5 system-ui,Segoe UI,Roboto,Arial}
+  a{color:#cfe0ff;text-decoration:none}
+  header{position:sticky;top:0;z-index:5;background:#0d1433;border-bottom:1px solid var(--line)}
+  .nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 14px}
+  .nav a,.nav .brand{padding:6px 10px;border:1px solid #2a3a75;border-radius:999px}
+  .nav a:hover{background:#1a2457}
+  .brand{font-weight:700;border-color:#3a4ca3;background:#0f1640}
+  .wrap{max-width:1200px;margin:0 auto;padding:14px}
+  .grid{display:grid;gap:12px}
+  @media(min-width:1100px){ .cols-2{grid-template-columns:2fr 1fr} }
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .right{margin-left:auto;display:flex;gap:8px}
+  .btn{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:8px 12px;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px solid var(--accent);color:#cfe0ff}
+  .btn.bad{background:transparent;border:1px solid var(--bad);color:#ffb4b4}
+  .btn.ok{background:var(--ok)}
+  input,select,textarea{background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:8px 10px;color:var(--ink);font:inherit}
+  textarea{min-height:60px;resize:vertical}
+  .small{font-size:12px;color:var(--muted)}
+  .pill{display:inline-flex;gap:8px;align-items:center;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#cfe1ff}
+  .chip{display:inline-flex;gap:6px;align-items:center;background:var(--chip);border:1px solid #2b3a77;border-radius:999px;padding:4px 8px}
+  .scroll{overflow:auto}
+  /* chat */
+  .layout{display:grid;grid-template-columns:280px 1fr;gap:12px}
+  @media(max-width:980px){ .layout{grid-template-columns:1fr} }
+  .roster .item{display:flex;gap:8px;align-items:center;padding:6px;border:1px solid #2a3a75;border-radius:10px;margin:6px 0;background:var(--panel2);cursor:pointer}
+  .roster .item.active{outline:2px solid #67a1ff55}
+  .dot{width:9px;height:9px;border-radius:50%}
+  .dot.emil{background:var(--emil)}
+  .dot.adrian{background:var(--adrian)}
+  .dot.szef{background:var(--szef)}
+  .chatbox{min-height:360px;max-height:560px;background:#0d1330;border:1px solid var(--line);border-radius:10px;padding:10px}
+  .msg{background:#142057;border:1px solid #2a3777;border-radius:12px;padding:8px 10px;margin:10px 0}
+  .msg .meta{font-size:12px;color:#a8b3ff;opacity:.95;margin-bottom:4px;display:flex;gap:10px;flex-wrap:wrap}
+  .msg .body{white-space:pre-wrap;word-wrap:break-word}
+  .bubble-files a{display:inline-flex;gap:6px;align-items:center;margin:4px 6px 0 0;padding:3px 8px;border:1px solid #2a3777;border-radius:999px}
+  .from-emil{box-shadow:0 0 0 1px #5bd1ff55 inset}
+  .from-adrian{box-shadow:0 0 0 1px #aef57855 inset}
+  .from-szef{box-shadow:0 0 0 1px #ff7ad655 inset}
+  /* composer */
+  .composer{display:grid;gap:8px}
+  .composer .row{align-items:flex-start}
+  .recipients{display:flex;gap:8px;flex-wrap:wrap}
+  .recipients .tag{display:inline-flex;gap:6px;align-items:center;padding:6px 10px;border:1px solid #3a4ca3;border-radius:999px}
+  .avatar{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:12px}
+  .av-emil{background:var(--emil);color:#001}
+  .av-adrian{background:var(--adrian);color:#001}
+  .av-szef{background:var(--szef);color:#001}
+  .emoji-trigger{border:1px dashed #3a4ca3;background:#0d1530}
+  .emoji-panel{position:absolute;z-index:20;background:#0e1433;border:1px solid #2b3a77;border-radius:10px;padding:8px;display:none;max-width:520px}
+  .emoji-panel.open{display:block}
+  .emoji-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;max-height:240px;overflow:auto}
+  .emoji-btn{font-size:18px;background:#111a45;border:1px solid #2b3a77;border-radius:8px;padding:6px;cursor:pointer}
+  .section-title{font-size:12px;color:#aeb8da;margin:6px 0 2px}
+  .statusline{display:flex;gap:10px;flex-wrap:wrap}
+  .badge{display:inline-flex;align-items:center;gap:6px;padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid #2a3a75;background:#0f1a44}
+  .badge.ok{border-color:#2b7744;background:#0f2a28}
+  .badge.warn{border-color:#886b2b;background:#2a230f}
+  .badge.bad{border-color:#7b3341;background:#2a0f16}
+  @media print{ header,.composer,.roster{display:none!important} .chatbox{max-height:none} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <span class="brand">ARKON Chat</span>
+    <a href="index.html">↩︎ Menu</a>
+    <a href="klienci.html">Klienci</a>
+    <a href="komponenty.html">Komponenty</a>
+    <a href="upload.html">Przesył plików</a>
+    <a href="dokumenty.html">Dokumenty</a>
+    <a href="kalkulator.html" target="_blank" rel="noopener">Kalkulator ↗</a>
+    <span class="pill">Perspektywa: <b id="asUserLabel">—</b></span>
+    <div class="right">
+      <button class="btn ghost" id="btnPrint">Drukuj / PDF</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="layout">
+    <!-- LEWA: roster / filtry -->
+    <aside class="card roster" aria-label="Pracownicy">
+      <div class="row" style="justify-content:space-between">
+        <h3 style="margin:0">Pracownicy</h3>
+        <button id="toggleOnline" class="btn ghost" title="Przełącz status online">⏺ status</button>
+      </div>
+      <div id="rosterList"></div>
+      <hr style="border:none;border-top:1px solid #2b3a77;margin:8px 0">
+      <div class="small">Kliknij „Wejdź jako”, aby zobaczyć chat oczami danej osoby (symulacja odczytów).</div>
+      <div class="row" style="margin-top:8px">
+        <select id="viewAs"></select>
+        <button class="btn" id="btnViewAs">Wejdź jako</button>
+      </div>
+      <hr style="border:none;border-top:1px solid #2b3a77;margin:8px 0">
+      <h4 style="margin:6px 0">Zaplanowane</h4>
+      <div id="scheduledBox" class="small"></div>
+    </aside>
+
+    <!-- PRAWA: główna kolumna -->
+    <main>
+      <div class="card">
+        <div class="row" style="justify-content:space-between">
+          <h3 style="margin:0">Kanał: Wszyscy / Grupowe</h3>
+          <div class="statusline" id="statusLine"></div>
+        </div>
+        <div id="chatBox" class="chatbox scroll" aria-live="polite" aria-label="Wiadomości"></div>
+      </div>
+
+      <!-- KOMPOZYTOR -->
+      <div class="card composer">
+        <div class="row">
+          <div class="recipients" id="rcpts"></div>
+          <div class="right">
+            <button class="btn ghost emoji-trigger" id="btnEmoji" type="button">😊 Emotki</button>
+            <label class="btn ghost">📎 Pliki… <input id="fileInput" type="file" multiple hidden></label>
+          </div>
+        </div>
+        <textarea id="msgText" placeholder="Napisz wiadomość… (użyj @Emil, @Adrian, @Szefowa aby wspomnieć)"></textarea>
+        <div class="row">
+          <div class="row">
+            <label>Wyślij jako</label>
+            <select id="fromUser"></select>
+          </div>
+          <div class="row">
+            <label>Do</label>
+            <select id="toUsers" multiple size="3" style="min-width:220px"></select>
+          </div>
+          <div class="row">
+            <label>Harmonogram</label>
+            <input id="dtDate" type="date">
+            <input id="dtTime" type="time" step="60">
+            <button class="btn ghost" id="clearSchedule" type="button" title="Wyczyść termin">✕</button>
+          </div>
+          <div class="right">
+            <button class="btn ok" id="btnSend">Wyślij teraz</button>
+            <button class="btn" id="btnSchedule">Zaplanuj</button>
+          </div>
+        </div>
+        <div id="pendingFiles" class="row small"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- EMOJI PANEL -->
+<div id="emojiPanel" class="emoji-panel" role="dialog" aria-modal="true" aria-label="Wybór emotek">
+  <div class="section-title">Uśmiechy • Gesty • Praca</div>
+  <div class="emoji-grid" id="emojiGrid"></div>
+</div>
+
+<script>
+'use strict';
+
+/* ===== stałe i narzędzia ===== */
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const fmtTime = ts => new Date(ts).toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'});
+const fmtDateTime = ts => new Date(ts).toLocaleString('pl-PL');
+const kb = n => n<1024? n+' B' : n<1048576? (n/1024).toFixed(1)+' KB' : (n/1048576).toFixed(1)+' MB';
+const uid = ()=>'ID_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2);
+function esc(s){return (s??'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+/* ===== dane / storage ===== */
+const LS_MSGS = 'arkon_chat_msgs_v5';
+const LS_SCHED= 'arkon_chat_sched_v1';
+const LS_VIEWAS='arkon_chat_viewas_v1';
+const STAFF = [
+  {id:'emil',   name:'Emil Trynda',    color:'var(--emil)',   dot:'emil',  online:true},
+  {id:'adrian', name:'Adrian Witka',   color:'var(--adrian)', dot:'adrian',online:true},
+  {id:'szef',   name:'Szefowa Gwiazda',color:'var(--szef)',   dot:'szef',  online:true}
+];
+
+let messages = load(LS_MSGS, []);
+let scheduled = load(LS_SCHED, []);
+let viewAs = localStorage.getItem(LS_VIEWAS) || 'emil'; // kto patrzy na czat
+
+/* ===== IndexedDB — pliki ===== */
+let db;
+function dbOpen(){
+  return new Promise((res,rej)=>{
+    const r = indexedDB.open('arkonChatFiles',1);
+    r.onupgradeneeded = ()=>{ const d=r.result; if(!d.objectStoreNames.contains('files')) d.createObjectStore('files',{keyPath:'id'}); };
+    r.onsuccess=()=>{ db=r.result; res(); };
+    r.onerror =()=>rej(r.error);
+  });
+}
+function dbPut(rec){ return new Promise((res,rej)=>{ const tx=db.transaction('files','readwrite'); tx.objectStore('files').put(rec); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
+function dbGet(id){ return new Promise((res,rej)=>{ const tx=db.transaction('files','readonly'); const q=tx.objectStore('files').get(id); q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); }); }
+
+/* ===== ładowanie ===== */
+function load(key,fallback){ try{return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback));}catch{return fallback} }
+function saveMsgs(){ localStorage.setItem(LS_MSGS, JSON.stringify(messages)); }
+function saveSched(){ localStorage.setItem(LS_SCHED, JSON.stringify(scheduled)); }
+
+/* ===== UI: roster ===== */
+function renderRoster(){
+  const box = $('#rosterList'); box.innerHTML='';
+  STAFF.forEach(p=>{
+    const div=document.createElement('div');
+    div.className='item';
+    div.innerHTML = `
+      <span class="dot ${p.dot}" title="${p.name}"></span>
+      <span style="flex:1">${esc(p.name)}</span>
+      <button class="btn ghost" data-act="view" data-id="${p.id}">Wejdź jako</button>
+    `;
+    div.querySelector('[data-act="view"]').addEventListener('click',()=>{
+      viewAs=p.id; localStorage.setItem(LS_VIEWAS,p.id);
+      $('#viewAs').value=p.id;
+      $('#asUserLabel').textContent=p.name;
+      renderChat(); renderScheduled();
+    });
+    box.appendChild(div);
+  });
+  const sel=$('#viewAs'); sel.innerHTML='';
+  STAFF.forEach(p=>{ const o=document.createElement('option'); o.value=p.id; o.textContent=p.name; if(p.id===viewAs)o.selected=true; sel.appendChild(o); });
+  $('#asUserLabel').textContent = STAFF.find(x=>x.id===viewAs)?.name || '—';
+}
+$('#btnViewAs').addEventListener('click',()=>{ const v=$('#viewAs').value; viewAs=v; localStorage.setItem(LS_VIEWAS,v); $('#asUserLabel').textContent=STAFF.find(x=>x.id===v)?.name||'—'; renderChat(); renderScheduled(); });
+
+/* ===== UI: status linii ===== */
+function setStatusLine(){
+  const line=$('#statusLine'); line.innerHTML='';
+  const me = STAFF.find(s=>s.id===viewAs);
+  const now = new Date();
+  line.innerHTML = `
+    <span class="badge ok">Online jako: <b>${esc(me.name)}</b></span>
+    <span class="badge">Dziś: ${now.toLocaleDateString('pl-PL')}</span>
+    <span class="badge">Godzina: ${now.toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'})}</span>
+  `;
+}
+setInterval(setStatusLine, 30000);
+$('#btnPrint').addEventListener('click',()=>window.print());
+
+/* ===== UI: selektory z/from ===== */
+function fillSelectors(){
+  const from=$('#fromUser'); const to=$('#toUsers'); from.innerHTML=''; to.innerHTML='';
+  STAFF.forEach(s=>{
+    const o=document.createElement('option'); o.value=s.id; o.textContent=s.name; from.appendChild(o);
+  });
+  from.value = viewAs;
+  STAFF.forEach(s=>{
+    const o=document.createElement('option'); o.value=s.id; o.textContent=s.name; if(s.id!==from.value) o.selected=true; to.appendChild(o);
+  });
+  renderRecipientsPills();
+}
+$('#fromUser').addEventListener('change', ()=>{ renderRecipientsPills(); suggestMentions(); });
+$('#toUsers').addEventListener('change', renderRecipientsPills);
+
+function renderRecipientsPills(){
+  const box=$('#rcpts'); box.innerHTML='';
+  const toSel = Array.from($('#toUsers').selectedOptions).map(o=>o.value);
+  if(!toSel.length){ box.innerHTML='<span class="chip">Brak odbiorców — wybierz po prawej.</span>'; return; }
+  toSel.forEach(id=>{
+    const p=STAFF.find(x=>x.id===id);
+    const pill=document.createElement('div');
+    pill.className='tag';
+    pill.innerHTML = `<span class="avatar ${'av-'+p.id}">${p.name[0]}</span> ${esc(p.name)}`;
+    box.appendChild(pill);
+  });
+}
+
+/* ===== Emoji ===== */
+const EMOJI = [
+  '😀','😃','😄','😁','😆','🥹','😊','🙂','😉','😍',
+  '😘','😜','🤩','🤗','🤝','👍','👌','🙏','👏','💪',
+  '🧱','🛠️','⚙️','💡','📐','📊','📁','📎','📝','📤',
+  '🚚','🏗️','🏠','🔧','🧰','🧪','⏱️','📅','⏳','✅',
+  '❌','⚠️','ℹ️','💬','🧾','💸','🔋','☀️','🧱','🪵'
+];
+(function buildEmoji(){
+  const grid=$('#emojiGrid'); grid.innerHTML='';
+  EMOJI.forEach(e=>{
+    const b=document.createElement('button'); b.type='button'; b.className='emoji-btn'; b.textContent=e;
+    b.addEventListener('click',()=>{ insertAtCaret($('#msgText'), e); toggleEmoji(false); });
+    grid.appendChild(b);
+  });
+})();
+function toggleEmoji(state){
+  const pnl = $('#emojiPanel');
+  if(state===undefined) pnl.classList.toggle('open');
+  else pnl.classList.toggle('open', !!state);
+  if(pnl.classList.contains('open')){
+    const btn=$('#btnEmoji'); const r=btn.getBoundingClientRect();
+    pnl.style.left=(r.left)+'px'; pnl.style.top=(r.bottom+6+window.scrollY)+'px';
+  }
+}
+$('#btnEmoji').addEventListener('click', ()=>toggleEmoji());
+document.addEventListener('click', (e)=>{ if(!e.target.closest('#emojiPanel') && !e.target.closest('#btnEmoji')) toggleEmoji(false); });
+function insertAtCaret(el, txt){
+  const s=el.selectionStart||0, e=el.selectionEnd||0, v=el.value;
+  el.value = v.slice(0,s) + txt + v.slice(e);
+  const pos = s + txt.length; el.setSelectionRange(pos,pos); el.focus();
+}
+
+/* ===== Załączniki ===== */
+let pendingFiles=[];
+$('#fileInput').addEventListener('change', async (e)=>{
+  const files = Array.from(e.target.files||[]);
+  for(const f of files){
+    const id=uid();
+    const rec={id,name:f.name,size:f.size,type:f.type||'application/octet-stream',blob:f,at:Date.now()};
+    pendingFiles.push(rec);
+  }
+  e.target.value='';
+  renderPendingFiles();
+});
+function renderPendingFiles(){
+  const box=$('#pendingFiles'); box.innerHTML='';
+  if(!pendingFiles.length){ box.innerHTML='<span class="small" style="opacity:.8">Brak załączników.</span>'; return; }
+  pendingFiles.forEach((f,i)=>{
+    const a=document.createElement('span');
+    a.className='pill';
+    a.innerHTML=`📎 ${esc(f.name)} <small>(${kb(f.size)})</small> <a href="#" data-i="${i}" title="Usuń">&times;</a>`;
+    a.querySelector('a').addEventListener('click', (ev)=>{ ev.preventDefault(); pendingFiles.splice(+ev.target.dataset.i,1); renderPendingFiles(); });
+    box.appendChild(a);
+  });
+}
+
+/* ===== Render wiadomości ===== */
+function renderChat(){
+  const box=$('#chatBox'); box.innerHTML='';
+  // sort by time
+  const all = messages.slice().sort((a,b)=> (a.at||0)-(b.at||0));
+  all.forEach(m=>{
+    const from=STAFF.find(s=>s.id===m.from)||{name:'?',id:'?'};
+    const toNames = (m.to||[]).map(id=>STAFF.find(s=>s.id===id)?.name||id);
+    const div=document.createElement('div');
+    div.className = 'msg from-'+from.id;
+    const when = fmtDateTime(m.at);
+    const deliv = (m.to||[]).filter(id=>m.delivered?.includes(id));
+    const reads = Object.entries(m.readBy||{}).map(([id,ts])=>({id,ts}));
+    const deliveredTo = deliv.map(id=>STAFF.find(s=>s.id===id)?.name||id).join(', ') || '—';
+    const readTo = reads.length ? reads.map(r=>(STAFF.find(s=>s.id===r.id)?.name||r.id)+' ('+fmtTime(r.ts)+')').join(', ') : '—';
+    div.innerHTML = `
+      <div class="meta">
+        <span class="chip"><b>${esc(from.name)}</b> → ${esc(toNames.join(', '))}</span>
+        <span class="chip">Wysłano: ${when}</span>
+        ${m.scheduledAt ? `<span class="chip">Plan: ${fmtDateTime(m.scheduledAt)}</span>`:''}
+        <span class="chip">Dostarczono: ${esc(deliveredTo)}</span>
+        <span class="chip">Przeczytano: ${esc(readTo)}</span>
+      </div>
+      <div class="body">${linkify(esc(m.text||''))}</div>
+      <div class="bubble-files" id="files_${m.id}"></div>
+    `;
+    box.appendChild(div);
+    // render files
+    if(m.files && m.files.length){
+      const fb = div.querySelector('#files_'+m.id);
+      m.files.forEach(f=>{
+        const a=document.createElement('a');
+        a.href='#'; a.textContent = '📎 '+f.name+' ('+kb(f.size)+')';
+        a.title='Pobierz';
+        a.addEventListener('click', async (e)=>{
+          e.preventDefault();
+          const rec = await dbGet(f.id);
+          if(!rec){ alert('Plik niedostępny.'); return; }
+          const url = URL.createObjectURL(rec.blob);
+          const link = document.createElement('a'); link.href=url; link.download=rec.name; document.body.appendChild(link); link.click(); link.remove();
+          setTimeout(()=>URL.revokeObjectURL(url), 1500);
+        });
+        fb.appendChild(a);
+      });
+    }
+  });
+  // autoscroll
+  box.scrollTop = box.scrollHeight;
+}
+
+/* ===== wysyłka / planowanie ===== */
+function getToSelection(){ return Array.from($('#toUsers').selectedOptions).map(o=>o.value); }
+function clearComposer(){
+  $('#msgText').value=''; pendingFiles=[]; renderPendingFiles(); $('#dtDate').value=''; $('#dtTime').value='';
+}
+$('#clearSchedule').addEventListener('click', ()=>{ $('#dtDate').value=''; $('#dtTime').value=''; });
+
+$('#btnSend').addEventListener('click', async ()=>{
+  const text = ($('#msgText').value||'').trim();
+  const from = $('#fromUser').value;
+  const to = getToSelection();
+  if(!text && !pendingFiles.length) return alert('Wpisz treść lub dodaj plik.');
+  if(!to.length) return alert('Wybierz odbiorców.');
+  await persistPendingFiles();
+  const msg = { id:uid(), from, to, text, at: Date.now(), delivered: to.slice(), readBy:{},
+                files: pendingFiles.map(f=>({id:f.id,name:f.name,size:f.size,type:f.type})) };
+  messages.push(msg); saveMsgs(); clearComposer(); renderChat(); markReadForViewer();
+});
+
+$('#btnSchedule').addEventListener('click', async ()=>{
+  const text = ($('#msgText').value||'').trim();
+  const from = $('#fromUser').value;
+  const to = getToSelection();
+  const date = $('#dtDate').value, time=$('#dtTime').value;
+  if(!text && !pendingFiles.length) return alert('Wpisz treść lub dodaj plik.');
+  if(!to.length) return alert('Wybierz odbiorców.');
+  if(!date || !time) return alert('Ustaw datę i godzinę.');
+  const when = new Date(date+'T'+time+':00');
+  await persistPendingFiles();
+  const sched = { id:uid(), from, to, text, scheduledAt: when.getTime(), files: pendingFiles.map(f=>({id:f.id,name:f.name,size:f.size,type:f.type})) };
+  scheduled.push(sched); saveSched(); clearComposer(); renderScheduled();
+  alert('Zadanie wysyłki zapisane.');
+});
+
+async function persistPendingFiles(){
+  if(!db) await dbOpen();
+  for(const f of pendingFiles){ await dbPut(f); }
+}
+
+function renderScheduled(){
+  const box=$('#scheduledBox'); box.innerHTML='';
+  if(!scheduled.length){ box.textContent='Brak zaplanowanych.'; return; }
+  const rows = scheduled.slice().sort((a,b)=>a.scheduledAt-b.scheduledAt);
+  rows.forEach(s=>{
+    const from=STAFF.find(x=>x.id===s.from)?.name||s.from;
+    const to=(s.to||[]).map(id=>STAFF.find(x=>x.id===id)?.name||id).join(', ');
+    const div=document.createElement('div');
+    div.style.margin='4px 0';
+    div.innerHTML = `• <b>${esc(from)}</b> → ${esc(to)} • <span class="small">${fmtDateTime(s.scheduledAt)}</span>
+    <div class="small muted" style="margin-top:2px">${esc(s.text.slice(0,120))}${s.text.length>120?'…':''}</div>`;
+    box.appendChild(div);
+  });
+}
+
+/* ===== harmonogram: co 10s sprawdzaj ===== */
+setInterval(()=>{
+  const now=Date.now();
+  const due = scheduled.filter(s=>s.scheduledAt<=now);
+  if(!due.length) return;
+  due.forEach(s=>{
+    messages.push({ id:uid(), from:s.from, to:s.to, text:s.text, at: Date.now(), delivered:s.to.slice(), readBy:{},
+      files:(s.files||[]).slice() });
+  });
+  scheduled = scheduled.filter(s=>s.scheduledAt>now);
+  saveMsgs(); saveSched(); renderChat(); renderScheduled(); markReadForViewer();
+}, 10000);
+
+/* ===== odczyty (perspektywa) ===== */
+function markReadForViewer(){
+  const me=viewAs;
+  let changed=false;
+  messages.forEach(m=>{
+    if(m.to?.includes(me) && !(m.readBy && m.readBy[me])){
+      m.readBy = m.readBy||{};
+      m.readBy[me] = Date.now();
+      changed=true;
+    }
+  });
+  if(changed){ saveMsgs(); renderChat(); }
+}
+
+/* ===== util: linkify ===== */
+function linkify(txt){
+  const urlRE = /(https?:\/\/[^\s]+)/g;
+  return txt.replace(urlRE, (m)=>`<a href="${m}" target="_blank" rel="noopener">${m}</a>`);
+}
+
+/* ===== sugestie wzmianek ===== */
+function suggestMentions(){
+  const f=$('#fromUser').value;
+  const names = STAFF.filter(s=>s.id!==f).map(s=>'@'+s.name.split(' ')[0]);
+  // (podpowiedzi inline, można rozbudować do dropdownu)
+}
+
+/* ===== boot ===== */
+(async function(){
+  await dbOpen();
+  renderRoster();
+  setStatusLine();
+  fillSelectors();
+  renderRecipientsPills();
+  renderChat();
+  renderScheduled();
+  markReadForViewer();
+})();
+
+</script>
+</body>
+</html>
