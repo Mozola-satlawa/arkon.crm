@@ -36,8 +36,7 @@
     .btn.bad{background:transparent;border:1px solid var(--bad);color:#ffb4b4}
     .btn.good{background:var(--good)}
     table{width:100%;border-collapse:collapse}
-    th{font-weight:600;text-align:left;border-bottom:1px solid var(--line);padding:8px 6px;color:var(--muted);font-size:13px;cursor:default;white-space:nowrap}
-    th.sort{cursor:pointer}
+    th{font-weight:600;text-align:left;border-bottom:1px solid var(--line);padding:8px 6px;color:var(--muted);font-size:13px;white-space:nowrap}
     td{border-bottom:1px solid #1a244d;padding:8px 6px;vertical-align:top}
     .scroll{overflow:auto}
     .right{display:flex;gap:8px;justify-content:flex-end}
@@ -48,11 +47,9 @@
     .list-reset{list-style:none;margin:0;padding:0}
     .danger{color:#ffb4b4}
     .status{padding:2px 8px;border-radius:999px}
-    /* klasy statusu (bez spacji) */
     .status.w-toku{background:#24336b}
     .status.podpisana{background:#1d3d2f}
     .status.anulowana{background:#4a1d1d}
-    /* panel boczny (bez modali/okien) */
     .layout{display:grid;grid-template-columns:1fr 340px;gap:16px}
     .side{position:sticky;top:64px;max-height:calc(100vh - 96px);overflow:auto}
     .cart-row{display:flex;align-items:center;gap:8px}
@@ -68,6 +65,7 @@
     <div class="tab" data-tab="clients" tabindex="0">Klienci</div>
     <div class="tab" data-tab="contracts" tabindex="0">Umowy</div>
     <div class="tab" data-tab="products" tabindex="0">Produkty</div>
+    <div class="tab" data-tab="components" tabindex="0">Komponenty</div>
     <div class="tab" data-tab="docs" tabindex="0">Dokumenty</div>
     <div class="tab" data-tab="chat" tabindex="0">Komunikator</div>
     <div class="tab" data-tab="settings" tabindex="0">Ustawienia</div>
@@ -116,9 +114,9 @@
             <table>
               <thead>
                 <tr>
-                  <th class="sort" data-k="id">ID</th>
-                  <th class="sort" data-k="name">Nazwa</th>
-                  <th>E-mail</th><th>Telefon</th><th class="sort" data-k="manager">Opiekun</th>
+                  <th>ID</th>
+                  <th>Nazwa</th>
+                  <th>E-mail</th><th>Telefon</th><th>Opiekun</th>
                 </tr>
               </thead>
               <tbody id="cli-rows"></tbody>
@@ -127,7 +125,7 @@
           </div>
         </div>
 
-        <!-- PANEL BOCZNY: szczegóły klienta -->
+        <!-- PANEL BOCZNY -->
         <aside class="side">
           <div class="card" id="cli-side">
             <h2>Szczegóły klienta</h2>
@@ -170,7 +168,7 @@
               <input id="ctr-prov" class="field" type="number" step="0.1" value="4" placeholder="Prowizja %"/>
               <button id="ctr-create" class="btn">Utwórz z koszyka produktów</button>
             </div>
-            <div class="small" style="margin-top:8px">Wybierz produkty w zakładce <b>Produkty</b> i dodaj je do koszyka po prawej. Tu zapiszesz z tego nową umowę.</div>
+            <div class="small" style="margin-top:8px">Wybierz produkty w zakładce <b>Produkty</b> i/lub <b>Komponenty</b>, dodaj je do koszyka po prawej, a tu zapisz umowę.</div>
           </div>
 
           <div class="card scroll">
@@ -182,7 +180,7 @@
           </div>
         </div>
 
-        <!-- panel boczny: detale umowy + checklista dokumentów -->
+        <!-- panel boczny -->
         <aside class="side">
           <div class="card" id="ctr-side">
             <h2>Szczegóły umowy</h2>
@@ -208,7 +206,7 @@
 
     <!-- PRODUCTS -->
     <section id="tab-products" class="grid" hidden>
-      <h1>Produkty i komponenty</h1>
+      <h1>Produkty</h1>
       <div class="layout">
         <div class="grid">
           <div class="card"><div class="row" id="prod-filters"></div></div>
@@ -222,7 +220,7 @@
         <aside class="side">
           <div class="card">
             <h2>Koszyk oferty</h2>
-            <div id="cart-empty" class="muted">Brak pozycji — dodaj z listy produktów.</div>
+            <div id="cart-empty" class="muted">Brak pozycji — dodaj z listy.</div>
             <div id="cart-list"></div>
             <div class="spacer"></div>
             <div class="row">
@@ -230,6 +228,29 @@
               <div class="card" style="flex:1"><div class="small">Po rabacie</div><h2 id="cart-sum-disc">0 zł</h2></div>
             </div>
             <div class="small muted">Rabat ustawisz przy tworzeniu umowy.</div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- COMPONENTS -->
+    <section id="tab-components" class="grid" hidden>
+      <h1>Komponenty</h1>
+      <div class="layout">
+        <div class="grid">
+          <div class="card"><div class="row" id="comp-filters"></div></div>
+          <div class="card scroll">
+            <table>
+              <thead><tr><th>SKU</th><th>Nazwa</th><th>Kategoria</th><th>Cena</th><th>Dodaj</th></tr></thead>
+              <tbody id="comp-rows"></tbody>
+            </table>
+          </div>
+        </div>
+        <aside class="side">
+          <div class="card">
+            <h2>Koszyk oferty</h2>
+            <div class="small muted">To ten sam koszyk współdzielony z zakładką Produkty.</div>
+            <div id="cart-list-2"></div>
           </div>
         </aside>
       </div>
@@ -257,7 +278,7 @@
           <input id="chat-text" class="field" placeholder="Napisz wiadomość…" />
           <button id="chat-send" class="btn">Wyślij</button>
         </div>
-        <div class="small muted" style="margin-top:8px">To wersja lokalna (bez backendu). Realtime pojawi się po podłączeniu Supabase.</div>
+        <div class="small muted" style="margin-top:8px">Wersja lokalna (bez backendu).</div>
       </div>
     </section>
 
@@ -275,7 +296,7 @@
             </label>
           </div>
           <div class="small" style="margin-top:10px">
-            Zapis lokalny: <code>localStorage</code>. Przycisk poniżej kasuje lokalny stan.
+            Zapis lokalny: <code>localStorage</code>.
           </div>
           <div class="row" style="margin-top:8px">
             <button id="wipe" class="btn bad" title="Usuwa zapis lokalny">Wyczyść zapisane dane</button>
@@ -285,9 +306,6 @@
           <h2>Druk / PDF</h2>
           <div class="row">
             <button class="btn" onclick="window.print()">Drukuj / Zapisz jako PDF</button>
-          </div>
-          <div class="small" style="margin-top:10px">
-            W przyszłości: generowanie PDF umowy na serwerze (Next.js API) i wysyłka do podpisu (OpenSign/DocuSeal).
           </div>
         </div>
       </div>
@@ -373,8 +391,8 @@
     function productBySku(sku){ return seedProducts.find(p=>p.sku===sku); }
     function escapeHtml(s){ return (s||"").replace(/[&<>"]/g,c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c])); }
 
-    // ====== NAWIGACJA (delegacja + bezpieczny switch) ======
-    function showTab(key){
+    // ====== NAWIGACJA z routingiem hash ======
+    function showTab(key,{pushHash=true}={}){
       if(!key) return;
       document.querySelectorAll(".tab").forEach(t =>
         t.classList.toggle("active", t.dataset.tab === key)
@@ -382,18 +400,15 @@
       document.querySelectorAll("section[id^='tab-']").forEach(s => s.hidden = true);
       const sec = document.getElementById("tab-" + key);
       if (sec) sec.hidden = false;
+      if(pushHash) history.replaceState(null, "", "#" + key);
     }
     const nav = document.querySelector(".nav");
-    // klik (odporność na TextNode)
     nav.addEventListener("click", (e) => {
-      const t = e.target;
-      const el = t && t.nodeType === 1 ? t : t.parentElement; // Element, nie TextNode
-      const btn = el && (el.classList.contains("tab") ? el : el.closest(".tab"));
-      if (!btn) return;
+      const el = e.target.closest(".tab");
+      if (!el) return;
       e.preventDefault();
-      showTab(btn.dataset.tab);
+      showTab(el.dataset.tab);
     });
-    // klawiatura
     document.querySelectorAll(".tab").forEach(tab => {
       tab.addEventListener("keydown", (e) => {
         if (e.key === "Enter" || e.key === " ") {
@@ -401,6 +416,10 @@
           showTab(tab.dataset.tab);
         }
       });
+    });
+    window.addEventListener("hashchange", ()=>{
+      const key = (location.hash||"").replace(/^#/,"") || "dashboard";
+      showTab(key,{pushHash:false});
     });
 
     // ====== DASHBOARD ======
@@ -474,7 +493,6 @@
       $("#cli-s-email").textContent = "✉ " + (c.email||"—");
       $("#cli-s-phone").textContent = "📞 " + (c.phone||"—");
       $("#cli-s-notes").value = c.notes||"";
-      // umowy klienta
       const ul = $("#cli-s-contracts"); ul.innerHTML="";
       state.contracts.filter(u=>u.client_id===id).forEach(u=>{
         const li=document.createElement("li");
@@ -496,7 +514,7 @@
     let selectedContractId = null;
     function renderContracts(){
       const tb = $("#ctr-rows"); tb.innerHTML="";
-      state.contracts.sort((a,b)=>b.created_at-a.created_at).forEach(c=>{
+      state.contracts.slice().sort((a,b)=>b.created_at-a.created_at).forEach(c=>{
         const tr=document.createElement("tr");
         tr.innerHTML = `
           <td><a href="#" class="ctr-link" data-id="${c.id}">${c.id}</a></td>
@@ -504,15 +522,12 @@
           <td>${money(c.total)}</td>
           <td><span class="chip">${c.type}</span></td>
           <td><span class="status ${statusClass(c.status)}">${c.status}</span></td>
-          <td>
-            <button class="btn ghost ctr-open" data-id="${c.id}">Szczegóły</button>
-          </td>`;
+          <td><button class="btn ghost ctr-open" data-id="${c.id}">Szczegóły</button></td>`;
         tb.appendChild(tr);
       });
       tb.querySelectorAll(".ctr-open,.ctr-link").forEach(b=>{
         b.addEventListener("click",(e)=>{ e.preventDefault(); openContractSide(b.dataset.id); });
       });
-      // lista klientów do nowej umowy
       const sel=$("#ctr-client"); sel.innerHTML="";
       state.clients.slice().sort((a,b)=>a.name.localeCompare(b.name,"pl")).forEach(c=>{
         const o=document.createElement("option");
@@ -532,7 +547,6 @@
       $("#ctr-s-type").textContent = c.type;
       $("#ctr-s-status").className = "chip " + statusClass(c.status);
       $("#ctr-s-status").textContent = c.status;
-      // dokumenty
       const ul=$("#ctr-docs"); ul.innerHTML="";
       (c.docs||defaultDocList().map(n=>({name:n,done:false}))).forEach((d,i)=>{
         const li=document.createElement("li");
@@ -553,30 +567,7 @@
       $("#ctr-status-signed").onclick = ()=>{ c.status="Podpisana"; saveState(); renderContracts(); openContractSide(id); };
     }
 
-    // tworzenie nowej umowy z koszyka
-    $("#ctr-create").addEventListener("click", ()=>{
-      const items = state.cart.slice();
-      if(!items.length) { alert("Koszyk jest pusty."); return; }
-      const clientId = $("#ctr-client").value;
-      const client = byId(state.clients, clientId);
-      const discount = +$("#ctr-discount").value||0;
-      const prov = +$("#ctr-prov").value||0;
-      const base = items.reduce((s,i)=>s+i.price*i.qty,0);
-      const total = Math.max(0, base - discount);
-      const id = uid("U", state.contracts);
-      const ctr = {
-        id, client_id: client.id, customer: client.name, items, total,
-        type: $("#ctr-type").value, status:"W toku",
-        docs: defaultDocList().map(n=>({name:n,done:false})),
-        commission: Math.round(total*(prov/100)), created_at: Date.now()
-      };
-      state.contracts=[ctr, ...state.contracts];
-      state.cart=[]; saveState();
-      renderContracts(); renderCart(); openContractSide(id);
-      showTab("contracts");
-    });
-
-    // ====== PRODUKTY + KOSZYK ======
+    // ====== PRODUKTY ======
     const prodCats=["wszystko","fotowoltaika","pompy","piece","hydraulika","ocieplenie"];
     function renderProductFilters(){
       const box=$("#prod-filters"); box.innerHTML="";
@@ -605,10 +596,49 @@
           const sku=btn.dataset.sku; const prod=productBySku(sku);
           const row = state.cart.find(i=>i.sku===sku);
           if(row) row.qty++; else state.cart.push({sku,qty:1,price:prod.price});
-          saveState(); renderCart();
+          saveState(); renderCart(); renderCartMirror();
         });
       });
     }
+
+    // ====== KOMPONENTY (wydzielone: hydraulika + ocieplenie) ======
+    const compCats=["wszystko","hydraulika","ocieplenie"];
+    function renderComponentFilters(){
+      const box=$("#comp-filters"); box.innerHTML="";
+      compCats.forEach(c=>{
+        const b=document.createElement("button");
+        b.className="btn ghost"; b.textContent=c;
+        b.addEventListener("click",()=>renderComponents(c));
+        box.appendChild(b);
+      });
+    }
+    function renderComponents(cat="wszystko"){
+      const rows=$("#comp-rows"); rows.innerHTML="";
+      const list=seedProducts.filter(p=>{
+        const isComponent=!["fotowoltaika","pompy","piece"].includes(p.category);
+        return isComponent && (cat==="wszystko"?true:p.category===cat);
+      });
+      list.forEach(p=>{
+        const tr=document.createElement("tr");
+        tr.innerHTML = `
+          <td>${p.sku}</td>
+          <td>${p.name}</td>
+          <td><span class="chip">${p.category}</span></td>
+          <td>${money(p.price)}</td>
+          <td><button class="btn ghost add-comp" data-sku="${p.sku}">Dodaj</button></td>`;
+        rows.appendChild(tr);
+      });
+      rows.querySelectorAll(".add-comp").forEach(btn=>{
+        btn.addEventListener("click",()=>{
+          const sku=btn.dataset.sku; const prod=productBySku(sku);
+          const row = state.cart.find(i=>i.sku===sku);
+          if(row) row.qty++; else state.cart.push({sku,qty:1,price:prod.price});
+          saveState(); renderCart(); renderCartMirror();
+        });
+      });
+    }
+
+    // ====== KOSZYK (wspólny) ======
     function renderCart(){
       const box=$("#cart-list"); const empty=$("#cart-empty");
       box.innerHTML="";
@@ -622,22 +652,40 @@
           <div style="flex:1">${p.name} <span class="small chip">${p.sku}</span></div>
           <input type="number" min="1" value="${i.qty}" data-i="${idx}">
           <div style="width:110px;text-align:right">${money(i.price*i.qty)}</div>
-          <button class="btn ghost" data-del="${idx}">Usuń</button>
-        `;
+          <button class="btn ghost" data-del="${idx}">Usuń</button>`;
         box.appendChild(div);
       });
       box.querySelectorAll('input[type="number"]').forEach(inp=>{
         inp.addEventListener("input",()=>{
           const i=+inp.dataset.i; const v=Math.max(1, +inp.value||1);
-          state.cart[i].qty=v; saveState(); renderCart();
+          state.cart[i].qty=v; saveState(); renderCart(); renderCartMirror();
         });
       });
       box.querySelectorAll('[data-del]').forEach(btn=>{
-        btn.addEventListener("click",()=>{ const i=+btn.dataset.del; state.cart.splice(i,1); saveState(); renderCart(); });
+        btn.addEventListener("click",()=>{ const i=+btn.dataset.del; state.cart.splice(i,1); saveState(); renderCart(); renderCartMirror(); });
       });
       const sum = state.cart.reduce((s,i)=>s+i.price*i.qty,0);
       $("#cart-sum").textContent = money(sum);
       $("#cart-sum-disc").textContent = money(sum);
+    }
+    // lustrzany koszyk w "Komponenty"
+    function renderCartMirror(){
+      const box=$("#cart-list-2"); if(!box) return;
+      box.innerHTML="";
+      if(!state.cart.length){ box.innerHTML='<div class="muted">Koszyk pusty.</div>'; return; }
+      state.cart.forEach((i,idx)=>{
+        const p=productBySku(i.sku);
+        const row=document.createElement("div");
+        row.className="cart-row";
+        row.innerHTML = `
+          <div style="flex:1">${p.name} <span class="small chip">${p.sku}</span></div>
+          <span>${i.qty} × ${money(i.price)}</span>
+          <button class="btn ghost" data-del2="${idx}">Usuń</button>`;
+        box.appendChild(row);
+      });
+      box.querySelectorAll("[data-del2]").forEach(btn=>{
+        btn.addEventListener("click",()=>{ const i=+btn.dataset.del2; state.cart.splice(i,1); saveState(); renderCart(); renderCartMirror(); });
+      });
     }
 
     // ====== DOKUMENTY (wzorzec) ======
@@ -673,7 +721,7 @@
       state.chat.forEach(m=>{
         const div=document.createElement("div");
         const dt = new Date(m.at||Date.now());
-               const hh = dt.toLocaleTimeString("pl-PL",{hour:"2-digit",minute:"2-digit"});
+        const hh = dt.toLocaleTimeString("pl-PL",{hour:"2-digit",minute:"2-digit"});
         div.className="msg";
         div.innerHTML = <strong>[${hh}] ${m.from}:</strong> <span>${escapeHtml(m.text)}</span>;
         box.appendChild(div);
@@ -685,7 +733,7 @@
       state.chat.push({from:"Ja",text:t,at:Date.now()}); $("#chat-text").value=""; saveState(); renderChat();
     });
 
-    // ====== USTAWIENIA: eksport/import/wipe ======
+    // ====== USTAWIENIA ======
     $("#export").addEventListener("click",()=>{
       const data = JSON.stringify(state,null,2);
       const blob = new Blob([data],{type:"application/json"});
@@ -722,11 +770,14 @@
 
     // ====== BOOT ======
     function boot(){
-      showTab("dashboard");
+      const initial = (location.hash||"").replace(/^#/,"") || "dashboard";
+      showTab(initial,{pushHash:false});
       renderDashboard();
       renderClients();
       renderContracts();
-      renderProductFilters(); renderProducts(); renderCart();
+      renderProductFilters(); renderProducts();
+      renderComponentFilters(); renderComponents();
+      renderCart(); renderCartMirror();
       renderDocsMaster();
       renderChat();
     }
