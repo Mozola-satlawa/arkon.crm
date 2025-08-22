@@ -1,0 +1,801 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ARKON • Szablon Umowy (edycja + druk)</title>
+  <meta name="description" content="Edytowalny szablon umowy na podstawie przesłanego PDF — pełny tekst, zapis, eksport, druk.">
+  <style>
+    :root{--bg:#0b1020;--card:#0f1636;--line:#263168;--ink:#e7ecff;--muted:#a3b3ff;--accent:#3a6df0;--ok:#2fbf71;--bad:#ff6b6b;}
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%}
+    body{background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,Arial}
+    header{position:sticky;top:0;z-index:10;background:#0e1433;border-bottom:1px solid var(--line);padding:10px 12px}
+    .wrap{max-width:900px;margin:0 auto;padding:16px}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    button,.btn{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:8px 12px;cursor:pointer}
+    .btn.ghost{background:transparent;border:1px solid var(--accent);color:#cfe0ff}
+    .btn.bad{background:transparent;border:1px solid var(--bad);color:#ffb4b4}
+    .btn.ok{background:var(--ok)}
+    input,select,textarea{background:#0d1530;border:1px solid var(--line);border-radius:8px;color:#var(--ink);padding:8px 10px;font:inherit}
+    .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
+    .muted{color:var(--muted);font-size:13px}
+    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .grid{display:grid;gap:12px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+    /* edytowalna treść */
+    #doc{background:#0f1636;border:1px solid var(--line);border-radius:12px;padding:18px;line-height:1.65;white-space:pre-wrap}
+    #doc[contenteditable="true"]{outline:2px dashed #2b3a77}
+    .small{font-size:12px;opacity:.85}
+    .hl{background:#18235a;border:1px dashed #2b3a77;border-radius:6px;padding:0 3px}
+    /* druk */
+    @media print{
+      header,.toolbar,.card .row,.helper,.muted,.pill{display:none!important}
+      body{background:#fff;color:#000}
+      #doc{border:0;outline:0}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="toolbar">
+        <a class="btn ghost" href="index.html">← Menu główne</a>
+        <button id="btnEdit" class="btn">Tryb edycji: <span id="st">WŁ.</span></button>
+        <button id="btnSave" class="btn ok">Zapisz</button>
+        <button id="btnLoad" class="btn ghost">Wczytaj zapis</button>
+        <button id="btnClear" class="btn bad">Wyczyść zapis</button>
+        <button id="btnPrint" class="btn">Drukuj / PDF</button>
+        <span class="pill">Autosave: <b id="as">ON</b></span>
+      </div>
+      <div class="small muted" style="margin-top:6px">
+        Pełny tekst zaimportowany z PDF. Edytuj bezpośrednio w treści (zachowujemy łamania wierszy). Zmiany zapisywane w localStorage.
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="card helper">
+      <div class="row">
+        <input id="find" placeholder="🔎 znajdź (np. &quot;Nabywca&quot;)" style="min-width:240px">
+        <input id="repl" placeholder="zamień na…">
+        <button id="btnReplace" class="btn ghost">Zamień wszystkie</button>
+        <button id="btnMark" class="btn ghost">Podświetl znalezione</button>
+        <span class="muted">Możesz masowo podmienić dane (np. nazwę klienta).</span>
+      </div>
+    </div>
+
+    <div id="doc" class="card" contenteditable="true">1 
+         
+  
+UMOWA NR  ………..................…………  
+ 
+zawarta  w dniu ……………… 202 ...... roku  w …………………………………. pomiędzy:  
+ 
+Imię  i nazwisko   
+Nr PESEL   
+Adres zamieszkania:  
+ulica, numer domu, nr lokalu   
+kod i miejscowość   
+poczta   
+telefon kontaktowy   
+adres e -mail   
+Adres do korespondencji (jeśli jest inny niż adres siedziby):  
+ulica, numer domu, nr lokalu   
+kod i miejscowość   
+poczta   
+ 
+  
+ 
+ 
+ 
+  
+ 
+ 
+  
+ 
+OŚWIADCZENIE  
+ 
+budowalnych, remontowych lub montażowych przez co najmniej 1 rok, co znajduje potwierdzenie  w danych 
+ 
+Umowy.  
+ 
+ 
+adres e-mail: biuro@arkoncentrum.pl, tel. 604 520 195, reprezentowan ą, reprezentowan ą przez:
+zwanymi dalej łącznie: Stronami.
+PW ARKON o świadcza, że zgodnie z wymogami Programu Priorytetowego „Czyste Powietrze” dzia ła na rynku us ług
+zawartych w publicznym rejestrze przedsi ębiorców wskazanym w oznaczeniu Arkon w komparycji niniejszej
+a Zamawiającym: zwanym dalej
+IX  Wydział  Gospodarczy Krajowego Rejestru Sądowego pod numerem 0000255361,Przedsiębiorstwem Wielobran żowym ARKON Czes ław i Krystyna Sobaniak sp.j. z siedzib ą w Przemkowie, adres:
+ 
+Rejestru  Sądowego –prowadzonego  przez  Sąd Rejonowy  dla  Wrocławia  – Fabrycznej we  Wrocławiu,ul. Fabryczna 12C, 59-170 Przemk ów, wpisan ą do Krajowego Rejestru S ądowego
+przez: Krystynę Sobaniak zwaną dalej , PW ARKON  REGON: 020258190, NIP: 5020038830,
+
+ 
+ 
+ 
+    2 
+         
+  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+§ 1 PRZEDMIOT UMOWY  
+ 
+1. Przedmiotem Umowy jest kompleksowa usługa montażu komponentów wybranych  w § 1 pkt. 2, 
+tj. sprzedaż urządzeń i/lub materiałów dostarczenie ich do miejsca montażu, montaż wraz  
+z wykonaniem niezbędnej instalacji oraz ich uruchomienie.  
+2. Zamawiający zleca wykonanie kompleksowej  usługi:  
+Adres montażu: 
+………………………………………………………………………………………………………………………………………...  
+ 
+a) montażu  ……………………………………………………………………………………………………………  tj.  montaż  
+urządzeń  producenta   …………………………………………..……..  model………………………………….……….  
+sztuk…………… wraz  z przyłączeniem się do istniejącej instalacji hydraulicznej (od miejsca wpięcia do 
+zastanej instalacji do momentu ponownego wpięcia do niej) i/lub elektrycznej od miejsca wpięcia 
+ 
+wraz  z niezbędną modernizacją instalacji CO  i CWU.  
+Wynagrodzenie  w kwocie netto …………………..………….… zł  …………………………………………………………..  
+brutto (VAT 8%).  
+ 
+b)    Ocieplenie poddasza/stropu pianą PUR – ilość m2…………….... grubość……………  
+Wynagrodzenie  w kwocie netto …………………..………….… zł  …………………………………………………………..  
+brutto (VAT 8%) . 
+ 
+c) Ocieplenie ścian zewnętrznych – materiał styropian ..............................................ilość 
+m2…………….  grubość……………..  
+Wynagrodzenie  w kwocie netto …………………..………….… zł  …………………………………………………………..  
+brutto (VAT 8%) . 
+ 
+d)     Tynk ilość m2 ………………………….. kolor nr ………………………………..  
+Wynagrodzenie  w kwocie netto …………………..………….… zł  …………………………………………………………..  
+brutto (VAT 8%) . 
+ 
+e) Klimatyzacja – marka………ilość  jednostek………….moc……………………  
+Wynagrodzenie  w kwocie netto …………………..………….… zł …………………………………………………………..  
+brutto (VAT 8%).  
+ 
+f) Instalacja fotowoltaiczna  – 
+Moc instalacji ( licząc sumaryczną moc modułów fotowoltaicznych ) - …………………….  
+Ilość modułów fotowoltaicznych  ……………, nazwa  ………………………………..……  
+do zastanej instalacji w pomieszczeniu monta żu urządzenia, a PW ARKON zobowi ązuje się do jego wykonania
+
+
+ 
+ 
+ 
+    3 
+         
+  
+ 
+ 
+ 
+ 
+moc  jednostki ………… .. 
+Typ inwertera ( 3F – trzy fazowy, 1F – jednofazowy ) - ………………………………………..  
+Nazwa inwertera - ………………………………………….  
+Typ montażu ( dach skośny, płaski, grunt) - ……………………………………..  
+ 
+ 
+Wynagrodzenie  w kwocie netto …………………..………….… zł  …………………………………………………………..  
+brutto (VAT 8%) . 
+ 
+g) Okna łącznie: ........................ilość .........................m2 kolor (w przypadku braku wpisu domyślny 
+kolor  biały)…………………  
+1) szer. .........................  wys.  .........................     2)  szer. .........................  wys.  .........................      
+3) szer. .........................  wys.  .........................     4)  szer. .........................  wys.  .........................      
+5) szer. .........................  wys.  .........................     6)  szer. .........................  wys.  .........................      
+7) szer. .........................  wys.  .........................     8)  szer. .........................  wys.  .........................      
+9) szer. .........................  wys.  .........................     10)  szer. .........................  wys.  .........................      
+ 
+Wynagrodzenie  w kwocie netto …………………..………….… zł  …………………………………………………………..  
+brutto (VAT 8%) . 
+ 
+15) Drzwi wejściowe: szerokość…………. wysokość…………….. kolor  ……………………………………..  
+Wynagrodzenie  w kwocie netto …………………..………….… zł  …………………………………………………………..  
+brutto (VAT 8%) . 
+ 
+h)    Inne : ................................... .............................................................................................................................. ...............  
+Wynagrodzenie  w kwocie netto …………………..………….… zł  …………………………………………………………..  
+brutto (VAT 8%) . 
+ 
+i) Audyt energetyczny do Programu Czyste Powietrze – TAK   NIE 
+Wynagrodzenie  w kwocie netto …………………..………….… zł  …………………………………………………………..  
+  
+ 
+§ 2 TERMIN WYKONANIA 
+UMOWY  
+1. 
+pod warunkiem terminowej zapłaty przez Zamawiającego kwoty wskazanej  w § 4 pkt. 1 oraz 
+dostępności urządzeń/materiałów na polskim rynku  handlowym.  
+2. Opóźnienie spowodowane brakiem dostępności urządzeń/materiałów na polskim rynku 
+handlowym lub  warunkami np. atmosferycznymi czy technicznymi nie stanowi podstawy  
+Przedmiot Umowy zostanie wykonany przez PW ARKON w terminie ustalonym zgodnie z § 2 pkt 3,brutto (VAT 23%). W przypadku wykonania us ługi termomodernizacji w firmie PW Arkon, klient p łaci tylko
+Vat 23% za audyt energetyczny wymagany do Programu Czyste Powietrze.
+
+ 
+ 
+ 
+    4 
+         
+  
+ 
+ 
+ 
+ 
+formułowania roszczeń ze strony Zamawiającego.  Wówczas  termin  zakończenia  prac  ulega  
+odpowiedniemu  przedłużeniu.  
+3. Data rozpoczęcia  i zakończenia prac będą ustalone indywidualnie  z Zamawiającym 
+uwzględniając możliwości  czasowe Zamawiającego oraz dostępność materiałów  i mocy 
+montażowych.  
+ 
+ 
+§ 3 ODBIÓR PRZEDMIOTU UMOWY  
+Przedmiot/y Umowy zostanie/ą odebrany/e  w miejscu wskazanym  w § 1 ust. 2 Umowy.  
+ 
+ 
+§ 4 WYNAGRODZENIE  
+1. 
+zgodnie  z przedmiotami wymienionymi  w § 1 ust. 2  a-i kwot według rozliczenia  z § 4 pkt.3.  
+ 
+  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+III  PRÓG  
+ 
+ 
+  Jednocześnie Strony ustalają, że kwota  w wysokości 
+…………………………………………………….. zostanie przelana bezpośrednio na konto  
+  
+ 
+ Rozliczenie  całościowe:  
+a) Łączna kwota inwestycji: 
+  
+ 
+  
+  
+  
+ 
+     
+ 
+  
+ 
+ 
+Zamawiający spełnia warunki tego programu.
+....................................Zamawiający zobowiązuje się zapłacić na rzecz PW ARKON, tytułem wykonania przedmiotu Umowy,
+energetyczny (VAT 23%)2.
+3.
+b) Kwota op łacana w ramach Programu Czyste Powietrze § 4 pkt.2
+c) Kwota op łacana w ramach kredytu
+...................................................................... 
+d) Kwota op łacana przez Zamawiaj ącego (wk ład własny):
+ 
+..................................................................... +audyt energetyczny................z §  4 pkt 1 ............................................... + audyt......PW ARKON przez WFO ŚiGW w ramach programu Czyste Powietrze, je śliŁącznie § 1pkt.2 a-i: kwota netto ............. ..................... zł .................... ........... brutto (VAT 8%).
+ 
+Audyt energetyczny  kwota netto ................................... z ł .................................brutto ( VAT 23%).
+
+ 
+ 
+ 
+    5 
+         
+   
+  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+  
+ 
+ 
+II  PRÓG  
+ 
+ 
+ 
+ 
+ 
+ 
+ 2.        Jednocześnie Strony ustalają, że kwota  w wysokości 
+……………………………………………………..  zostanie przelana bezpośrednio na konto  
+  
+  
+3.        Rozliczenie  całościowe:  
+a) Łączna kwota inwestycji: 
+  
+b) Kwota opłacana  w ramach Programu Czyste Powietrze § 4 pkt.2 
+  
+c) Kwota opłacana  w ramach kredytu  
+  
+d) Kwota opłacana przez Zamawiającego (wkład własny): 
+  
+     
+ 
+  
+  
+ 
+ 
+ 
+ 
+I  PRÓG  
+ 
+ 
+ 
+ 
+ 2.        Jednocześnie Strony ustalają, że kwota  w wysokości 
+……………………………………………………..  zostanie przelana bezpośrednio na konto  
+Zamawiajacego  przez  WFOŚiGW  w ramach  programu  Czyste  Powietrze,  jeśli  
+Zamawiający  spełnia  warunki  tego  programu.  
+3.        Rozliczenie  całościowe:  
+a) Łączna kwota inwestycji: 
+  
+b) Kwota opłacana  w ramach Programu Czyste Powietrze § 4 pkt.2 
+  
+  
+  
+  
+        
+ 
+ 
+…...................................... zł  
+....................................
+......................................................................PW ARKON przez WFO ŚiGW w ramach programu Czyste Powietrze, je śli
+Zamawiający spełnia warunki tego programu.
+......................................................................
+z §  4 pkt 1 ............................................... + audyt ...........
+z §  4 pkt 1 ............................................... + audyt .............
+.................................... +audyt energetyczny................
+c) Kwota op łacana w ramach kredytu
+...................................................................... 
+ 
+d) Kwota op łacana przez Zamawiaj ącego (wk ład własny):
+ 
+ .......................................... +audyt energetyczny................
+
+ 
+ 
+ 
+     
+         
+  
+ 
+ 
+ 
+ 
+         
+         
+  
+5.      W przypadku braku dofinansowania  z WFOŚiGW  w terminie do 3 dni roboczych od daty 
+ 
+zaliczkę  w wysokości min. 50% wynagrodzenia brutto wskazanego  w § 4.3a tj. kwoty 
+ 
+40% wynagrodzenia brutto wskazanego  w §4.3a tj. kwoty ……………..…………… zł oraz przyjmie 
+protokół przekazania sprzętu zgodnie  z §2 OWU.  
+wskazany  w § 4 pkt 4  w terminie do 3 dni roboczych od daty podpisania protokołu odbioru zgodnie  
+z §2 OWU.  
+ 
+ 
+§ 5 FAKTURA VAT  
+ 
+  
+dokumentującą  sprzedaż.  
+3. Zamawiający wyraża/nie wyraża* zgody na otrzymanie faktury  w formie elektronicznej na 
+adres e -mail wskazany do kontaktu.  
+ 
+§ 6 POSTANOWIENIA KOŃCOWE  
+1. Umowę sporządzono  w 2 jednobrzmiących egzemplarzach  z przeznaczeniem 1 egz. dla 
+  
+2. Zamawiający oświadcza, że wyraża zgodę na przetwarzanie jego danych osobowych przez 
+  
+3. Zmiana  Umowy  wymaga  formy  pisemnej  pod rygorem  nieważności.  
+4. Ewentualne  spory  Strony  poddają  pod rozstrzygnięcie  sądu  powszechnego  właściwego  dla 
+siedziby  pozwanego  lub miejsca wykonania  Umowy.  
+5. W sprawach nieuregulowanych  w Umowie znajdują zastosowanie przepisy Kodeksu 
+Cywilnego  i ustawy  o prawach konsumentów.  
+6. Wszelkie zmiany, zwane dalej zakresem prac dodatkowych, muszą być sporządzone na piśmie  
+i podpisane przez obie strony. Zamawiający zobowiązuje się do podpisania zakresu prac 
+dodatkowych  w terminie do 2 dni od jego dostarczenia. Po tym terminie zakres prac 
+  
+  
+7. Zamawiający oświadcza, iż jest twórcą odpadów powstałych  w czasie wykonywanych prac. 
+Odpady zutylizuje na koszt własny zgodnie  z obowiązującymi przepisami  prawnymi.  
+ 
+ZAM AWIAJĄCY  
+      
+6PW ARKON
+41 1020 3017 0000 2402 0550 1871
+Zamawiającego i 1 egz. dla PW ARKON.
+PW ARKON  w zakresie niezb ędnym do wykonania Umowy.
+dodatkowych uznany zostaje za zaakceptowany przez obie strony, a PW ARKON wystawi FV
+na wartość w nim ustalon ą. o nr:
+zawarcia niniejszej Umowy Zamawiający wpłaci na rachunek bankowy PW ARKON wskazany w § 4 pkt 4
+....................................  zł. W dniu  dostarczenia  przedmiotu  Umowy  Zamawiający  dokona  wpłaty
+6.      Pozostała  część  wynagrodzenia zostanie zapłacona przez Zamawiającego na rachunek PW ARKON
+ 
+2. W dniu podpisania protoko łu odbioru, okre ślonego w § 3, PW ARKON wystawi faktur ę VAT4. Wynagrodzenie zostanie wp łacone na rachunek bankowy PW ARKON prowadzony przez PKO BP SA
+1.  PW ARKON o świadcza, że jest czynnym podatnikiem podatku VAT o numerze NIP: 5020038830.
+
+ 
+ 
+ 
+     
+         
+  
+ 
+                   
+ 
+ 
+Załącznik nr 2  
+ 
+ 
+ 
+1.  
+ 
+ 
+ 
+ 
+ 
+OGÓLNE WARUNKI DO UMOWY (OWU)  
+§1 Pojęcia  i przedmiot Umowy  
+a)  
+b) 
+    
+a podmiotem wykonującym czyli  Wykonawcą.  
+d) Umowie oznacza to:  zgodne porozumienie Stron ustalające ich wzajemne prawa lub  obowiązki.  
+e) Wynagrodzeniu  
+f) Adresie montażu oznacza to miejsce  w którym będą wykonywane prace zawarte  w Umowie  
+g) Czystym Powietrzu oznacza to: ogólnopolski program dopłat do wymiany starych pieców oraz docieplenia domów jednorodzinnych 
+ 
+h) Inwestycji oznacza to : zakres prac opisany  w Umowie  
+i) oznacza to: prace, które należy wykonać  a nie znajdują się  w specyfikacjach  i Umowie poprzez co nie są 
+przedmiotem Umowy  i nie są ujęte  w kwotach  Umowy.  
+2. Przedmiot  i wykonanie  Umowy  
+a)  
+ 
+ 
+b) 
+  
+c) 
+  
+montażu  parapetów  do 30 dni licząc  od daty  odbioru  ocieplenia  pod rygorem  utraty  gwarancji  na ten  zakres  prac.  
+d) 
+ 
+e) 
+ 
+  
+ 
+ 
+ 
+f) 
+ 
+g) 
+o wskaźnik cen towarów  i usług konsumenckich ogłaszany przez prezesa GUS. Wzrost składników cenotwórczych usług nie większy niż 
+ 
+wynagrodzenia określonego  w Umowie także  w przypadku zmiany stawki podatku VAT od towarów  i usług.  
+h) Zamawiający może bez ponoszenia dodatkowych kosztów odstąpić od umowy  w terminie 14 dni od dnia otrzymania przez Zamawiającego 
+ 
+wystąpienia wyżej opisanych  okoliczności.  
+§2 ODBIÓR PRZEDMIOTU UMOWY:  
+1. Potwierdzeniem dostarczenia przedmiotu Umowy będzie protokół przekazania sprzętu  i prac sporządzony  w dwóch jednobrzmiących 
+ 
+2. 
+ 
+  
+§3 USTERKI  I NIEPRAWIDŁOWOŚCI  
+ 
+ 
+ 
+7
+ 
+ 
+prowadzony przez WFO ŚiGW.
+Pracach  Dodatkowych
+Wymagania  dotyczące  przedmiotu  Umowy  muszą  być  zgodne z przedstawioną  wcześniej  przez PW ARKON    specyfikacją, z zastrzeżeniem  iż
+w przypadku konieczności wprowadzenia zmian wynikających ze specyfiki montażu w danym miejscu Strony zobowiązane są  uprzednio
+sporządzić zlecenie wykonania pracdodatkowych.
+Zamawiający  oświadcza, iż możliwy  jest montaż zgodny  ze specyfikacją i dysponuje  wszelkimi wymaganymi zgodami  w tym  zakresie,
+a odpowiedzialno ść za ewentualny monta ż przed uzyskaniem stosownych zezwole ń obciąża wyłącznie Zamawiaj ącego.
+Jeśli przedmiotem Umowy jest wykonanie ocieplenia ścian zewnętrznych Strony zgodnie ustalają, że wykonanie parapetów leży po stronie
+Zamawiającego i nie jest ono przedmiotem Umowy, chyba że Strony  ustalą inaczej osobny zapisem. Zamawiający  zobowiązuje  się do
+Zamawiający  zobowiązuje  się  udostępnić  PW ARKON  na  czas  trwania  umowy  wszystkie  pomieszczenie, w których  mają  być  wykonywane
+umówione prace, a także pomieszczenia sanitarne, wodę i prąd. Koszt zużycia mediów ponosi Zamawiający.
+Zamawiający  oświadcza,  że  nie  zachodzą  jakiekolwiek  okoliczności,  które  mogłyby  uniemożliwić  wykonanie  Umowy, w tym
+wytrzymałości  konstrukcyjnej  budynku.  Zamawiający  ponosi  wyłączną  odpowiedzialność z tytułu  prawidłowości  powyższego
+oświadczenia. PW ARKON może  dokonać  dodatkowej  ekspertyzy  wytrzymałości  budynku  za  dodatkową  opłatą  uzgodnioną  przez  Strony
+w formie  odr ębnego  porozumienia  zawartego  pomi ędzy  Zamawiaj ącym a PW ARKON. W przypadku  braku  ekspertyzy  PW ARKON  nie  ponosi
+jakiejkolwiek  odpowiedzialności  za  ewentualne  szkody  powstałe w związku z nieprawdziwością  powyższego  oświadczenia
+Zamawiającego.
+PW ARKON  ma  prawo  posługiwać  się  dla  celów  wykonania  Umowy w całości  lub w części  podwykonawcami  wybranymi  według  własnego
+uznania , za których działania PW ARKON odpowiada jak zawłasne.
+Strony zastrzegają iż w okresie od podpisania Umowy a przed wykonaniem jej w całości przez PW ARKON, wynagrodzenie PW ARKON może ulec zmianie
+2%  nie  będzie  stanowił  podstawy  do  ubiegania  się o wzrost  wartości  umowy.  PW ARKON  przewiduje  możliwość  zmiany  wysokości
+informacji o zmianie  wysoko ści  wynagrodzenia  ponosz ąc  wyłącznie  koszty  udokumentowane  przez  PW ARKON  jakie  poni ósł  do  momentu
+egzemplarzach, podpisanych przez Zamawiającego i PW ARKON lub upoważnione przez nichosoby.
+PW ARKON  informuje  Zamawiającego o zakończeniu  prac i ustala  termin  odbioru  prac i podpisania  protokołu  odbioru. W sytuacji  gdy
+Zamawiający uniemożliwia odbiór prac i/lub podpisania protokołu odbioru lub nie stawi się na ustalony termin, PW ARKON ma prawoZa każdym razem gdy mowa jest o :
+nieprawidłowości i usterek  powinno  być  potwierdzone  protokołem  podpisanym  przez  Zamawiającego i PW ARKON  lub  ich  upoważnionych1. PW ARKON zobowi ązuje się do należytego wykonania Umowy, w szczeg ólności zaś do dostarczenia urz ądzeń bezwad.
+2. Jeżeli w trakcie odbioru zostan ą stwierdzone nieprawid łowości lub usterki PW ARKON zobowi ązuje się do ich niezw łocznego usuni ęcia. Usuni ęcieoznacza to : kwotę należną za poprawne wykonanie pracy/zleceniaoznacza to: firmę lub osobę fizyczną , która zamawia określone dobra lub usługi lub zleca wykonanie prac
+umowy  oznacza  to  podmioty  uczestniczące w umowie  ,  jest  to  podmiot  zlecający  wykonanie    prac  zwany  ZamawiającymPrzedsiębiorstwem Wielobran żowym ARKON Czes ław i Krystyna Sobaniak sp.j.i/lub wykonawc ędanego zlecenia dzia łającego na zlecenie
+ PW ARKON
+StronachZamawiającym
+PW AR KON
+wyznaczyć dodatkowy termin. W przypadku kolejnej nieskutecznej próby odbioru prac PW Arkon dokona jednostronnego odbioru prac
+i podpisania protoko łu odbioru. Tak sporz ądzony protok ół stanowi podstaw ę zapłatywynagrodzenia.c)
+
+ 
+ 
+ 
+     
+         
+ przedstawicieli.  
+ 
+  
+ 
+ 
+ 
+§4 WYNAGRODZENIE  
+ 
+1. Zamawiający udzieli stosownych informacji koniecznych dla ustalenia wysokości stawki VAT. Prawo do zastosowania stawki 
+podatku VAT 8% powstanie tylko  w przypadku, gdy jest to przewidziane przez obowiązujące przepisy;  w innych przypadkach 
+obowiązuje stawka podatku VAT 23%. Prawo do zastosowania stawki podatku VAT 8% powstaje  w odniesieniu do usług 
+świadczonych  w obiektach budownictwa mieszkaniowego rozumianych jako budynki stałego zamieszkania, tj.  w przypadku 
+lokali mieszkalnych, których powierzchnia użytkowa nie przekracza 150 m2  a w przypadku budynków mieszkalnych 
+jednorodzinnych, jeżeli powierzchni użytkowa nie przekracza 300 m2. 
+ 
+a) w lokalu  mieszkalnym,  którego  powierzchnia  użytkowa  nie przekracza/przekracza  150  m2*,  
+b) w budynku mieszkalnym jednorodzinnym, którego powierzchnia użytkowa nie przekracza/przekracza 300 
+m2*. Zamawiający oświadcza, że jest uprawniony/nie jest uprawniony do skorzystania  z 8% stawki podatku VAT . 
+W przypadku zakwestionowania przez organy podatkowe zastosowanej stawki podatku VAT, Zamawiający zobowiązuje się 
+ 
+użytkową). Ewentualne konsekwencje  finansowe  
+złożenia przez Zamawiającego nieprawdziwych oświadczeń  o powierzchni użytkowej lub braku współdziałania obciążają 
+Zamawiającego,  
+ 
+a także kwot odpowiadających należnym odsetkom, karom  i wszelkim kosztom  z tym związanym,  w terminie 7 dni od dnia 
+otrzymania pisemnego wezwania.  
+c) 
+Funduszu Ochrony Środowiska  i Gospodarki Wodnej, zwanego  w dalszej części Umowy  WFOŚiGW.  
+2 
+wynagrodzenia uzyskaną dotację pod  rygorem:  
+  
+−  
+− potwierdzenia  złożenia  wniosku  o płatność  w terminie  do 14 dni od daty  podpisania  protokołu  odbioru  przez  Strony,  
+− dopełnienia wszystkich wymaganych przez WFOŚiGW warunków, na co Zamawiający wyraża  zgodę.  
+3 W przypadku braku współdziałania Zamawiającego przy rozliczaniu wniosku końcowego,  w szczególności:  
+−  
+− podanie   fałszywych  danych  lub  zatajenie  stanu  rzeczy  istotnych  dla  prawidłowego  i  rzetelnego rozliczenia  wniosku,  
+− nieudostępnienie wymaganych dokumentów do końcowego rozliczenia  wniosku,  
+− utrudnianie lub uniemożliwienie oględzin  w celu wykonania dokumentacji fotograficznej urządzeń zamontowanych  
+w nieruchomości opisanej  w § 1 ust.  2, 
+− nieprzedłożenie  w terminie  do 14 dni od daty  podpisania  protokołu  odbioru  potwierdzenia złożenia  wniosku  o płatność  do 
+WFOŚiGW,  
+a także  w razie odmowy przyznania przez WFOŚiGW dotacji lub jej wypłatę niższą niż wnioskowana (z winy Zamawiającego), 
+ 
+zapłaty.  
+4 
+wynagrodzenia. Całe  należne  wynagrodzenie  zawiera  również  wartość  ewentualnych  prac  dodatkowych.  
+5 Prace dodatkowe  i inne:  
+a) 
+b) Jeżeli umowa nie zawiera zakresu prac zlecanych przez Zamawiającego, rozliczane będą one  w pracach  dodatkowych.  
+c) Zamawiający oświadcza ,że instalacja C.O  i C.WU są gotowe do przyłączenia pompy ciepła  w związku  z czym Wykonawca nie 
+ingeruje  i nie ponosi odpowiedzialności za wtórną stronę układu np. prawidłowy dobór  grzejników.  
+d) Zamawiający zapewnia miejsce przygotowane do posadowienia jednostki  zewnętrznej.  
+e) Pomieszczenie niezbędne do wykonania prac muszą być uprzątnięte  i usunięte  z nich np. zabudowy meblowe. Jeżeli będą 
+  
+8Zamawiający oświadcza, że usługi zlecone PW ARKON
+wskazania we wniosku nr konta PW ARKON
+złożenia oświadczenia upoważniającego do odbioru kwoty dotacji przez PW ARKON,
+niewskazanie we wniosku o p łatność nr konta PW ARKON,
+PW ARKON nie świadczy us ług w zakresie projekt ów i rysunk ów technicznych. Zamawiaj ący może zlecić takowe specjalistycznej firmie.
+wymagane  prace  związane z wyżej wymienionymi pracami PW ARKON będzie traktował to jako prace dodatkowo płatne 60,00 złbędą wykonywane:
+W przypadku pozytywnej decyzji WFOŚiGW, PW ARKON dopuszcza możliwość wcześniejszego montażu instalacji, zaliczając na poczet
+Zamawiający zobowiązany jest do zapłaty pozostałej kwoty na rzecz PW ARKON w terminie 3 dni od dnia otrzymania wezwania do
+Strony  zgodnie  postanawiają,  że  Zamawiający  nabędzie  własność  przedmiotu  Umowy z chwilą  zapłaty  całego  należnego  PW ARKONw szczególności Zamawiający zobowiązany będzie do zapłaty na rzecz PW ARKON kwoty stanowiącej różnicę w należnym podatku VAT,urządzenia, zmianami dokonanymi przez Zamawiającego lub osoby postronne w ustawieniach urządzenia, wadami lub nieprawidłowościami
+w działaniu  instalacji  hydraulicznej  i/lub  elektrycznej  Zamawiaj ącego,  wezwanie  PW ARKON do  interwencji  uprawnia  PW ARKON  do  wystawienia
+Zamawiającemu FV tytułem prac dodatkowych, wykraczających poza ramy Umowy, w wysokości 500zł netto (pięćset zł netto) plus należny
+podatek VAT oraz  2zł za każdy km ( liczone od adresu PW ARKON do miejsca montażu i z powrotem).3. Jeśli  nieprawid łowe  dzia łanie  instalacji  i/lub  urz ądzenia  zamontowanego  przez  PW ARKON  spowodowane  jest  nieprawid łowym  użytkowaniem
+PW ARKON  oferuje  pomoc w wype łnieniu i rozliczeniu  wniosk ów o uzyskanie  dotacji  „Czyste  Powietrze ”, z Wojew ódzkiegowspółdziałać z PW ARKON w celu  potwierdzenia  prawdziwości  złożonych  powyżej  oświadczeń  (tj.  wykazać  powierzchnię
+
+ 
+ 
+ 
+     
+         
+ netto  /rh 
+f) Jeżeli Zamawiający zmieni zdanie co do rozwiązania technicznego,  a materiał instalacyjny został już zamówiony, zostaje on 
+przekazany Zamawiającemu,  który  zobowiązuje  się opłacić  jego  wartość.  Nowe  rozwiązanie  jest wyceniane  zgodnie   
+z propozycją  Zamawiającego,.  
+g) Wszelkie zmiany muszą być udokumentowane, spisane  i potwierdzone obustronnie przez  Strony.  
+h) części  zestawu 
+hydraulicznego/elektrycznego/budowlanego. Strony dopuszczają możliwość wymiany komponentów na inne, rozliczane 
+aneksem do Umowy.  
+i) 
+elektrycznej i/lub wodno -kanalizacyjnej Zamawiający zobowiązuje się przedstawić ich  schemat.  
+j) 
+Zamawiającego zgłoszonymi mailowo czy pisemnie, pod warunkiem, iż Zamawiający uprzednio odrzucił mailowo czy 
+pisemnie zastrzeżenia Sprzedawcy zgłoszone do takiego polecenia  i podtrzymał swoje  polecenie.  
+ 
+§ 5 PRAWO ODSTĄPIENIA  
+ 
+1. 
+przedsiębiorstwa. Mają Państwo  prawo  odstąpić  od niniejszej  Umowy  w terminie  14 dni, licząc  od dnia  jej podpisania,  bez 
+podania  jakiejkolwiek  przyczyny.  
+2. 
+(analiza stanu budynku, doboru materiałów, rozwiązań technologicznych, złożonych wniosków  i pism, audytu energetycznego, 
+audytu przedmontażowego  i innych)  w kwocie do 12000zł,  a Zamawiający zobowiązuje się do ich opłacenia niezależnie od 
+otrzymanych bądź nie dotacji.  
+3. Odstąpienie od umowy musi nastąpić  w formie  pisemnej.  
+4.  
+ o swojej decyzji  
+o odstąpieniu od niniejszej Umowy  w drodze  jednoznacznego  oświadczenia  (na przykład  pismo  wysłane  pocztą  lub pocztą  
+elektroniczną).  
+5.  
+płatności,  jakie zostały przez Państwa użyte  w pierwotnej transakcji, chyba że wyraźnie zgodziliście się Państwo na inne 
+rozwiązanie;  w każdym przypadku nie poniosą Państwo żadnych opłat  w związku  z tym  zwrotem.  
+6. W przypadku braku otrzymania przez Zamawiającego dotacji  w ramach programu Czyste Powietrze,  o którym mowa  
+w § 4 pkt 2 Umowy zostaje samoczynnie rozwiązana  i uznana przez obie Strony za nieobowiązującą,  a kwotę opłaconą 
+  
+o tym fakcie.  
+7. 
+naruszenia przez Zamawiającego postanowień umowy, w szczególności:  
+ 
+1.⁠ ⁠odmowy odbioru materia łów bez uzasadnienia,  
+2.⁠ ⁠opóźnienia w p łatno ściach przekraczaj ącego 14 dni,  
+ 
+ 
+specjalne zamówienie.  
+ 
+§6 REKLAMACJA - GWARANCJA  I RĘKOJMIA  
+1. Urządzenia/materiały objęte są gwarancją producenta, zgodnie  z terminami  i zasadami wskazanymi  w dokumencie gwarancji 
+wystawionym przez producenta, przekazanym Zamawiającemu wraz  z protokołem odbioru urządzenia/materiału, pod 
+warunkiem  dokonywania przeglądów gwarancyjnych (gdy wymagane) przez autoryzowany przez danego producenta serwis, 
+zgodnie  z częstotliwością wskazaną  w dokumencie  gwarancji.  
+2. 
+ustalany jest corocznie.  
+3. Jeśli Zamawiający,  w ramach okresowej promocji, otrzyma promesę bezpłatnej takiej usługi musi mieć to odzwierciedlenie  
+w formie pisemnej pod rygorem  nieważności.  
+4. 
+5.  
+cywilnym.  
+6. 
+rzeczy Zamawiającemu lub  w przypadku rzeczy używanej przed upływem roku od jej wydania. Roszczenie Zamawiającego  
+o usunięcie wady przedawnia  się z upływem  roku  od dnia  stwierdzenia  wady,  jednakże  nie wcześniej  niż terminy  określone   
+w zdaniu  poprzedzającym.  
+9tel. 604 520 195 
+biuro@arkoncentrum.pl,
+PW ARKON montuj ąc urządzenia/materia ł wykorzystuje podstawowe lecz niezb ędne
+PW ARKON  nie  ponosi  odpowiedzialności  za  szkody  wynikłe z wykonania  czynności  zgodnie z wyraźnymi  poleceniami
+3. działań na szkod ę reputacji PW AR KON poprzez publikacj ę nieprawdziwych lub obra źliwych tre ści w mediach.
+W  przypadku  wypowiedzenia  umowy  przez PW ARKON  Zamawiający  zobowiązuje  się  do  pokrycia  kosztów
+poniesionych  przez  PW ARKON  do  momentu  wypowiedzenia,  w  tym  kosztów  materiałów,  audytów  i  produkcji  naPW ARKON  zapewnia  Zamawiającemu,  będącemu  konsumentem,  prawo  odstąpienia  od  Umowy  zawartej  poza  lokalem
+W sytuacji odstąpienia od Umowy po upływie 14 dni od podpisania Umowy PW ARKON ma prawo naliczyć koszty poniesionych działań
+Aby  skorzystać z prawa  odstąpienia  od  Umowy,  muszą  Państwo  poinformować  nas  tj.:
+Przemkowie, adres: ul. Fabryczna 12 C, 59-170 Przemk ów, e-mail:
+Jeśli w tym okresie dokonali Państwo jakiejkolwiek płatności dla PW ARKON zwrotujej dokonamy przy użyciu takich samych sposobów
+przez Zamawiającego, zgodnie z § 4 pkt.3 d), PW ARKON zwróci na konto Zamawiającego w ciągu 14 dni od powzięcia informacji
+PW ARKON  zastrzega  sobie  prawo  do  wypowiedzenia umowy  ze  skutkiem  natychmiastowym  w  przypadku  rażącego
+PW ARKON może świadczyć usługi przeglądów rocznych o ile są one wymagane przez producenta lub Zamawiającego. Koszt takiej usługi
+Na usługę montażu instalacji i podłączenia PW ARKON udziela Gwarancji na okres 12miesięcy.
+Jeżeli przedmiot Umowy ma wadę Zamawiający, może złożyć reklamację u PW ARKON na zasadach rękojmi, uregulowanych w kodeksie
+PW ARKON  odpowiada z tytu łu rękojmi w przypadku  stwierdzenia  wady w towarze  przed  up ływem  dw óch  lat  od  momentu  wydania  PW AR KON Sp. j.. z siedzib ąW  razie  gdy  informacje  przekazane  przez  Zamawiającego  odbiegają  od  stanu  faktycznego  rozmieszczenia  instalacji
+
+ 
+ 
+ 
+     
+         
+ 7. W przypadku stwierdzenia wady przed upływem roku od momentu wydania rzeczy, przyjmuje się, że istniała ona  w chwili 
+przejścia na Zamawiającego. Jeśli wada zostanie stwierdzona po upływie roku od momentu wydania rzeczy, obowiązek wykazania, 
+że wada istniała            w produkcie  w momencie zakupu spoczywa na  Zamawiającym.  
+8. Jeśli rzecz sprzedana ma wadę, Zamawiający może: złożyć oświadczenie  o żądaniu obniżenia ceny; żądać wymiany produktu na 
+wolny od  wad;  żądać  usunięcia  wady.  Uprawnienie  do wymiany  produktu  na wolny  od wad  jest wyłączone,  gdy wada  jest 
+nieistotna.  
+9. 
+w sposób wybrany przez Zamawiającego jest niemożliwe albo  w porównaniu  z drugim możliwym sposobem doprowadzenia do 
+zgodności  z Umową wymagałoby nadmiernych kosztów. Zamawiający zobowiązany jest udostępnić miejsce prac na czas usunięcia  
+wad.  
+ 
+wymiany na wolną od wad lub usunięciu wady. Zamawiający obowiązany jest jednak ponieść część związanych  z tym kosztów 
+przewyższających cenę rzeczy  sprzedanej.  
+  
+12. W przypadku obniżenia ceny, obniżona cena powinna pozostawać  w takiej proporcji do ceny wynikającej  z Umowy,  w jakiej 
+wartość  rzeczy   z wadą pozostaje do wartości rzeczy bez  wady.  
+ 
+ 
+  
+ 
+ 
+ 
+10
+mailowo biuro@arkoncentrum.pl,PW ARKON  może  odmówić  zadośćuczynienia  żądaniu  Zamawiającego,  jeżeli  doprowadzenie  do  zgodności z Umową  rzeczy  wadliwej
+13. W przypadku zatajenia wady przez PW ARKON up ływ terminu nie wy łącza uprawnie ń z tytułurękojmi.
+14. Adres,  pod  kt óry  można  składać  reklamacje,  jest  zgodny z danymi  rejestrowymi  PW ARKON,  wskazanymi w nag łówku  Umowy  lub10. Jeżeli  rzecz  wadliwa  zosta ła  zamontowana,  Zamawiaj ący  może  żądać  demonta żu i ponownego  zamontowania  po  dokonaniu
+11. PW ARKON odniesie si ę w ciągu 21 dni (roboczych) do otrzymanej reklamacji. Brak odpowiedzi w ww. terminie oznacza uznanie reklamacji.
+                                                  ZAMAWIAJ ĄCY                                                                                                 PW AR KON</div>
+
+    <div class="card small">
+      <div><b>Log ekstrakcji:</b> PyPDF2: OK, pages=10</div>
+      <div class="muted">Jeśli układ różni się od PDF, to normalne dla ekstrakcji tekstu. Wydruk użyje bieżącego układu.</div>
+    </div>
+  </div>
+
+  <script>
+    const KEY = "arkon_umowa_bufor_v1";
+    const docEl = document.getElementById('doc');
+    const stEl  = document.getElementById('st');
+    const asEl  = document.getElementById('as');
+
+    function save(){ localStorage.setItem(KEY, docEl.innerHTML); }
+    function load(){
+      const s = localStorage.getItem(KEY);
+      if(s) docEl.innerHTML = s;
+    }
+    function clearS(){ localStorage.removeItem(KEY); alert('Usunięto zapis.'); }
+
+    // autosave
+    let autosave = true;
+    function toggleEdit(){
+      const on = docEl.getAttribute('contenteditable') === 'true';
+      if(on){ docEl.setAttribute('contenteditable','false'); stEl.textContent='WYŁ.'; }
+      else{ docEl.setAttribute('contenteditable','true'); stEl.textContent='WŁ.'; }
+    }
+
+    document.getElementById('btnEdit').onclick = toggleEdit;
+    document.getElementById('btnSave').onclick = save;
+    document.getElementById('btnLoad').onclick = load;
+    document.getElementById('btnClear').onclick = clearS;
+    document.getElementById('btnPrint').onclick = () => window.print();
+
+    docEl.addEventListener('input', ()=>{ if(autosave) save(); });
+    asEl.onclick = ()=>{
+      autosave = !autosave;
+      asEl.textContent = autosave ? 'ON' : 'OFF';
+    };
+
+    // Find/replace helpers
+    function escapeRegExp(s){ return s.replace(/[.*+?^{{}}()|[\\]\\\\]/g, '\\\\$&'); }
+    document.getElementById('btnReplace').onclick = ()=>{
+      const f = document.getElementById('find').value;
+      const r = document.getElementById('repl').value;
+      if(!f) return;
+      const re = new RegExp(escapeRegExp(f),'g');
+      const tmp = document.createElement('div'); tmp.innerHTML = docEl.innerHTML;
+      function walk(n){ if(n.nodeType===3){ n.nodeValue = n.nodeValue.replace(re, r); } else { (n.childNodes||[]).forEach(walk); } }
+      walk(tmp);
+      docEl.innerHTML = tmp.innerHTML;
+      save();
+    };
+    document.getElementById('btnMark').onclick = ()=>{
+      const f = document.getElementById('find').value; if(!f) return;
+      const parts = docEl.innerText.split(f);
+      if(parts.length <= 1) return alert('Brak dopasowań.');
+      const out = [];
+      for(let i=0;i<parts.length;i++){ out.push(parts[i]); if(i<parts.length-1) out.push('<span class="hl">'+f+'</span>'); }
+      docEl.innerHTML = out.join('');
+      save();
+    };
+
+    // load any saved draft on start
+    load();
+  </script>
+</body>
+</html>
