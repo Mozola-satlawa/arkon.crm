@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARKON — Przesyłanie dokumentów</title>
+<style>
+  :root{ --bg:#0b1020; --p1:#121a34; --p2:#172142; --ink:#e8edff; --muted:#aeb8da; --accent:#4cc9f0; --ok:#2b8a57; --grid:#243059; --card:#0f1533; }
+  body{margin:0;background:linear-gradient(180deg,#0a0f1e,#0c1230 60%,#0a0f1e);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
+  header{padding:16px;background:#11183a;border-bottom:1px solid #1c2750}
+  header h1{margin:0;font-size:22px}
+  nav{background:#172142;display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid #1c2750}
+  nav a{color:#cfe1ff;text-decoration:none;padding:8px 12px;border-radius:999px;border:1px solid #2a3a75}
+  nav a:hover{background:#223160}
+  .wrap{max-width:1100px;margin:auto;padding:20px 16px 60px}
+  .card{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid #1c2750;border-radius:14px;padding:16px;margin-bottom:18px}
+  .card h2{margin:0 0 10px 0;font-size:18px}
+  label{display:block;margin:6px 0 4px;font-size:14px;color:var(--muted)}
+  input[type="file"]{background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:10px;width:100%;color:#aeb8da}
+  input[type="file"]::-webkit-file-upload-button{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:8px;padding:6px 12px;cursor:pointer}
+  .file-list{margin-top:6px;font-size:13px;color:#cfe1ff}
+  .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:10px 14px;cursor:pointer;font-size:15px}
+  .btn:hover{background:#2f3e7a}
+  .right{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
+  .muted{color:var(--muted);font-size:13px}
+  .preview{margin-top:10px;padding:8px;border:1px dashed #2a3a75;border-radius:10px;background:#101a3a}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Przesyłanie dokumentów</h1>
+</header>
+
+<nav>
+  <a href="index.html">Pulpit</a>
+  <a href="kalkulator.html">Kalkulator</a>
+  <a href="komponenty.html">Komponenty</a>
+  <a href="dokumenty.html">Dokumenty</a>
+  <a href="upload.html">Przesył plików</a>
+  <a href="chat.html">Komunikator</a>
+  <a href="ustawienia.html">Ustawienia</a>
+</nav>
+
+<div class="wrap">
+  <form id="uploadForm" enctype="multipart/form-data" method="POST" action="#">
+    
+    <!-- UMOWA -->
+    <div class="card">
+      <h2>Umowa z firmą</h2>
+      <label for="umowa">Dodaj plik (PDF/DOCX)</label>
+      <input type="file" id="umowa" name="umowa" accept=".pdf,.doc,.docx">
+      <div class="file-list" id="umowaList"></div>
+    </div>
+
+    <!-- AUDYT -->
+    <div class="card">
+      <h2>Audyt energetyczny</h2>
+      <label for="audyt">Dodaj plik (PDF/DOCX)</label>
+      <input type="file" id="audyt" name="audyt" accept=".pdf,.doc,.docx">
+      <div class="file-list" id="audytList"></div>
+    </div>
+
+    <!-- DOKUMENT DO AUDYTU -->
+    <div class="card">
+      <h2>Dokument do audytu • Czyste Powietrze</h2>
+      <label for="audytCP">Dodaj plik</label>
+      <input type="file" id="audytCP" name="audytCP" accept=".pdf,.doc,.docx,.jpg,.png">
+      <div class="file-list" id="audytCPList"></div>
+    </div>
+
+    <!-- AUDYT INSTALACJI -->
+    <div class="card">
+      <h2>Audyt rozprowadzenia instalacji</h2>
+      <label for="instalacja">Dodaj plik</label>
+      <input type="file" id="instalacja" name="instalacja" accept=".pdf,.doc,.docx,.jpg,.png">
+      <div class="file-list" id="instalacjaList"></div>
+    </div>
+
+    <!-- POMIARY -->
+    <div class="card">
+      <h2>Pomiary budynku</h2>
+      <label for="pomiary">Dodaj pliki (rysunki, PDF/JPG/PNG)</label>
+      <input type="file" id="pomiary" name="pomiary" accept=".pdf,.jpg,.png" multiple>
+      <div class="file-list" id="pomiaryList"></div>
+    </div>
+
+    <!-- RZUTY -->
+    <div class="card">
+      <h2>Rzut budynku</h2>
+      <label for="rzut">Dodaj pliki (PDF/JPG/PNG)</label>
+      <input type="file" id="rzut" name="rzut" accept=".pdf,.jpg,.png" multiple>
+      <div class="file-list" id="rzutList"></div>
+    </div>
+
+    <!-- KOTŁOWNIA -->
+    <div class="card">
+      <h2>Zdjęcia kotłowni</h2>
+      <label for="kotlownia">Dodaj zdjęcia</label>
+      <input type="file" id="kotlownia" name="kotlownia" accept=".jpg,.png" multiple>
+      <div class="file-list" id="kotlowniaList"></div>
+    </div>
+
+    <!-- FAKTURA ZA PRĄD -->
+    <div class="card">
+      <h2>Faktura za prąd</h2>
+      <label for="faktura">Dodaj plik</label>
+      <input type="file" id="faktura" name="faktura" accept=".pdf,.jpg,.png">
+      <div class="file-list" id="fakturaList"></div>
+    </div>
+
+    <!-- FALOWNIK -->
+    <div class="card">
+      <h2>Zdjęcia falownika</h2>
+      <label for="falownik">Dodaj zdjęcia</label>
+      <input type="file" id="falownik" name="falownik" accept=".jpg,.png" multiple>
+      <div class="file-list" id="falownikList"></div>
+    </div>
+
+    <!-- BUDYNEK -->
+    <div class="card">
+      <h2>Zdjęcia budynku</h2>
+      <label for="budynek">Dodaj zdjęcia</label>
+      <input type="file" id="budynek" name="budynek" accept=".jpg,.png" multiple>
+      <div class="file-list" id="budynekList"></div>
+    </div>
+
+    <!-- PRZYCISKI -->
+    <div class="right">
+      <button type="reset" class="btn">Wyczyść</button>
+      <button type="submit" class="btn">Wyślij wszystkie</button>
+    </div>
+  </form>
+</div>
+
+<script>
+// Funkcja do podglądu nazw plików
+function setupPreview(inputId, listId){
+  const input = document.getElementById(inputId);
+  const list  = document.getElementById(listId);
+  input.addEventListener('change', ()=>{
+    list.innerHTML = '';
+    if(input.files.length){
+      const ul = document.createElement('ul');
+      for(const f of input.files){
+        const li = document.createElement('li');
+        li.textContent = f.name + ' (' + Math.round(f.size/1024) + ' KB)';
+        ul.appendChild(li);
+      }
+      list.appendChild(ul);
+    }
+  });
+}
+
+// Lista pól do podglądu
+['umowa','audyt','audytCP','instalacja','pomiary','rzut','kotlownia','faktura','falownik','budynek']
+.forEach(id => setupPreview(id,id+'List'));
+
+document.getElementById('uploadForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  alert('Pliki zostały przygotowane do wysłania.\n⚠ Uwaga: Aby je faktycznie zapisać na serwerze, trzeba podłączyć backend (np. PHP, Node.js, Supabase).');
+});
+</script>
+
+</body>
+</html>
