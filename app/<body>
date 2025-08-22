@@ -1,0 +1,107 @@
+<body>
+  <!-- NAWIGACJA -->
+  <div class="nav">
+    <div class="brand">ARKON CRM</div>
+    <div class="tab active" data-tab="dashboard">Pulpit</div>
+    <div class="tab" data-tab="clients">Klienci</div>
+    <div class="tab" data-tab="contracts">Umowy</div>
+    <div class="tab" data-tab="products">Produkty</div>
+    <div class="tab" data-tab="docs">Dokumenty</div>
+    <div class="tab" data-tab="chat">Komunikator</div>
+    <div class="tab" data-tab="login">Logowanie</div>
+    <div class="tab" data-tab="settings">Ustawienia</div>
+  </div>
+
+  <!-- KONTENER -->
+  <div class="container">
+    <!-- DASHBOARD -->
+    <section id="tab-dashboard">
+      <h1>Pulpit</h1>
+      <div class="card">Przychody, umowy, prowizje – tutaj będą wykresy.</div>
+      <canvas id="chart-revenue" style="max-height:300px"></canvas>
+    </section>
+
+    <!-- KLIENCI -->
+    <section id="tab-clients" hidden>
+      <h1>Klienci</h1>
+      <div class="card">
+        <input id="cli-search" class="field" placeholder="Szukaj klienta…" />
+        <button id="cli-add" class="btn">Dodaj klienta</button>
+      </div>
+      <div class="card scroll">
+        <table>
+          <thead><tr><th>ID</th><th>Nazwa</th><th>Email</th><th>Telefon</th><th>Opiekun</th></tr></thead>
+          <tbody id="cli-rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- UMOWY -->
+    <section id="tab-contracts" hidden>
+      <h1>Umowy</h1>
+      <div class="card">
+        <h2>Kalkulator umowy</h2>
+        <input id="sum" class="field" type="number" value="20000" placeholder="Kwota brutto (zł)">
+        <input id="months" class="field" type="number" value="60" placeholder="Okres (mies.)">
+        <input id="rate" class="field" type="number" value="7.2" step="0.1" placeholder="Oprocentowanie %">
+        <input id="prov" class="field" type="number" value="4" step="0.1" placeholder="Prowizja %">
+        <div class="card"><b>Rata:</b> <span id="out-rate">0 zł</span></div>
+      </div>
+      <div class="card scroll">
+        <h2>Lista umów</h2>
+        <table>
+          <thead><tr><th>ID</th><th>Klient</th><th>Kwota</th><th>Status</th></tr></thead>
+          <tbody id="ctr-rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- PRODUKTY -->
+    <section id="tab-products" hidden>
+      <h1>Produkty</h1>
+      <div class="card"><div id="prod-filters"></div></div>
+      <div class="card scroll">
+        <table>
+          <thead><tr><th>SKU</th><th>Nazwa</th><th>Kategoria</th><th>Cena</th></tr></thead>
+          <tbody id="prod-rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- DOKUMENTY -->
+    <section id="tab-docs" hidden>
+      <h1>Dokumenty</h1>
+      <div class="card">
+        <ul id="doc-list"></ul>
+        <button id="doc-reset" class="btn ghost">Wyczyść zaznaczenie</button>
+      </div>
+    </section>
+
+    <!-- KOMUNIKATOR -->
+    <section id="tab-chat" hidden>
+      <h1>Komunikator</h1>
+      <div id="chat-box" class="card" style="height:200px;overflow:auto"></div>
+      <input id="chat-text" class="field" placeholder="Wpisz wiadomość…">
+      <button id="chat-send" class="btn">Wyślij</button>
+    </section>
+
+    <!-- LOGOWANIE -->
+    <section id="tab-login" hidden>
+      <h1>Logowanie</h1>
+      <button id="login-google" class="btn">Zaloguj przez Google</button>
+      <button id="login-facebook" class="btn">Zaloguj przez Facebook</button>
+      <button id="logout" class="btn ghost">Wyloguj</button>
+      <div id="user-info" class="card">Nie zalogowano</div>
+    </section>
+
+    <!-- USTAWIENIA -->
+    <section id="tab-settings" hidden>
+      <h1>Ustawienia</h1>
+      <div class="card">
+        <button onclick="window.print()" class="btn">Drukuj / PDF</button>
+        <button id="wipe" class="btn ghost">Wyczyść dane</button>
+        <p class="small">To wersja demo 1-plikowa. Docelowo: Supabase (auth, storage, realtime).</p>
+      </div>
+    </section>
+  </div>
+</body>
