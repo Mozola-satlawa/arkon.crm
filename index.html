@@ -1,805 +1,361 @@
 <!doctype html>
 <html lang="pl">
 <head>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Kalkulator dotacji Czyste Powietrze 2025 – ARKON Przedsiębiorstwo Wielobranżowe, Przemków. Limity pojedyncze i pakietowe, VAT 8/23%, druk, CSV.">
-  <meta name="robots" content="index, follow">
-  <meta name="theme-color" content="#0b1020">
-  <title>Kalkulator Czyste Powietrze 2025 – ARKON</title>
-  <style>
-    :root{--bg:#0b1020;--p1:#121a34;--p2:#172142;--ink:#e8edff;--muted:#aeb8da;--accent:#4cc9f0;--ok:#2b8a57;--warn:#e6a700;--grid:#243059;--danger:#ff6b6b}
-    *{box-sizing:border-box} html,body{height:100%} body{margin:0;background:linear-gradient(180deg,#0a0f1e,#0c1230 60%,#0a0f1e);color:var(--ink);font:16px/1.5 system-ui,Segoe UI,Roboto,Arial}
-    .wrap{max-width:1200px;margin:auto;padding:24px 16px 120px}
-    header{display:flex;gap:12px;align-items:center;margin-bottom:10px}
-    .logo{width:54px;height:54px;border-radius:12px;display:grid;place-items:center;background:#0e1538;border:1px solid #1f2a55;color:var(--accent)}
-    .logo svg{width:42px;height:42px}
-    h1{font-size:22px;margin:0}
-    .muted{color:var(--muted);font-size:13px}
-    .panel{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid #1c2750;border-radius:14px;padding:16px;margin:12px 0;box-shadow:0 10px 30px #0006}
-    .grid{display:grid;gap:12px}
-    @media(min-width:960px){.cols-3{grid-template-columns:repeat(3,1fr)}}
-    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
-    input,select,button,textarea{font:500 15px/1.2 system-ui,Segoe UI,Roboto,Arial;color:var(--ink)}
-    input,select,textarea{width:100%;background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:10px;outline:none}
-    input:focus,select:focus,textarea:focus{border-color:#3b4fa0;box-shadow:0 0 0 3px #3b4fa033}
-    input.num{text-align:right}
-    button{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:12px;padding:10px 12px;cursor:pointer}
-    button.ghost{background:transparent;border:1px dashed #3a4ca3} button.ok{background:#194d34;border-color:var(--ok)}
-    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
-    .tab-btn{background:#233261;border:1px solid #3a4ca3;border-radius:999px;padding:10px 14px}
-    .tab-btn[aria-selected="true"]{background:#1b2550;border-color:#67a1ff;box-shadow:0 0 0 2px #67a1ff44}
-    .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:8px 10px;margin:4px 8px 0 0;font-size:13px;color:var(--muted)}
-    .right{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-    .hidden{display:none}
-    .warn{display:block;background:#2a2100;border:1px solid #6a5400;color:#ffefb0;border-radius:10px;padding:10px;margin-top:10px}
-    table{width:100%;border-collapse:separate;border-spacing:0}
-    th,td{padding:10px;border-bottom:1px solid var(--grid);text-align:left;vertical-align:middle}
-    th.num,td.num{text-align:right}
-    .cap-badge{display:inline-block;margin-left:8px;padding:2px 8px;border:1px solid #ff7b7b;border-radius:999px;font-size:11px;color:#ffdada;background:#3a0e14}
-    .cap-prog{display:inline-block;margin-left:8px;padding:2px 8px;border:1px solid #ffd27b;border-radius:999px;font-size:11px;color:#fff2d2;background:#5a3a0e}
-    .over-panel{box-shadow:0 0 0 2px #ff7b7b55 inset}
-    .chip{display:inline-block;padding:6px 10px;border:1px solid #3750a8;border-radius:999px;background:#17224b;color:#bcd1ff;font-size:12px}
-    .chip.warn{border-color:#8a6e00;background:#302400;color:#ffe9a8}
-    .chip.danger{border-color:#9c2b2b;background:#2b1212;color:#ffd6d6}
-    .toolbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:10px}
-    .subnote{font-size:12px;color:#9fb2ff;margin-top:6px}
-    @media(max-width:860px){
-      .wrap{padding-bottom:160px}
-      .hide-sm{display:none}
-      th:nth-child(4),td:nth-child(4),th:nth-child(5),td:nth-child(5),th:nth-child(7),td:nth-child(7){display:none}
-    }
-    @media print{
-      body{background:#fff;color:#000}
-      .tabs,.tab-btn,.toolbar button,.right button{display:none!important}
-      .panel{box-shadow:none;border:1px solid #bbb;background:#fff}
-      .logo{border:0;box-shadow:none}
-      .cap-badge,.cap-prog{border-color:#000;color:#000}
-    }
-    /* tryb „druk – klient” */
-    .print-client .admin-only,
-    .print-client #warnTop,
-    .print-client .pill:has(#sumCapProg),
-    .print-client .pill:has(#sumOverCap),
-    .print-client .chip,
-    .print-client .subnote { display:none !important; }
-    .client-header{display:flex;align-items:center;gap:12px;margin-bottom:8px}
-    .client-header .logo{width:64px;height:64px}
-    .client-meta{font-size:12px;color:#333}
-    .client-title{font-weight:800;margin:4px 0}
-    .signs{display:flex;gap:40px;margin-top:28px}
-    .sign{flex:1;border-top:1px solid #999;padding-top:6px;text-align:center;font-size:12px}
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ARKON CRM — monolit (Docs + Chat + Kalkulator loader)</title>
+<style>
+  :root{
+    --bg:#0b1020;--card:#0f1636;--line:#263168;--accent:#3a6df0;
+    --text:#e7ecff;--muted:#a3b3ff;--chip:#1a244d;--field:#0e1330;
+    --good:#2fbf71;--warn:#ffb84d;--bad:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font:14px/1.45 system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+  a{color:#cfe0ff;text-decoration:none}
+  .container{max-width:1280px;margin:0 auto;padding:16px}
+  .nav{position:sticky;top:0;z-index:10;display:flex;gap:12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--bg)}
+  .brand{font-weight:700;letter-spacing:.4px}
+  .tab{padding:6px 10px;border-radius:8px;cursor:pointer}
+  .tab.active{background:var(--chip)}
+  .grid{display:grid;gap:16px}
+  .cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  @media (max-width:900px){ .cols-3{grid-template-columns:1fr} }
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .small{opacity:.85;color:var(--muted);font-size:13px}
+  h1{margin:0 0 10px}
+  h2{margin:0 0 10px;font-size:18px}
+  .chip{display:inline-block;padding:4px 8px;border-radius:999px;background:var(--chip)}
+  input,select,button,textarea{font:inherit}
+  .field{background:var(--field);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:10px 12px;outline:0;width:100%}
+  .row{display:flex;gap:8px;flex-wrap:wrap}
+  .btn{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:10px 14px;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px solid var(--accent);color:#cfe0ff}
+  .btn.bad{background:transparent;border:1px solid var(--bad);color:#ffb4b4}
+  .btn.good{background:var(--good)}
+  .list-reset{list-style:none;margin:0;padding:0}
+  .scroll{overflow:auto}
+  .spacer{height:6px}
+  .muted{opacity:.7}
+  .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
+
+  /* Chat */
+  .chat-box{border:1px solid var(--line);border-radius:8px;padding:12px;min-height:240px;max-height:380px;overflow:auto;background:#0d1330}
+  .chat-input{display:flex;gap:8px;margin-top:8px;align-items:center}
+  .bubble{background:#142057;border:1px solid #2a3777;border-radius:10px;padding:8px 10px;margin:6px 0}
+  .bubble .meta{font-size:12px;color:#a8b3ff;opacity:.9;margin-bottom:4px}
+  .dropzone{border:2px dashed #2a3777;border-radius:10px;padding:10px;text-align:center;cursor:pointer}
+  .dropzone.drag{background:#111a3f}
+  .files{margin-top:8px}
+  .file-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid #2a3777;border-radius:999px;margin:4px 6px 0 0}
+  .file-pill small{opacity:.8}
+  /* Loader kalkulatora */
+  .loader{display:flex;align-items:center;gap:10px}
+</style>
 </head>
 <body>
-  <div class="wrap" id="app">
-    <header>
-      <div class="logo" aria-hidden="true">
-        <!-- Wbudowane logo SVG -->
-        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <rect x="8" y="8" width="184" height="184" rx="22" fill="#0e1538"/>
-          <path d="M32 126 L100 46 L168 126" stroke="#4cc9f0" stroke-width="12" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-          <text x="100" y="160" text-anchor="middle" font-family="system-ui,Segoe UI,Roboto,Arial" font-size="28" font-weight="800" fill="#4cc9f0">ARKON</text>
-        </svg>
-      </div>
-      <div>
-        <h1>Kalkulator dotacji • Czyste Powietrze 2025</h1>
-        <div class="muted">Źródło ciepła + ocieplenie/stolarka. Limity pojedyncze i <b>pakietowe</b>, VAT 8/23%, zapis/CSV/druk, wysyłka oferty.</div>
-      </div>
-    </header>
 
-    <div class="tabs" role="tablist" aria-label="Zakładki kalkulatora">
-      <button class="tab-btn" role="tab" aria-selected="true" aria-controls="tab-main" id="tabbtn-main" type="button">Główne (Źródło ciepła)</button>
-      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-env" id="tabbtn-env" type="button">Ocieplenie / Stolarka</button>
-    </div>
+  <!-- NAV -->
+  <div class="nav">
+    <div class="brand">ARKON CRM</div>
+    <div class="tab" data-tab="dashboard" tabindex="0">Pulpit</div>
+    <div class="tab" data-tab="docs" tabindex="0">Dokumenty</div>
+    <div class="tab" data-tab="chat" tabindex="0">Komunikator</div>
+    <div class="tab" data-tab="calc" tabindex="0">Kalkulator</div>
+    <div class="tab" data-tab="settings" tabindex="0">Ustawienia</div>
+  </div>
 
-    <!-- METRYCZKA / USTAWIENIA -->
-    <section class="panel" aria-labelledby="metryczkaTitle">
-      <h2 id="metryczkaTitle" class="muted" style="margin:0 0 8px 0">Metryczka i ustawienia</h2>
+  <div class="container">
+    <!-- DASHBOARD -->
+    <section id="tab-dashboard" class="grid" hidden>
+      <h1>Pulpit</h1>
       <div class="grid cols-3">
-        <div>
-          <label for="typ">Typ gospodarstwa</label>
-          <select id="typ"><option value="">— wybierz —</option><option>JEDNO</option><option>WIELO</option></select>
-        </div>
-        <div>
-          <label for="doch_mies">Miesięczny dochód na osobę [zł]</label>
-          <input id="doch_mies" inputmode="decimal" placeholder="np. 2100">
-        </div>
-        <div>
-          <label for="doch_roczny">Roczny dochód wnioskodawcy [zł]</label>
-          <input id="doch_roczny" inputmode="decimal" placeholder="np. 120000">
-        </div>
-        <div>
-          <label for="swiadczenia">Świadczenia (MOPS/GOPS)</label>
-          <select id="swiadczenia"><option value="">— wybierz —</option><option>TAK</option><option>NIE</option></select>
-        </div>
-        <div>
-          <label for="euDemand">Zapotrzebowanie EU do ogrzewania (kWh/m²·rok)</label>
-          <select id="euDemand">
-            <option value="EU_BELOW_80">Poniżej 80</option>
-            <option value="EU_80_140">80–140</option>
-            <option value="EU_ABOVE_140" selected>Powyżej 140</option>
-          </select>
-        </div>
-        <div>
-          <label for="vatSel">VAT dla obliczeń brutto</label>
-          <select id="vatSel">
-            <option value="0.08" selected>8% (budownictwo mieszkaniowe)</option>
-            <option value="0.23">23% (inne)</option>
-          </select>
-        </div>
-        <div class="pill">Poziom: <b id="poziom">—</b></div>
-        <div class="pill">Procent: <b id="procent">—</b></div>
-        <div class="pill">Źródło pakietu: <b id="catLabel">—</b></div>
+        <div class="card"><div class="small">Przychód (symulacja)</div><h2 id="db-revenue">0 zł</h2></div>
+        <div class="card"><div class="small">Aktywne umowy</div><h2 id="db-open">0</h2></div>
+        <div class="card"><div class="small">Brakujące dokumenty</div><h2 id="db-missing">0</h2></div>
       </div>
-      <div id="warnTop" class="warn hidden">
-        Najwyższy poziom (100%) dla <b>PW+ / GRUNT</b> dostępny jest tylko dla EU <b>&gt; 140 kWh/m²·rok</b>. W innych przypadkach dotacja pakietowa T jest niedostępna (stosowane są wyłącznie limity pojedyncze).
+      <div class="card small">
+        Porady: <span class="kbd">Alt+K</span> Kalkulator • <span class="kbd">/</span> fokus wyszukiwania (w czacie) •
+        zapisz/odtwórz dane w Ustawieniach.
       </div>
     </section>
 
-    <!-- PODSUMOWANIE -->
-    <section id="sumPanel" class="panel" aria-labelledby="sumTitle">
-      <h2 id="sumTitle" class="muted" style="margin:0 0 8px 0">Podsumowanie</h2>
-      <div aria-live="polite">
-        <span class="pill">Wybrane (źródło): <b id="selCountMain">0</b></span>
-        <span class="pill">Wybrane (ocieplenie): <b id="selCountEnv">0</b></span>
-        <span class="pill">Suma dotacji (bez limitu): <b id="sumGrantAll">0</b> zł</span>
-        <span class="pill">Limit pakietu: <b id="sumCapProg">—</b> zł <span id="capBadge" class="cap-prog hidden">LIMIT (pakiet)</span></span>
-        <span class="pill">Dotacja po limicie: <b id="sumGrantCapped">0</b> zł</span>
-        <span class="pill">Nadwyżka ponad limit: <b id="sumOverCap">0</b> zł</span>
-        <span class="pill">Suma dopłaty (brutto): <b id="sumCopayAll">0</b> zł</span>
-        <span class="pill">Min. wymagany wydatek (netto): <b id="sumNeedAll">—</b> zł</span>
-      </div>
-
-      <div style="margin-top:8px">
-        <span id="noteOver" class="chip danger hidden">Uwaga: wykryto nadwyżkę ponad limit pakietu – powiększa dopłatę klienta.</span>
-        <span id="noteNoPack" class="chip warn hidden">Brak limitu pakietowego dla wybranej kombinacji (działają tylko limity pojedyncze).</span>
-      </div>
-
-      <div class="toolbar">
-        <button id="btnSave" class="ghost" type="button">Zapisz</button>
-        <button id="btnLoad" class="ghost" type="button">Wczytaj</button>
-        <button id="btnCSVAll" class="ghost" type="button">CSV (łączny)</button>
-        <button id="btnAutoNeedMain" class="ghost" type="button">Auto: 100% limitu (główne)</button>
-        <button id="btnAutoNeedEnv" class="ghost" type="button">Auto: 100% stawki (ocieplenie)</button>
-        <button id="btnPresetAll" class="ghost" type="button">Wyczyść wybory</button>
-
-        <!-- Druk -->
-        <button id="btnPrintClient" class="ok" type="button">🖨 Drukuj dla klienta</button>
-        <button id="btnPrintSellerFull" class="ghost" type="button">🖨 Druk – sprzedawca (szczegółowy)</button>
-        <button id="btnPrintSellerShort" class="ghost" type="button">🖨 Druk – sprzedawca (skrócony)</button>
-        <button id="btnPrintSellerTech" class="ghost" type="button">🖨 Druk – sprzedawca (techniczny)</button>
-
-        <!-- Wysyłka -->
-        <button id="btnSendClient" class="ghost" type="button">✉ Wyślij e‑mailem (klient)</button>
-        <button id="btnSendFull" class="ghost" type="button">✉ Wyślij e‑mailem (pełny)</button>
-      </div>
-      <div class="subnote">Wysyłka: na telefonach (Chrome/Android) plik udostępni się bezpośrednio; na desktopie zostanie pobrany i otworzy się okno poczty (dołącz pobrany plik).</div>
-
-      <div style="margin-top:10px">
-        <label for="notes">Notatki (zapis lokalny)</label>
-        <textarea id="notes" placeholder="np. nazwisko klienta, telefon, adres inwestycji, uwagi…"></textarea>
+    <!-- DOCUMENTS -->
+    <section id="tab-docs" class="grid" hidden>
+      <h1>Dokumenty do pobrania</h1>
+      <div class="card">
+        <ul class="list-reset">
+          <!-- Pliki muszą leżeć w tym samym katalogu co index.html -->
+          <li><a href="zalacznik_do_instrukcji_wniosku_o_dofinansowanie_wzor_dyspozycji_wyplaty_zaliczki-14-06-2024.pdf" download>📄 Wzór dyspozycji wypłaty zaliczki (PDF)</a></li>
+          <li><a href="UMOWA Z WYKONAWCĄ  arkon.pdf" download>📄 Umowa z wykonawcą (PDF)</a></li>
+          <li><a href="PEŁNOMOCNICTWO.docx" download>📄 Pełnomocnictwo (DOCX)</a></li>
+          <li><a href="OŚWIADCZENIE O DOKONANIU ZAPŁATY.docx" download>📄 Oświadczenie o dokonaniu zapłaty (DOCX)</a></li>
+          <li><a href="OŚWIADCZENIE WSPÓŁWŁAŚCICIELA.docx" download>📄 Oświadczenie współwłaściciela (DOCX)</a></li>
+          <li><a href="OŚWIADCZENIE WSPÓŁMAŁŻONKA.docx" download>📄 Oświadczenie współmałżonka (DOCX)</a></li>
+        </ul>
+        <div class="small muted" style="margin-top:10px">
+          Jeśli hostujesz na GitHub Pages i pliki mają spacje/znaki diakrytyczne, upewnij się, że nazwy są dokładnie takie same (GitHub akceptuje unicode w nazwach).
+        </div>
       </div>
     </section>
 
-    <!-- ŹRÓDŁO CIEPŁA -->
-    <section id="tab-main" role="tabpanel" aria-labelledby="tabbtn-main">
-      <section class="panel">
-        <div class="muted" style="margin-bottom:8px">
-          Dotacja = <i>min(koszt NETTO × % , limit dla poziomu)</i>. Dopuszczalne tylko <b>jedno źródło ciepła</b>.
+    <!-- CHAT (lokalny, z załącznikami) -->
+    <section id="tab-chat" class="grid" hidden>
+      <h1>Komunikator (lokalny)</h1>
+      <div class="card">
+        <div id="chat-box" class="chat-box"></div>
+
+        <div class="dropzone" id="dz">
+          Upuść pliki tutaj lub kliknij, aby wybrać…
+          <input type="file" id="file-input" multiple hidden />
         </div>
-        <div class="right" style="margin-bottom:6px">
-          <button id="btnPresetMain" class="ghost" type="button">Przywróć domyślne (główne)</button>
-          <button id="btnCSVMain" class="ghost" type="button">CSV (główne)</button>
+        <div class="files" id="pending-files"></div>
+
+        <div class="chat-input">
+          <input id="chat-name" class="field" placeholder="Twoje imię (domyślnie: Anon)" style="max-width:240px">
+          <input id="chat-text" class="field" placeholder="Napisz wiadomość…" />
+          <button id="chat-send" class="btn">Wyślij</button>
         </div>
-        <div style="overflow:auto">
-          <table>
-            <thead>
-              <tr>
-                <th>Wybierz</th>
-                <th>Komponent / Wariant</th>
-                <th class="num">Koszt (Twoja kwota)</th>
-                <th class="num hide-sm">Limit (aktywny)</th>
-                <th class="num hide-sm">Min. wydatek (netto)</th>
-                <th class="num">Dotacja</th>
-                <th class="num hide-sm">Koszt brutto</th>
-                <th class="num">Dopłata (brutto)</th>
-              </tr>
-            </thead>
-            <tbody id="tbodyMain"></tbody>
-            <tfoot>
-              <tr>
-                <td colspan="5" class="num hide-sm"><b>SUMA (główne)</b></td>
-                <td class="num" id="sumMain">0</td>
-                <td class="num hide-sm" id="sumMainGross">0</td>
-                <td class="num" id="sumMainCopay">0</td>
-              </tr>
-            </tfoot>
-          </table>
+        <div class="small muted" style="margin-top:8px">
+          Wiadomości i pliki zapisują się lokalnie (IndexedDB). Użyj „Eksportuj stan” w Ustawieniach, by przenieść wszystko na inny komputer.
         </div>
-      </section>
+      </div>
     </section>
 
-    <!-- OCIEPLENIE / STOLARKA -->
-    <section id="tab-env" class="hidden" role="tabpanel" aria-labelledby="tabbtn-env">
-      <section class="panel">
-        <div class="muted">Dotacja = <i>min( koszt NETTO × % , pow_m2 × stawka_dotacji_NETTO_na_m2 )</i>. Ceny brutto liczone z wybranego VAT.</div>
-      </section>
-      <section class="panel">
-        <div class="right" style="margin-bottom:6px">
-          <button id="btnPresetEnv" class="ghost" type="button">Przywróć domyślne (ocieplenie)</button>
-          <button id="btnCSVEnv" class="ghost" type="button">CSV (ocieplenie)</button>
+    <!-- KALKULATOR: ładowany dynamicznie z kalkulator.html -->
+    <section id="tab-calc" class="grid" hidden>
+      <h1>Kalkulator</h1>
+      <div id="calc-host" class="card">
+        <div class="loader small">⏳ Czekam na <code>kalkulator.html</code>…</div>
+      </div>
+    </section>
+
+    <!-- USTAWIENIA -->
+    <section id="tab-settings" class="grid" hidden>
+      <h1>Ustawienia</h1>
+      <div class="grid cols-3">
+        <div class="card">
+          <h2>Eksport / Import stanu czatu</h2>
+          <div class="row">
+            <button id="export" class="btn">Eksportuj stan (JSON)</button>
+            <label class="btn ghost">Importuj
+              <input id="import" type="file" accept="application/json" hidden>
+            </label>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <button id="wipe" class="btn bad">Wyczyść wszystkie dane lokalne</button>
+          </div>
+          <div class="small muted" style="margin-top:10px">
+            Zapis lokalny: <code>localStorage</code> (wiadomości) + <code>IndexedDB</code> (pliki).
+          </div>
         </div>
-        <div style="overflow:auto">
-          <table>
-            <thead>
-              <tr>
-                <th>Wybierz</th>
-                <th>Pozycja</th>
-                <th class="num">Pow. [m²]</th>
-                <th class="num">Twoja cena / m² (NETTO/BRUTTO)</th>
-                <th class="num">Maks. dotacja / m² (NETTO)</th>
-                <th class="num">Koszt NETTO</th>
-                <th class="num">Limit z m²</th>
-                <th class="num">Dotacja</th>
-                <th class="num hide-sm">Koszt BRUTTO</th>
-                <th class="num">Dopłata (brutto)</th>
-              </tr>
-            </thead>
-            <tbody id="tbodyEnv"></tbody>
-            <tfoot>
-              <tr>
-                <td colspan="7" class="num hide-sm"><b>SUMA (ocieplenie/stolarka)</b></td>
-                <td class="num" id="sumEnvGrant">0</td>
-                <td class="num hide-sm" id="sumEnvGross">0</td>
-                <td class="num" id="sumEnvCopay">0</td>
-              </tr>
-            </tfoot>
-          </table>
+        <div class="card">
+          <h2>Druk / PDF</h2>
+          <div class="row">
+            <button class="btn" onclick="window.print()">Drukuj / Zapisz jako PDF</button>
+          </div>
         </div>
-      </section>
+      </div>
     </section>
   </div>
 
-  <script>
-  'use strict';
-  /* helpers */
-  const q =(s)=>document.querySelector(s);
-  const qa=(s)=>Array.from(document.querySelectorAll(s));
-  const INT=new Intl.NumberFormat('pl-PL',{maximumFractionDigits:0});
-  const fmt=(n)=> (isFinite(n)? INT.format(Math.round(n)) : '—');
-  const toNum=(v)=>{ if(typeof v!=='string') return Number(v)||0; let s=v.replace(/\\u00A0/g,' ').replace(/\\s+/g,'').replace(/\\./g,'').replace(',', '.'); const n=parseFloat(s); return isFinite(n)? n : 0; };
-  const debounce=(fn,ms=180)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
-  const nowStr=()=>new Date().toLocaleString('pl-PL');
+<script>
+/* ====== POMOCNICZE ====== */
+const $ = sel => document.querySelector(sel);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
+function esc(s){return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]))}
+function bytes(n){ if(n<1024) return n+" B"; if(n<1024*1024) return (n/1024).toFixed(1)+" KB"; if(n<1024*1024*1024) return (n/1024/1024).toFixed(1)+" MB"; return (n/1024/1024/1024).toFixed(1)+" GB"; }
 
-  /* VAT */
-  let VAT=0.08;
-  q('#vatSel').addEventListener('change', ()=>{ VAT=Number(q('#vatSel').value)||0.08; recomputeAllRows(); updateAggregates(); autosave(); });
-
-  /* limity pakietowe (globalne) – wg dostarczonej tabeli */
-  const PACK_CAPS={
-    GRUNT:{ EU_BELOW_80:{P:34840,M:60970,T:null}, EU_80_140:{P:54040,M:94570,T:null}, EU_ABOVE_140:{P:68040,M:119070,T:170100} },
-    PW_PLUS:{ EU_BELOW_80:{P:22920,M:40110,T:null}, EU_80_140:{P:42120,M:73710,T:null}, EU_ABOVE_140:{P:56120,M:98210,T:140300} },
-    BIOMASS:{ EU_BELOW_80:{P:17040,M:29820,T:null}, EU_80_140:{P:36240,M:63420,T:null}, EU_ABOVE_140:{P:50240,M:87920,T:125600} }
-  };
-
-  /* stawki/m2 (NETTO) */
-  const RATES_M2={
-    sciany:{P:180,M:210,T:250},
-    strop:{P:80,M:140,T:200},
-    podloga:{P:80,M:100,T:150},
-    okna:{P:650,M:1050,T:1500},
-    drzwi:{P:2000,M:2500,T:3000},
-    bramy:{P:600,M:1050,T:1500}
-  };
-
-  /* poziom dofinansowania */
-  const state={ level:{name:'BRAK', pct:0}, priceMode:'NETTO', mainRows:[], envRows:[] };
-  function calcLevel({typ,mies,roczny,swiadczenia}){
-    const t=(typ||'').toUpperCase();
-    const ben=(swiadczenia||'').toUpperCase()==='TAK';
-    const m=toNum(mies), r=toNum(roczny);
-    if (ben || (t==='JEDNO'&&m>0&&m<=1800) || (t==='WIELO'&&m>0&&m<=1300)) return {name:'NAJWYŻSZY', pct:1};
-    if ((t==='JEDNO'&&m>0&&m<=3150) || (t==='WIELO'&&m>0&&m<=2250)) return {name:'PODWYŻSZONY', pct:0.7};
-    if (r>0 && r<=135000) return {name:'PODSTAWOWY', pct:0.4};
-    return {name:'BRAK', pct:0};
-  }
-  function refreshLevel(){
-    state.level = calcLevel({typ:q('#typ').value, mies:q('#doch_mies').value, roczny:q('#doch_roczny').value, swiadczenia:q('#swiadczenia').value});
-    q('#poziom').textContent=state.level.name;
-    q('#procent').textContent=state.level.pct? (state.level.pct*100).toFixed(0)+'%' : '—';
-    toggleWarnIfNeeded(); recomputeAllRows(); updateAggregates(); autosave();
-  }
-  const debRefreshLevel=debounce(refreshLevel,180);
-  ['#typ','#doch_mies','#doch_roczny','#swiadczenia','#euDemand'].forEach(sel=>{
-    q(sel).addEventListener('input', debRefreshLevel);
-    q(sel).addEventListener('change', refreshLevel);
+/* ====== ZAKŁADKI (klik, klawiatura, hash, pamięć) ====== */
+const LS_TAB = "arkon_last_tab";
+function showTab(key,{push=true}={}){
+  $$(".tab").forEach(t=>t.classList.toggle("active",t.dataset.tab===key));
+  $$("section[id^='tab-']").forEach(s=>s.hidden=true);
+  const sec=$("#tab-"+key); if(sec) sec.hidden=false;
+  if(push) location.hash = key;
+  localStorage.setItem(LS_TAB,key);
+  // specjalny przypadek: kalkulator — dociągnij treść
+  if(key==="calc") ensureCalculatorLoaded();
+}
+document.querySelector(".nav").addEventListener("click",(e)=>{
+  const el=e.target.closest(".tab"); if(!el) return;
+  e.preventDefault(); showTab(el.dataset.tab);
+});
+$$(".tab").forEach(tab=>{
+  tab.addEventListener("keydown",(e)=>{
+    if(e.key==="Enter"||e.key===" "){ e.preventDefault(); showTab(tab.dataset.tab); }
   });
+});
+window.addEventListener("hashchange",()=>{
+  const key=(location.hash||"").replace(/^#/,"")||"dashboard";
+  showTab(key,{push:false});
+});
+window.addEventListener("keydown",(e)=>{ if(e.altKey && (e.key==="k"||e.key==="K")) showTab("calc"); });
 
-  /* dane główne (pojedyncze limity) */
-  const DATA_MAIN=[
-    {id:'PC',name:'Pompa ciepła',heat:true,variants:[
-      {label:'powietrze/woda – standard',     lim:{P:12600,M:22000,T:31500}},
-      {label:'powietrze/woda – wyższa klasa', lim:{P:14080,M:24640,T:35200}},
-      {label:'powietrze/powietrze (klimatyzacja)', lim:{P:4480,M:7840,T:11200}},
-      {label:'gruntowa – wyższa klasa',       lim:{P:18000,M:31500,T:45000}},
-      {label:'dolne źródło (odwierty)',       lim:{P:8000,M:14000,T:20000}}
-    ]},
-    {id:'SIEC',name:'Podłączenie do sieci ciepłowniczej (z przyłączem)',heat:true,variants:[{label:'standard', lim:{P:9800,M:15575,T:22250}}]},
-    {id:'GAZ',name:'Kocioł zgazowujący drewno (podw. standard)',heat:true,variants:[{label:'standard', lim:{P:8200,M:14350,T:20500}}]},
-    {id:'PEL',name:'Kocioł na pellet (podw. standard)',heat:true,variants:[{label:'standard', lim:{P:8200,M:14350,T:20500}}]},
-    {id:'ELE',name:'Ogrzewanie elektryczne',heat:true,variants:[{label:'standard', lim:{P:4480,M:7840,T:11200}}]},
-    {id:'INST',name:'Instalacja CO + CWU',heat:false,variants:[{label:'standard', lim:{P:8200,M:14350,T:20500}}]},
-    {id:'AUD',name:'Audyt energetyczny',heat:false,variants:[{label:'standard', lim:{P:480,M:840,T:1200}}]},
-    {id:'SCH',name:'Świadectwo charakterystyki',heat:false,variants:[{label:'standard', lim:{P:160,M:280,T:400}}]},
-    {id:'REC',name:'Rekuperacja (zestaw)',heat:false,variants:[{label:'zestaw', lim:{P:6680,M:11690,T:16700}}]}
-  ];
-  function limActive(lim){
-    if (state.level.name==='PODSTAWOWY') return lim.P||0;
-    if (state.level.name==='PODWYŻSZONY') return lim.M||0;
-    if (state.level.name==='NAJWYŻSZY') return lim.T||0;
-    return 0;
+/* ====== PULPIT (demo) ====== */
+function renderDashboard(){
+  $("#db-revenue").textContent=(63500).toLocaleString("pl-PL")+" zł";
+  $("#db-open").textContent="1";
+  $("#db-missing").textContent="2";
+}
+
+/* ====== CHAT LOKALNY (IndexedDB na pliki) ====== */
+const LS_MSGS = "arkon_msgs_v1";
+
+/* IndexedDB */
+let db;
+function dbOpen(){
+  return new Promise((res,rej)=>{
+    const r = indexedDB.open("arkonCRM_local",1);
+    r.onupgradeneeded = ()=>{ const d=r.result; if(!d.objectStoreNames.contains("files")) d.createObjectStore("files",{keyPath:"id"}); };
+    r.onsuccess = ()=>{ db=r.result; res(); };
+    r.onerror   = ()=>rej(r.error);
+  });
+}
+function dbPut(fileObj){ return new Promise((res,rej)=>{ const tx=db.transaction("files","readwrite"); tx.objectStore("files").put(fileObj); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
+function dbGet(id){ return new Promise((res,rej)=>{ const tx=db.transaction("files","readonly"); const req=tx.objectStore("files").get(id); req.onsuccess=()=>res(req.result); req.onerror=()=>rej(req.error); }); }
+function dbAll(){ return new Promise((res,rej)=>{ const tx=db.transaction("files","readonly"); const req=tx.objectStore("files").getAll(); req.onsuccess=()=>res(req.result); req.onerror=()=>rej(req.error); }); }
+function dbClear(){ return new Promise((res,rej)=>{ const tx=db.transaction("files","readwrite"); tx.objectStore("files").clear(); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
+
+/* Wiadomości */
+function loadMsgs(){ try{return JSON.parse(localStorage.getItem(LS_MSGS)||"[]")}catch{return[]} }
+function saveMsgs(list){ localStorage.setItem(LS_MSGS, JSON.stringify(list)); }
+
+let messages = loadMsgs();
+let pendingFiles = []; // {id,name,type,size,blob}
+
+const chatBox = $("#chat-box");
+function renderChat(){ chatBox.innerHTML=""; messages.forEach(m=>appendMsg(m,false)); chatBox.scrollTop = chatBox.scrollHeight; }
+function appendMsg(m,scroll=true){
+  const dt = new Date(m.at||Date.now());
+  const time = dt.toLocaleTimeString("pl-PL",{hour:"2-digit",minute:"2-digit"});
+  const div=document.createElement("div"); div.className="bubble";
+  let html = `<div class="meta"><strong>${esc(m.user||"Anon")}</strong> • ${time}</div>
+  <div class="text">${esc(m.text||"")}</div>`;
+  if(m.files && m.files.length){
+    html += <div style="margin-top:6px"> + m.files.map(f=><a class="file-pill" href="#" data-dlid="${f.id}" title="${esc(f.name)}"><span>📎</span>${esc(f.name)} <small>(${bytes(f.size)})</small></a>).join("") + </div>;
   }
-
-  /* ocieplenie/stolarka */
-  const DATA_ENV=[
-    {key:'sciany', name:'Ocieplenie ścian zewnętrznych'},
-    {key:'strop',  name:'Ocieplenie dachu / stropodachu'},
-    {key:'podloga',name:'Ocieplenie podłogi na gruncie'},
-    {key:'okna',   name:'Stolarka okienna'},
-    {key:'drzwi',  name:'Drzwi zewnętrzne'},
-    {key:'bramy',  name:'Brama garażowa'}
-  ];
-  function rateForKey(key){
-    const r=RATES_M2[key]||{};
-    if (state.level.name==='PODSTAWOWY') return r.P||0;
-    if (state.level.name==='PODWYŻSZONY') return r.M||0;
-    if (state.level.name==='NAJWYŻSZY') return r.T||0;
-    return 0;
-  }
-
-  /* tabele */
-  function buildMain(){
-    const tb=q('#tbodyMain'); tb.innerHTML=''; state.mainRows=[];
-    DATA_MAIN.forEach((comp, idx)=>{
-      const tr=document.createElement('tr');
-      const row={compIdx:idx, heat:comp.heat, sel:false, vIdx:0, costInput:0, _costNet:0,_grant:0,_gross:0,_copay:0,_need:0,_hit:false, els:{}};
-
-      const tdSel=document.createElement('td'); const sel=document.createElement('input'); sel.type='checkbox'; tdSel.append(sel);
-      const tdName=document.createElement('td'); const title=document.createElement('div'); title.textContent=comp.name;
-      const selVar=document.createElement('select'); comp.variants.forEach((v,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=v.label; selVar.appendChild(o); });
-      tdName.append(title, selVar);
-
-      const tdCost=document.createElement('td'); tdCost.className='num';
-      const cost=document.createElement('input'); cost.className='num'; cost.inputMode='decimal'; cost.placeholder='0'; tdCost.append(cost);
-
-      const tdLim=document.createElement('td'); tdLim.className='num hide-sm';
-      const tdNeed=document.createElement('td'); tdNeed.className='num hide-sm';
-      const tdGrant=document.createElement('td'); tdGrant.className='num';
-      const tdGross=document.createElement('td'); tdGross.className='num hide-sm';
-      const tdCopay=document.createElement('td'); tdCopay.className='num';
-
-      tr.append(tdSel,tdName,tdCost,tdLim,tdNeed,tdGrant,tdGross,tdCopay); tb.appendChild(tr);
-      row.els={sel,selVar,cost,tdLim,tdNeed,tdGrant,tdGross,tdCopay}; state.mainRows.push(row);
-
-      sel.addEventListener('change', ()=>{
-        row.sel=sel.checked;
-        if (row.sel && comp.heat){
-          state.mainRows.forEach((r,j)=>{ if(j!==idx && DATA_MAIN[r.compIdx].heat){ r.sel=false; r.els.sel.checked=false; recalcMainRow(j); } });
-        }
-        recalcMainRow(idx); updateAggregates(); autosave(); categoryLabelFromSelection();
-      });
-      selVar.addEventListener('change', ()=>{
-        row.vIdx=Number(selVar.value); recalcMainRow(idx); updateAggregates(); autosave(); categoryLabelFromSelection();
-      });
-      cost.addEventListener('input', ()=>{
-        row.costInput=toNum(cost.value); debRecalcMainRow(idx)(); debUpdateAggregates();
-      });
-      cost.addEventListener('change', autosave);
+  div.innerHTML = html; chatBox.appendChild(div); if(scroll) chatBox.scrollTop=chatBox.scrollHeight;
+  div.querySelectorAll("[data-dlid]").forEach(a=>{
+    a.addEventListener("click", async (e)=>{
+      e.preventDefault();
+      const id=a.getAttribute("data-dlid");
+      const rec = await dbGet(id);
+      if(!rec){ alert("Plik niedostępny."); return; }
+      const url = URL.createObjectURL(rec.blob);
+      const link = document.createElement("a"); link.href=url; link.download=rec.name; document.body.appendChild(link); link.click(); link.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 2500);
     });
-  }
-  function buildEnv(){
-    const tb=q('#tbodyEnv'); tb.innerHTML=''; state.envRows=[];
-    DATA_ENV.forEach((it,idx)=>{
-      const tr=document.createElement('tr');
-      const r={ key:it.key, sel:false, m2:0, ownRate:0, costNet:0, _grant:0,_gross:0,_copay:0,_hit:false, els:{} };
+  });
+}
 
-      const tdSel=document.createElement('td'); const sel=document.createElement('input'); sel.type='checkbox'; tdSel.append(sel);
-      const tdName=document.createElement('td'); tdName.textContent=it.name;
+async function sendMessage(){
+  const text = ($("#chat-text").value||"").trim();
+  if(!text && pendingFiles.length===0) return;
+  const user = ($("#chat-name").value||"").trim() || "Anon";
+  const fileRefs = pendingFiles.map(f=>({id:f.id,name:f.name,type:f.type,size:f.size}));
+  const msg = { id: Date.now()+"_"+Math.random().toString(36).slice(2), user, text, at: Date.now(), files:fileRefs };
+  messages.push(msg); saveMsgs(messages); appendMsg(msg);
+  for(const f of pendingFiles){ await dbPut(f); }
+  pendingFiles = []; renderPendingFiles();
+  $("#chat-text").value=""; $("#chat-text").focus();
+}
 
-      const tdM2=document.createElement('td'); tdM2.className='num'; const m2=document.createElement('input'); m2.className='num'; m2.inputMode='decimal'; m2.placeholder='0'; tdM2.append(m2);
-      const tdOwn=document.createElement('td'); tdOwn.className='num'; const own=document.createElement('input'); own.className='num'; own.inputMode='decimal'; own.placeholder='0'; tdOwn.append(own);
+/* pliki -> pending */
+const dz = $("#dz"), fi = $("#file-input"), pendingBox=$("#pending-files");
+dz.addEventListener("click",()=>fi.click());
+dz.addEventListener("dragover",(e)=>{ e.preventDefault(); dz.classList.add("drag"); });
+dz.addEventListener("dragleave",()=>dz.classList.remove("drag"));
+dz.addEventListener("drop",(e)=>{ e.preventDefault(); dz.classList.remove("drag"); handleFiles(e.dataTransfer.files); });
+fi.addEventListener("change",()=>{ handleFiles(fi.files); fi.value=""; });
+function renderPendingFiles(){
+  if(!pendingFiles.length){ pendingBox.innerHTML=""; return; }
+  pendingBox.innerHTML = pendingFiles.map((f,i)=><span class="file-pill">📎 ${esc(f.name)} <small>(${bytes(f.size)})</small> <a href="#" data-rm="${i}" title="Usuń">&times;</a></span>).join("");
+  pendingBox.querySelectorAll("[data-rm]").forEach(a=>a.addEventListener("click",(e)=>{ e.preventDefault(); const idx=+a.getAttribute("data-rm"); pendingFiles.splice(idx,1); renderPendingFiles(); }));
+}
+function handleFiles(fileList){
+  const maxPerFile = 50 * 1024 * 1024;
+  Array.from(fileList||[]).forEach(f=>{
+    if(f.size>maxPerFile){ alert(Plik ${f.name} jest większy niż 50MB); return; }
+    const id = "F_"+Date.now()+"_"+Math.random().toString(36).slice(2);
+    pendingFiles.push({ id, name:f.name, type:f.type||"application/octet-stream", size:f.size, blob:f });
+  });
+  renderPendingFiles();
+}
 
-      const tdRate=document.createElement('td'); tdRate.className='num';
-      const tdCost=document.createElement('td'); tdCost.className='num';
-      const tdCap=document.createElement('td'); tdCap.className='num';
-      const tdGrant=document.createElement('td'); tdGrant.className='num';
-      const tdGross=document.createElement('td'); tdGross.className='num hide-sm';
-      const tdCopay=document.createElement('td'); tdCopay.className='num';
-
-      tr.append(tdSel,tdName,tdM2,tdOwn,tdRate,tdCost,tdCap,tdGrant,tdGross,tdCopay); tb.appendChild(tr);
-      r.els={sel,m2,ownRate:own,tdRateMax:tdRate,tdCostNet:tdCost,tdLimit:tdCap,tdGrant,tdGross,tdCopay}; state.envRows.push(r);
-
-      sel.addEventListener('change', ()=>{ r.sel=sel.checked; recalcEnvRow(idx); updateAggregates(); autosave(); });
-      m2.addEventListener('input', ()=>{ r.m2=toNum(m2.value); debRecalcEnvRow(idx)(); debUpdateAggregates(); });
-      own.addEventListener('input', ()=>{ r.ownRate=toNum(own.value); debRecalcEnvRow(idx)(); debUpdateAggregates(); });
-      m2.addEventListener('change', autosave); own.addEventListener('change', autosave);
-    });
-  }
-  const debRecalcMainRow=(i)=>debounce(()=>recalcMainRow(i),140);
-  const debRecalcEnvRow =(i)=>debounce(()=>recalcEnvRow(i),140);
-
-  function setGrantCell(td, value, hit){ td.innerHTML = fmt(value) + (hit ? ' <span class="cap-badge">LIMIT</span>' : ''); }
-  function recalcMainRow(i){
-    const r=state.mainRows[i]; if(!r) return;
-    const comp=DATA_MAIN[r.compIdx]; const v=comp.variants[r.vIdx];
-    const lim=limActive(v.lim); r.els.tdLim.textContent=fmt(lim);
-
-    const net = r.costInput/(1+(state.priceMode==='BRUTTO'?VAT:0))*(state.priceMode==='BRUTTO'?1:1); // jeśli wpisujesz BRUTTO – przelicz na NETTO
-    const grant0 = net*(state.level.pct||0);
-    const grant = Math.min(grant0, lim);
-    const need  = state.level.pct>0 ? Math.ceil(lim/state.level.pct) : 0;
-    const gross = net*(1+VAT);
-    const own   = Math.max(0, gross - grant);
-
-    r._costNet=net; r._grant=grant; r._gross=gross; r._copay=own; r._need=need; r._hit=(grant0>lim+1e-9);
-
-    if(!r.sel){ r.els.tdNeed.textContent='—'; r.els.tdGrant.innerHTML='—'; r.els.tdGross.textContent='—'; r.els.tdCopay.textContent='—'; }
-    else{ r.els.tdNeed.textContent=need?fmt(need):'—'; setGrantCell(r.els.tdGrant,grant,r._hit); r.els.tdGross.textContent=fmt(gross); r.els.tdCopay.textContent=fmt(own); }
-  }
-  function recalcEnvRow(i){
-    const r=state.envRows[i]; if(!r) return;
-    const per=rateForKey(r.key)||0; r.els.tdRateMax.textContent=fmt(per);
-
-    const ownNet = r.ownRate/(1+(state.priceMode==='BRUTTO'?VAT:0));
-    const costNet=(r.m2||0)*(ownNet||0);
-    const cap=(r.m2||0)*per;
-    const grant0=costNet*(state.level.pct||0);
-    const grant=Math.min(grant0, cap);
-    const gross=costNet*(1+VAT);
-    const own=Math.max(0, gross - grant);
-
-    r.costNet=costNet; r._grant=grant; r._gross=gross; r._copay=own; r._hit=(grant0>cap+1e-9);
-
-    if(!r.sel){ r.els.tdCostNet.textContent='—'; r.els.tdLimit.textContent=fmt(cap); r.els.tdGrant.innerHTML='—'; r.els.tdGross.textContent='—'; r.els.tdCopay.textContent='—'; }
-    else{ r.els.tdCostNet.textContent=fmt(costNet); r.els.tdLimit.textContent=fmt(cap); setGrantCell(r.els.tdGrant,grant,r._hit); r.els.tdGross.textContent=fmt(gross); r.els.tdCopay.textContent=fmt(own); }
-  }
-
-  function getTotalsMain(){ let sumGrant=0,sumGross=0,sumCopay=0,countSel=0; state.mainRows.forEach(r=>{ if(r.sel){ sumGrant+=r._grant||0; sumGross+=r._gross||0; sumCopay+=r._copay||0; countSel++; } }); return {sumGrant,sumGross,sumCopay,countSel}; }
-  function getTotalsEnv(){ let sumGrant=0,sumGross=0,sumCopay=0,countSel=0; state.envRows.forEach(r=>{ if(r.sel){ sumGrant+=r._grant||0; sumGross+=r._gross||0; sumCopay+=r._copay||0; countSel++; } }); return {sumGrant,sumGross,sumCopay,countSel}; }
-  function renderTotals(){
-    const m=getTotalsMain(), e=getTotalsEnv();
-    q('#sumMain').textContent=fmt(m.sumGrant); q('#sumMainGross').textContent=fmt(m.sumGross); q('#sumMainCopay').textContent=fmt(m.sumCopay); q('#selCountMain').textContent=m.countSel;
-    q('#sumEnvGrant').textContent=fmt(e.sumGrant); q('#sumEnvGross').textContent=fmt(e.sumGross); q('#sumEnvCopay').textContent=fmt(e.sumCopay); q('#selCountEnv').textContent=e.countSel;
-  }
-
-  function selectedHeatCategory(){
-    for (let i=0;i<state.mainRows.length;i++){
-      const r=state.mainRows[i]; if(!r.sel) continue;
-      const comp=DATA_MAIN[r.compIdx]; if(!comp.heat) continue;
-      const label=comp.variants[r.vIdx].label.toLowerCase();
-      if (label.includes('gruntowa')) return 'GRUNT';
-      if (label.includes('powietrze/woda') && label.includes('wyższa')) return 'PW_PLUS';
-      if (DATA_MAIN[r.compIdx].id==='GAZ' || DATA_MAIN[r.compIdx].id==='PEL') return 'BIOMASS';
-      return null;
+/* Eksport/Import czatu */
+function blobToBase64(blob){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result.split(",")[1]); r.onerror=()=>rej(r.error); r.readAsDataURL(blob); }); }
+async function dbAll(){ return new Promise((res,rej)=>{ const tx=db.transaction("files","readonly"); const req=tx.objectStore("files").getAll(); req.onsuccess=()=>res(req.result); req.onerror=()=>rej(req.error); }); }
+async function exportAll(){
+  const files = await dbAll();
+  const files64 = [];
+  for(const f of files){ files64.push({ id:f.id, name:f.name, type:f.type, size:f.size, b64: await blobToBase64(f.blob) }); }
+  const dump = { version:1, messages, files:files64 };
+  const data = JSON.stringify(dump,null,2);
+  const url = URL.createObjectURL(new Blob([data],{type:"application/json"}));
+  const a=document.createElement("a"); a.href=url; a.download="arkon-crm-export.json"; a.click(); URL.revokeObjectURL(url);
+}
+async function importAll(file){
+  try{
+    const txt = await file.text();
+    const dump = JSON.parse(txt);
+    if(!dump || !dump.messages || !Array.isArray(dump.files)) throw new Error("Struktura pliku niepoprawna.");
+    await dbClear(); messages = []; saveMsgs(messages);
+    for(const f of dump.files){
+      const bin = Uint8Array.from(atob(f.b64), c=>c.charCodeAt(0));
+      await dbPut({ id:f.id, name:f.name, type:f.type, size:f.size, blob:new Blob([bin],{type:f.type}) });
     }
-    return null;
+    messages = dump.messages; saveMsgs(messages); renderChat();
+    alert("Import zakończony.");
+  }catch(e){ alert("Błąd importu: "+e.message); }
+}
+$("#chat-send").addEventListener("click", sendMessage);
+$("#chat-text").addEventListener("keydown",(e)=>{ if(e.key==="Enter"){ e.preventDefault(); sendMessage(); }});
+$("#export").addEventListener("click", exportAll);
+$("#import").addEventListener("change",(e)=>{ const f=e.target.files[0]; if(f) importAll(f); e.target.value=""; });
+$("#wipe").addEventListener("click", async ()=>{
+  if(confirm("Usunąć wszystkie dane lokalne?")){
+    localStorage.removeItem(LS_MSGS);
+    await dbClear();
+    messages=[]; renderChat();
+    alert("Wyczyszczono.");
   }
-  function detectPackCap(){
-    const cat=selectedHeatCategory(); if(!cat) return {cap:null, nd:false, cat:null};
-    const eu=q('#euDemand').value || 'EU_ABOVE_140';
-    const lvl=state.level.name;
-    const L=(lvl==='PODSTAWOWY'?'P':(lvl==='PODWYŻSZONY'?'M':(lvl==='NAJWYŻSZY'?'T':null)));
-    if(!L) return {cap:null, nd:false, cat};
-    const cap=PACK_CAPS[cat] && PACK_CAPS[cat][eu] ? PACK_CAPS[cat][eu][L] : null;
-    const nd = (cap==null);
-    return {cap, nd, cat, eu, L};
+});
+
+/* ====== Loader: kalkulator.html ====== */
+let calcLoaded = false;
+async function ensureCalculatorLoaded(){
+  if(calcLoaded) return;
+  const host = $("#calc-host");
+  try{
+    const res = await fetch("kalkulator.html", {cache:"no-store"});
+    if(!res.ok) throw new Error("Brak pliku kalkulator.html");
+    const html = await res.text();
+    host.innerHTML = html;
+    calcLoaded = true;
+  }catch(err){
+    host.innerHTML = <div class="small">❗ ${err.message}. Utwórz w katalogu obok plik <code>kalkulator.html</code> (patrz poniższy szablon).</div>;
   }
-  function toggleWarnIfNeeded(){
-    const info=detectPackCap();
-    const showWarn = info.nd && state.level.name==='NAJWYŻSZY' && (info.cat==='PW_PLUS'||info.cat==='GRUNT');
-    q('#warnTop').classList.toggle('hidden', !showWarn);
-  }
+}
 
-  function renderSummary(){
-    const m=getTotalsMain(), e=getTotalsEnv();
-    const sumGrant=(m.sumGrant||0)+(e.sumGrant||0);
-    const sumCopayBase=(m.sumCopay||0)+(e.sumCopay||0);
+/* ====== BOOT ====== */
+(async function boot(){
+  await dbOpen();
+  renderDashboard();
+  renderChat();
+  const fromHash=(location.hash||"").replace(/^#/,"");
+  const remembered=localStorage.getItem(LS_TAB)||"";
+  const initial = fromHash || remembered || "dashboard";
+  showTab(initial,{push:false});
+})();
+</script>
 
-    const info=detectPackCap();
-    const capProg = info.cap!=null ? info.cap : null;
-    const noPack = (info.cat==null || info.cap==null);
-
-    const grantCapped = capProg!=null ? Math.min(sumGrant, capProg) : sumGrant;
-    const overCap = capProg!=null ? Math.max(0, sumGrant - capProg) : 0;
-    const sumCopayAll = sumCopayBase + overCap;
-
-    // Min. wymagany wydatek (z lim. pojedynczych)
-    let need=0;
-    state.mainRows.forEach(r=>{
-      if(r.sel && state.level.pct>0){
-        const lim = limActive(DATA_MAIN[r.compIdx].variants[r.vIdx].lim);
-        need += Math.ceil(lim/state.level.pct);
-      }
-    });
-    state.envRows.forEach(r=>{
-      if(r.sel && state.level.pct>0){
-        const cap = (r.m2||0) * (rateForKey(r.key)||0);
-        need += Math.ceil(cap/state.level.pct);
-      }
-    });
-
-    q('#sumGrantAll').textContent=fmt(sumGrant);
-    q('#sumCapProg').textContent=capProg!=null ? fmt(capProg) : '—';
-    q('#capBadge').classList.toggle('hidden', !(capProg!=null && sumGrant>capProg+1e-9));
-    q('#sumGrantCapped').textContent=fmt(grantCapped);
-    q('#sumOverCap').textContent=fmt(overCap);
-    q('#sumCopayAll').textContent=fmt(sumCopayAll);
-    q('#sumNeedAll').textContent=state.level.pct?fmt(need):'—';
-
-    q('#noteOver').classList.toggle('hidden', !(overCap>0));
-    q('#noteNoPack').classList.toggle('hidden', !noPack);
-    q('#sumPanel').classList.toggle('over-panel', overCap>0);
-  }
-
-  function categoryLabelFromSelection(){
-    const cat = selectedHeatCategory();
-    const map={GRUNT:'GRUNT',PW_PLUS:'PW+',BIOMASA:'BIOMASA'};
-    q('#catLabel').textContent = cat? map[cat] : '—';
-  }
-
-  function updateAggregates(){ renderTotals(); renderSummary(); }
-  const debUpdateAggregates=debounce(updateAggregates,160);
-  function recomputeAllRows(){ state.mainRows.forEach((r,i)=>recalcMainRow(i)); state.envRows.forEach((r,i)=>recalcEnvRow(i)); categoryLabelFromSelection(); }
-
-  /* auto / preset */
-  function autoNeedMain(){
-    state.mainRows.forEach((r,i)=>{
-      if(!r.sel) return;
-      const lim=limActive(DATA_MAIN[r.compIdx].variants[r.vIdx].lim);
-      if(state.level.pct>0){
-        const needNet = Math.ceil(lim/state.level.pct);
-        r.costInput = Math.round(needNet*(1+VAT)); // wpisujemy BRUTTO
-        r.els.cost.value = String(r.costInput);
-        recalcMainRow(i);
-      }
-    });
-    updateAggregates(); autosave();
-  }
-  function autoNeedEnv(){
-    state.envRows.forEach((r,i)=>{
-      if(!r.sel) return;
-      const per=rateForKey(r.key)||0;
-      if(state.level.pct>0){
-        const needPerNet = per/(state.level.pct||1);
-        r.ownRate = Math.round(needPerNet*(1+VAT)); // BRUTTO/m2
-        r.els.ownRate.value = String(r.ownRate);
-        recalcEnvRow(i);
-      }
-    });
-    updateAggregates(); autosave();
-  }
-  function presetMain(){ state.mainRows.forEach((r,i)=>{ r.sel=false; r.els.sel.checked=false; r.vIdx=0; r.els.selVar.value='0'; r.costInput=0; r.els.cost.value=''; recalcMainRow(i); }); updateAggregates(); autosave(); }
-  function presetEnv(){ state.envRows.forEach((r,i)=>{ r.sel=false; r.els.sel.checked=false; r.m2=0; r.els.m2.value=''; r.ownRate=0; r.els.ownRate.value=''; recalcEnvRow(i); }); updateAggregates(); autosave(); }
-  function presetAll(){ presetMain(); presetEnv(); }
-
-  /* CSV */
-  function csvEscape(v){ const s=String(v ?? ''); return /[",;\\n]/.test(s)? '\"' + s.replace(/\"/g,'\"\"') + '\"' : s; }
-  function downloadCSV(name, rows){
-    const csv = rows.map(r => r.map(csvEscape).join(';')).join('\\n');
-    const blob = new Blob([csv], { type:'text/csv;charset=utf-8' });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-    a.download = name.endsWith('.csv') ? name : `${name}.csv`; a.click(); URL.revokeObjectURL(a.href);
-  }
-  function exportCSVMain(){
-    const out=[['Wybrany','Komponent','Wariant','Koszt netto','Limit (aktywny)','Min. wydatek netto','Dotacja','Koszt brutto (VAT '+Math.round(VAT*100)+'%)','Dopłata']];
-    state.mainRows.forEach(r=>{
-      const comp=DATA_MAIN[r.compIdx], v=comp.variants[r.vIdx], lim=limActive(v.lim);
-      out.push([ r.sel?'TAK':'NIE', comp.name, v.label, Math.round(r._costNet||0), lim, r.sel?(r._need||''):'', Math.round(r._grant||0), Math.round(r._gross||0), Math.round(r._copay||0) ]);
-    });
-    downloadCSV('cp2025_glowne', out);
-  }
-  function exportCSVEnv(){
-    const out=[['Wybrany','Pozycja','Pow m2','Twoja cena/m2','Koszt netto','Limit z m2','Dotacja','Koszt brutto (VAT '+Math.round(VAT*100)+'%)','Dopłata']];
-    state.envRows.forEach((r,i)=>{
-      const base=DATA_ENV[i]; const cap=Math.round((r.m2||0)*(rateForKey(r.key)||0));
-      out.push([ r.sel?'TAK':'NIE', base.name, r.m2||0, r.ownRate||0, Math.round(r.costNet||0), cap, Math.round(r._grant||0), Math.round(r._gross||0), Math.round(r._copay||0) ]);
-    });
-    downloadCSV('cp2025_ocieplenie', out);
-  }
-  function exportCSVAll(){
-    const m=getTotalsMain(), e=getTotalsEnv();
-    const sumGrant=(m.sumGrant||0)+(e.sumGrant||0);
-    const info=detectPackCap();
-    const capProg = info.cap!=null ? info.cap : '';
-    const overCap = capProg? Math.max(0, sumGrant-capProg) : 0;
-    const out=[['Sekcja','Nazwa','Opis','Koszt netto','Limit (aktywny)','Dotacja','Koszt brutto (VAT '+Math.round(VAT*100)+'%)','Dopłata']];
-    state.mainRows.forEach(r=>{
-      const comp=DATA_MAIN[r.compIdx], v=comp.variants[r.vIdx], lim=limActive(v.lim);
-      out.push(['Glowne', comp.name, v.label, Math.round(r._costNet||0), lim, Math.round(r._grant||0), Math.round(r._gross||0), Math.round(r._copay||0)]);
-    });
-    state.envRows.forEach((r,i)=>{
-      const base=DATA_ENV[i], cap=Math.round((r.m2||0)*(rateForKey(r.key)||0));
-      out.push(['Ocieplenie', base.name, `${r.m2||0} m2 x ${r.ownRate||0}`, Math.round(r.costNet||0), cap, Math.round(r._grant||0), Math.round(r._gross||0), Math.round(r._copay||0)]);
-    });
-    out.push([]); out.push(['PODSUMOWANIE','','','', 'Limit pakietu', capProg||'—', 'Nadwyżka ponad limit', overCap]);
-    downloadCSV('cp2025_laczny', out);
-  }
-
-  /* Druk – tryby */
-  function setPrintMode(mode){ document.body.classList.remove('print-client'); document.body.dataset.printMode = mode || ''; if (mode==='client'){ document.body.classList.add('print-client'); } }
-  function doPrint(mode){ setPrintMode(mode); if (mode==='client'){ ensureClientHeader(); } else { removeClientHeader(); } window.print(); setTimeout(()=>{ setPrintMode(null); }, 300); }
-  q('#btnPrintClient').addEventListener('click', ()=> doPrint('client'));
-  q('#btnPrintSellerFull').addEventListener('click', ()=> doPrint('seller-full'));
-  q('#btnPrintSellerShort').addEventListener('click', ()=> doPrint('seller-short'));
-  q('#btnPrintSellerTech').addEventListener('click',  ()=> doPrint('seller-tech'));
-
-  /* Nagłówek dla klienta */
-  let clientHdr;
-  function ensureClientHeader(){}
-    if (clientHdr) return;
-    clientHdr = document.createElement('div');
-    clientHdr.className='panel';
-    clientHdr.innerHTML = `
-      <div class="client-header">
-        <div class="logo" aria-hidden="true">
-          <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <rect x="8" y="8" width="184" height="184" rx="22" fill="#0e1538"/>
-            <path d="M32 126 L100 46 L168 126" stroke="#4cc9f0" stroke-width="12" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-            <text x="100" y="160" text-anchor="middle" font-family="system-ui,Segoe UI,Roboto,Arial" font-size="28" font-weight="800" fill="#4cc9f0">ARKON</text>
-          </svg>
-        </div>
-        <div>
-          <div class="client-title">Kalkulacja dotacji – Czyste Powietrze 2025</div>
-          <div class="client-meta"><b>ARKON – Przedsiębiorstwo Wielobranżowe</b></div>
-          <div class="client-meta">ul. Głogowska 30, 59‑170 Przemków • NIP: 5020099763</div>
-          <div class="client-meta">Data: \${nowStr()}</div>
-        </div>
-      </div>
-      <div class="muted" style="color:#9aa8d6">Poniżej przedstawiono kalkulację dotacji i dopłaty klienta. Kwoty brutto liczone z wybranego VAT.</div>
-    \`;
-    document.querySelector('.wrap').prepend(clientHdr);
-  }
-  function removeClientHeader(){ if(clientHdr){ clientHdr.remove(); clientHdr=null; } }
-
-  /* Export oferty do HTML (do maila/udostępnienia) */
-  function fmtPL(n){ return INT.format(Math.round(n||0)); }
-  function collectSelectedRows(){
-    const mains=state.mainRows.map((r)=>({sel:r.sel, comp:DATA_MAIN[r.compIdx], vIdx:r.vIdx, net:r._costNet, grant:r._grant, gross:r._gross, copay:r._copay}));
-    const envs=state.envRows.map((r,i)=>({sel:r.sel, name:DATA_ENV[i].name, net:r.costNet, grant:r._grant, gross:r._gross, copay:r._copay, m2:r.m2, own:r.ownRate}));
-    return {mains, envs};
-  }
-  function currentSummary(){
-    const m=getTotalsMain(), e=getTotalsEnv();
-    const sumGrant=(m.sumGrant||0)+(e.sumGrant||0);
-    const sumGross=(m.sumGross||0)+(e.sumGross||0);
-    const sumCopay=(m.sumCopay||0)+(e.sumCopay||0);
-    const info=detectPackCap();
-    const cap = info.cap!=null? info.cap : null;
-    const over = cap!=null? Math.max(0,sumGrant-cap) : 0;
-    const grantCapped = cap!=null? Math.min(sumGrant,cap) : sumGrant;
-    return {sumGrant,sumGross,sumCopay,cap,over,grantCapped};
-  }
-  function composeOfferHTML({client=true}={}){
-    const {mains,envs}=collectSelectedRows();
-    const s=currentSummary();
-    const rows=[];
-    mains.forEach(x=>{ if(x.sel) rows.push({name:\\${x.comp.name} – \${x.comp.variants[x.vIdx].label}\, gross:x.gross, grant:x.grant, copay:x.copay}); });
-    envs.forEach(x=>{ if(x.sel) rows.push({name:\\${x.name}\, gross:x.gross, grant:x.grant, copay:x.copay}); });
-
-    const title = client? 'Oferta dla klienta' : 'Raport pełny (sprzedawca)';
-    const css = \`
-      body{font:14px/1.35 system-ui,Segoe UI,Roboto,Arial;margin:0;padding:20px;color:#111}
-      .hdr{display:flex;gap:12px;align-items:center;margin-bottom:10px}
-      .logo{width:56px;height:56px}
-      .meta{font-size:12px;color:#333}
-      h1{font-size:18px;margin:6px 0}
-      table{width:100%;border-collapse:collapse;margin-top:8px}
-      th,td{padding:8px;border-bottom:1px solid #ddd;text-align:left}
-      th.num,td.num{text-align:right}
-      .sum{margin-top:10px;padding-top:8px;border-top:2px solid #000}
-      .signs{display:flex;gap:40px;margin-top:24px}
-      .sign{flex:1;border-top:1px solid #666;padding-top:6px;text-align:center;font-size:12px}
-      .soft{color:#666}
-      .footer{margin-top:18px;font-size:12px;color:#555}
-    \`;
-    const infoLine = client
-      ? (s.cap? \<div class="soft">\${s.over>0? 'Osiągnięto maksymalny limit dotacji – dodatkowe koszty pokrywa klient.' : 'Dotacja mieści się w limicie programu.'}</div>\ : '')
-      : \<div class="soft">Limit pakietu: \${s.cap? fmtPL(s.cap)+' zł' : '—'} • Nadwyżka: \${fmtPL(s.over)} zł</div>\;
-    const logo = \<svg class="logo" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="8" width="184" height="184" rx="22" fill="#0e1538"/><path d="M32 126 L100 46 L168 126" stroke="#4cc9f0" stroke-width="12" fill="none"/><text x="100" y="160" text-anchor="middle" font-family="system-ui,Segoe UI,Roboto,Arial" font-size="28" font-weight="800" fill="#4cc9f0">ARKON</text></svg>\;
-    const rowsHtml = rows.map(r=>\<tr><td>\${r.name}</td><td class="num">\${fmtPL(r.gross)} zł</td><td class="num">\${fmtPL(r.grant)} zł</td><td class="num">\${fmtPL(r.copay)} zł</td></tr>\).join('');
-    const html = \`
-    <!doctype html><meta charset="utf-8"><title>\${title} – ARKON</title>
-    <style>\${css}</style>
-    <div class="hdr">
-      \${logo}
-      <div>
-        <h1>\${title}</h1>
-        <div class="meta"><b>ARKON – Przedsiębiorstwo Wielobranżowe</b></div>
-        <div class="meta">ul. Głogowska 30, 59‑170 Przemków • NIP: 5020099763</div>
-        <div class="meta">Data: \${nowStr()}</div>
-        \${infoLine}
-      </div>
-    </div>
-    <table>
-      <thead><tr><th>Pozycja</th><th class="num">Koszt brutto</th><th class="num">Dotacja</th><th class="num">Dopłata</th></tr></thead>
-      <tbody>\${rowsHtml || '<tr><td colspan="4" class="soft">Brak wybranych pozycji</td></tr>'}</tbody>
-    </table>
-    <div class="sum">
-      <div><b>Suma dotacji:</b> \${fmtPL(s.grantCapped)} zł</div>
-      <div><b>Suma dopłaty klienta:</b> \${fmtPL( (s.sumCopay||0) + (s.over||0) )} zł</div>
-    </div>
-    <div class="signs">
-      <div class="sign">Podpis sprzedawcy</div>
-      <div class="sign">Podpis klienta</div>
-    </div>
-    <div class="footer">ARKON – Przedsiębiorstwo Wielobranżowe, ul. Głogowska 30, 59‑170 Przemków • NIP: 5020099763</div>\`;
-    return html;
-  }
-
-  async function shareHtml(filename, html){
-    const blob = new Blob([html], {type:'text/html'});
-    const file = new File([blob], filename, {type:'text/html'});
-    if (navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
-      try{ await navigator.share({title: filename, text:'Oferta ARKON – Czyste Powietrze 2025', files:[file]}); return; }catch(e){}
-    }
-    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; a.click(); URL.revokeObjectURL(a.href);
-    const subject=encodeURIComponent('Oferta ARKON – Czyste Powietrze 2025');
-    const body=encodeURIComponent('Dzień dobry,\\n\\nW załączeniu przesyłam ofertę (plik został pobrany na komputer). Proszę dołączyć pobrany plik do wiadomości.\\n\\nPozdrawiam,\\nARKON');
-    window.location.href=\mailto:?subject=\${subject}&body=\${body}\;
-  }
-  q('#btnSendClient').addEventListener('click', async()=>{ const html = composeOfferHTML({client:true}); await shareHtml('oferta_arkon_klient.html', html); });
-  q('#btnSendFull').addEventListener('click', async()=>{ const html = composeOfferHTML({client:false}); await shareHtml('oferta_arkon_pelna.html', html); });
-
-  /* SAVE / LOAD */
-  function saveAll(){
-    const data={
-      typ:q('#typ').value, mies:q('#doch_mies').value, roczny:q('#doch_roczny').value, swiad:q('#swiadczenia').value,
-      eu:q('#euDemand').value, vat:VAT, notes:q('#notes')?.value||'',
-      main: state.mainRows.map(r=>({sel:r.sel, vIdx:r.vIdx, cost:r.costInput})),
-      env:  state.envRows.map(r=>({sel:r.sel, m2:r.m2, ownRate:r.ownRate}))
-    };
-    localStorage.setItem('cp2025_arkon', JSON.stringify(data));
-  }
-  function loadAll(){
-    const raw=localStorage.getItem('cp2025_arkon'); if(!raw){ alert('Brak zapisu'); return; }
-    let d; try{ d=JSON.parse(raw); }catch(_){ alert('Nieprawidłowy zapis.'); return; }
-    q('#typ').value=d.typ||''; q('#doch_mies').value=d.mies||''; q('#doch_roczny').value=d.roczny||''; q('#swiadczenia').value=d.swiad||'';
-    q('#euDemand').value=d.eu||'EU_ABOVE_140'; VAT = (typeof d.vat==='number')? d.vat : (Number(d.vat)||VAT); q('#vatSel').value=String(VAT);
-    if (q('#notes')) q('#notes').value=d.notes||'';
-    buildMain(); buildEnv();
-    d.main?.forEach((m,i)=>{ const r=state.mainRows[i]; if(!r) return; r.sel=!!m.sel; r.els.sel.checked=r.sel; r.vIdx=Number(m.vIdx||0); r.els.selVar.value=String(r.vIdx); r.costInput=toNum(m.cost); r.els.cost.value=r.costInput?String(r.costInput):''; recalcMainRow(i); });
-    d.env?.forEach((e,i)=>{ const r=state.envRows[i]; if(!r) return; r.sel=!!e.sel; r.els.sel.checked=r.sel; r.m2=toNum(e.m2); r.els.m2.value=r.m2?String(r.m2):''; r.ownRate=toNum(e.ownRate); r.els.ownRate.value=r.ownRate?String(r.ownRate):''; recalcEnvRow(i); });
-    refreshLevel();
-  }
-  const autosave=debounce(saveAll,250);
-
-  /* init */
-  function init(){
-    qa('.tab-btn').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        qa('.tab-btn').forEach(b=>b.setAttribute('aria-selected','false')); btn.setAttribute('aria-selected','true');
-        const tab=btn.id==='tabbtn-main'?'main':'env';
-        q('#tab-main').classList.toggle('hidden', tab!=='main');
-        q('#tab-env').classList.toggle('hidden', tab!=='env');
-      });
-    });
-    buildMain(); buildEnv(); refreshLevel(); categoryLabelFromSelection();
-
-    q('#btnCSVMain').addEventListener('click', exportCSVMain);
-    q('#btnCSVEnv').addEventListener('click', exportCSVEnv);
-    q('#btnCSVAll').addEventListener('click', exportCSVAll);
-    q('#btnSave').addEventListener('click', saveAll);
-    q('#btnLoad').addEventListener('click', loadAll);
-
-    q('#btnAutoNeedMain').addEventListener('click', autoNeedMain);
-    q('#btnAutoNeedEnv').addEventListener('click', autoNeedEnv);
-    q('#btnPresetMain').addEventListener('click', presetMain);
-    q('#btnPresetEnv').addEventListener('click', presetEnv);
-    q('#btnPresetAll').addEventListener('click', presetAll);
-  }
-  init();
-  </script>
+<!-- Opcjonalnie: generator wierszy (jeśli naprawdę potrzebujesz 24k linii w pliku,
+     NIE wpływa to na funkcje aplikacji; to tylko "wypełniacz" do testów)
+<script>
+  // for(let i=0;i<23000;i++){ const c=document.createComment('pad-'+i); document.body.appendChild(c); }
+</script>
+-->
 </body>
 </html>
