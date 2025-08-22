@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARKON — Komponenty: Fotowoltaika</title>
+<meta name="description" content="ARKON CRM — Fotowoltaika: moduły, falowniki, mikroinwertery, magazyny energii, systemy montażu, akcesoria, zestawy. Edycja, filtry, eksport/import, zapis lokalny.">
+<style>
+  :root{
+    --bg:#0a0f1e; --ink:#e8edff; --muted:#aeb8da; --line:#243059; --card:#0f1533; --card2:#121a34;
+    --accent:#4cc9f0; --ok:#2b8a57; --bad:#ff6b6b; --warn:#ffb84d;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#0a0f1e,#0c1230 60%,#0a0f1e);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
+  header{padding:16px;background:#11183a;border-bottom:1px solid var(--line)}
+  header h1{margin:0;font-size:22px}
+  nav{background:#172142;display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line)}
+  nav a{color:#cfe1ff;text-decoration:none;padding:8px 12px;border-radius:999px;border:1px solid #2a3a75}
+  nav a:hover{background:#223160}
+  .wrap{max-width:1400px;margin:auto;padding:16px}
+  .muted{color:var(--muted);font-size:13px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+  .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px dashed #3a4ca3}
+  .btn.bad{background:#3a1f2a;border-color:#7b3341}
+  .btn.ok{background:#194d34;border-color:var(--ok)}
+  .btn.warn{background:#5a3c12;border-color:#c48a26}
+  input,select,textarea{background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:8px 10px;color:var(--ink);font:inherit}
+  input::placeholder{color:#aeb8da99}
+  table{width:100%;border-collapse:separate;border-spacing:0}
+  th,td{padding:9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+  th{font-size:13px;color:var(--muted);white-space:nowrap}
+  .card{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:14px;padding:14px}
+  .subtabs{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+  .subtabs button{padding:8px 12px;border-radius:999px;border:1px solid #2a3a75;background:#0d1530;color:#cfe1ff;cursor:pointer}
+  .subtabs button[aria-selected="true"]{background:#1b2550;border-color:#67a1ff}
+  .pill{display:inline-flex;gap:6px;align-items:center;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#cfe1ff;font-size:13px}
+  .right{display:flex;gap:8px;justify-content:flex-end;align-items:center}
+  .small{font-size:12px;color:#aeb8da}
+  .scroll{overflow:auto}
+  .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .grid{display:grid;gap:12px}
+  @media(min-width:1100px){ .cols-2{grid-template-columns:2fr 1fr} }
+  .danger{color:#ffb4b4}
+  @media print{ nav,.toolbar,.subtabs,.right,.filters{display:none!important} }
+</style>
+</head>
+<body>
+<header>
+  <h1>Komponenty • Fotowoltaika — ARKON</h1>
+  <div class="muted">Moduły, falowniki, mikroinwertery, magazyny energii, montaż, akcesoria i gotowe zestawy. Edycja w tabeli, filtry, eksport/import, zapis w LocalStorage.</div>
+</header>
+
+<nav>
+  <a href="index.html">Pulpit</a>
+  <a href="klienci.html">Klienci</a>
+  <a href="komponenty-pompy.html">Pompy</a>
+  <a href="komponenty-piece.html">Piece</a>
+  <a href="komponenty-fotowoltaika.html" aria-current="page">Fotowoltaika</a>
+  <a href="komponenty-ocieplenie.html">Ocieplenie</a>
+  <a href="komponenty-stolarka.html">Stolarka</a>
+  <a href="dokumenty.html">Dokumenty</a>
+  <a href="upload.html">Przesył plików</a>
+  <a href="chat.html">Komunikator</a>
+  <a href="ustawienia.html">Ustawienia</a>
+  <a href="kalkulator.html" target="_blank" rel="noopener">Kalkulator ↗</a>
+  <a href="lidy.html">Lidy</a>
+</nav>
+
+<div class="wrap">
+  <!-- SUBTABS -->
+  <div class="card">
+    <div class="subtabs" role="tablist" aria-label="Kategorie PV">
+      <button class="sb" data-k="sets" aria-selected="true">Zestawy</button>
+      <button class="sb" data-k="modules">Moduły</button>
+      <button class="sb" data-k="inverters">Falowniki</button>
+      <button class="sb" data-k="micro">Mikroinwertery</button>
+      <button class="sb" data-k="batt">Magazyny energii</button>
+      <button class="sb" data-k="mount">System montażu</button>
+      <button class="sb" data-k="acc">Akcesoria</button>
+    </div>
+
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+      <input id="q" placeholder="🔎 Szukaj w aktywnej kategorii… (marka, model, opis, cechy)" style="min-width:340px">
+      <span id="dynFilters" class="row filters"></span>
+      <button id="btnAdd" class="btn ok">+ Dodaj pozycję</button>
+      <button id="btnCSV" class="btn ghost">CSV eksport</button>
+      <button id="btnJSON" class="btn ghost">JSON eksport</button>
+      <label class="btn ghost">JSON import <input id="inJSON" type="file" accept="application/json" hidden></label>
+      <span class="pill">Widocznych: <b id="countVis">0</b></span>
+      <span class="pill">Łącznie: <b id="countAll">0</b></span>
+      <span class="pill">Sort: <b id="sortLabel">marka→model</b></span>
+    </div>
+
+    <!-- TABLES -->
+    <div class="card" style="padding:0">
+      <div class="scroll">
+        <table>
+          <thead id="thead"></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="small muted" style="padding:10px 12px">
+        Edytuj w komórkach. Usuń/duplikuj z kolumny „Akcje”. Zmiany zapisują się automatycznie.
+        Skróty: <span class="kbd">/</span> fokus na wyszukiwaniu • <span class="kbd">Alt+N</span> nowa pozycja • klik nagłówka = sortowanie.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* === helpers === */
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const INT0 = new Intl.NumberFormat('pl-PL',{maximumFractionDigits:0});
+const INT1 = new Intl.NumberFormat('pl-PL',{maximumFractionDigits:1});
+const INT2 = new Intl.NumberFormat('pl-PL',{maximumFractionDigits:2});
+const fmt = (n,dp=0)=> (isFinite(+n)? (dp===0?INT0:dp===1?INT1:INT2).format(+n) : '—');
+const money = n => isFinite(+n)? INT0.format(Math.round(+n))+' zł' : '—';
+const uid = ()=> 'PV_'+Math.random().toString(36).slice(2)+'_'+Date.now().toString(36);
+const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function toCSV(rows, cols){
+  const escCsv = v => { let s=(v==null?'':String(v)); if(/[;\n"]/.test(s)) s='"'+s.replace(/"/g,'""')+'"'; return s; };
+  const out = [cols.join(';')].concat(rows.map(r=>cols.map(c=>escCsv(r[c])).join(';')));
+  const blob = new Blob([out.join('\\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='pv_'+state.tab+'.csv'; a.click(); URL.revokeObjectURL(a.href);
+}
+function saveJSON(data){
+  const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='pv_'+state.tab+'.json'; a.click(); URL.revokeObjectURL(a.href);
+}
+function readJSON(f){ return f.text().then(t=>JSON.parse(t)); }
+function sum(arr,fn){ return (arr||[]).reduce((a,x)=>a+(+fn(x)||0),0); }
+
+/* === storage keys === */
+const KS = {
+  sets:'arkon_pv_sets_v2',
+  modules:'arkon_pv_modules_v2',
+  inverters:'arkon_pv_inverters_v2',
+  micro:'arkon_pv_micro_v2',
+  batt:'arkon_pv_batt_v2',
+  mount:'arkon_pv_mount_v2',
+  acc:'arkon_pv_acc_v2'
+};
+
+/* === state & filters === */
+const state = {
+  tab:'sets',
+  q:'',
+  sort:{key:'brand_model',dir:1},
+  filters:{
+    // per-tab dynamic
+    modules:{tech:'', pMin:'', pMax:'', effMin:'', bif:''},
+    inverters:{phase:'', hybrid:'', acMin:'', acMax:'', mppt:''},
+    micro:{brand:'', acMin:'', acMax:''},
+    batt:{capMin:'', capMax:'', chem:''},
+    mount:{roof:'', tilt:'', ground:''},
+    sets:{kwpMin:'', kwpMax:'', phase:'', storage:''}
+  },
+  data:{
+    sets:[],
+    modules:[],
+    inverters:[],
+    micro:[],
+    batt:[],
+    mount:[],
+    acc:[]
+  }
+};
+
+/* === load/save === */
+function loadAll(){
+  Object.keys(state.data).forEach(k=>{
+    try{ state.data[k] = JSON.parse(localStorage.getItem(KS[k])||'[]'); }catch{ state.data[k]=[]; }
+  });
+}
+function saveTab(){
+  localStorage.setItem(KS[state.tab], JSON.stringify(state.data[state.tab]||[]));
+  render();
+}
+
+/* === seed when empty === */
+function seedIfEmpty(){
+  if(!(state.data.modules||[]).length){
+    state.data.modules = [
+      {id:uid(),brand:'Jinko',model:'Tiger Neo N 475W',tech:'TopCon N',bifacial:'NIE',watt:475,eff:21.5,size:'1903x1134x30',temp:'-0.30',warr_prod:15,warr_perf:30,price:630,note:'182mm, half-cut'},
+      {id:uid(),brand:'LONGi',model:'Hi-MO 6 460W',tech:'HPBC',bifacial:'NIE',watt:460,eff:21.9,size:'1903x1134x30',temp:'-0.29',warr_prod:15,warr_perf:25,price:650,note:'wysoka sprawność'},
+      {id:uid(),brand:'Trina',model:'Vertex S+ 505W',tech:'TopCon N',bifacial:'TAK',watt:505,eff:21.7,size:'1961x1134x30',temp:'-0.30',warr_prod:25,warr_perf:30,price:720,note:'bifacial double-glass'},
+      {id:uid(),brand:'JA Solar',model:'JAM54S30 460W',tech:'Mono PERC',bifacial:'NIE',watt:460,eff:20.9,size:'1903x1134x30',temp:'-0.35',warr_prod:12,warr_perf:25,price:560,note:''},
+      {id:uid(),brand:'QCells',model:'Q.PEAK DUO ML-G11S 410W',tech:'Mono PERC',bifacial:'NIE',watt:410,eff:21.1,size:'1722x1134x30',temp:'-0.34',warr_prod:12,warr_perf:25,price:540,note:''},
+      {id:uid(),brand:'REC',model:'Alpha Pure 410W',tech:'HJT',bifacial:'NIE',watt:410,eff:22.2,size:'1721x1016x30',temp:'-0.24',warr_prod:25,warr_perf:25,price:1000,note:'premium'},
+      {id:uid(),brand:'SunPower',model:'Maxeon 3 430W',tech:'IBC',bifacial:'NIE',watt:430,eff:22.6,size:'1690x1046x40',temp:'-0.29',warr_prod:25,warr_perf:40,price:1400,note:'max wydajność'},
+      {id:uid(),brand:'Canadian Solar',model:'CS3L 450W',tech:'Mono PERC',bifacial:'NIE',watt:450,eff:20.6,size:'2108x1048x35',temp:'-0.36',warr_prod:12,warr_perf:25,price:520,note:''},
+      {id:uid(),brand:'Risen',model:'Titan S 500W',tech:'TopCon N',bifacial:'NIE',watt:500,eff:21.3,size:'1903x1134x30',temp:'-0.30',warr_prod:15,warr_perf:25,price:640,note:''},
+      {id:uid(),brand:'AstroEnergy',model:'CHSM54N-HC 455W',tech:'Mono PERC',bifacial:'NIE',watt:455,eff:20.8,size:'1915x1134x30',temp:'-0.35',warr_prod:12,warr_perf:25,price:520,note:''}
+    ];
+  }
+  if(!(state.data.inverters||[]).length){
+    state.data.inverters = [
+      {id:uid(),brand:'Fronius',model:'Primo 6.0-1',phase:'1F',hybrid:'NIE',ac_kw:6,mppt:2,max_v:1000,eff:97.8,price:6400,note:'WiFi, Datamanager'},
+      {id:uid(),brand:'Fronius',model:'Symo 10.0-3-M',phase:'3F',hybrid:'NIE',ac_kw:10,mppt:2,max_v:1000,eff:98.1,price:9800,note:''},
+      {id:uid(),brand:'Huawei',model:'SUN2000-6KTL-L1',phase:'1F',hybrid:'TAK',ac_kw:6,mppt:2,max_v:980,eff:98.4,price:6800,note:'LUNA ready'},
+      {id:uid(),brand:'Huawei',model:'SUN2000-10KTL-M1',phase:'3F',hybrid:'TAK',ac_kw:10,mppt:2,max_v:1080,eff:98.6,price:10200,note:'LUNA ready'},
+      {id:uid(),brand:'Sofar',model:'6.6KTL-X',phase:'3F',hybrid:'NIE',ac_kw:6.6,mppt:2,max_v:1100,eff:98.2,price:5600,note:''},
+      {id:uid(),brand:'Growatt',model:'MOD 10KTL3-X',phase:'3F',hybrid:'NIE',ac_kw:10,mppt:2,max_v:1100,eff:98.2,price:6200,note:''},
+      {id:uid(),brand:'GoodWe',model:'GW10K-ET Plus',phase:'3F',hybrid:'TAK',ac_kw:10,mppt:3,max_v:1000,eff:98.0,price:11200,note:'HV battery'},
+      {id:uid(),brand:'FoxESS',model:'H1-5.0-E',phase:'1F',hybrid:'TAK',ac_kw:5,mppt:2,max_v:600,eff:97.6,price:5600,note:''},
+      {id:uid(),brand:'SolarEdge',model:'SE10K',phase:'3F',hybrid:'NIE',ac_kw:10,mppt:0,max_v:480,eff:98.3,price:11500,note:'wymaga optymalizatorów'},
+      {id:uid(),brand:'SMA',model:'Sunny Tripower 8.0',phase:'3F',hybrid:'NIE',ac_kw:8,mppt:2,max_v:1000,eff:98.2,price:9800,note:''}
+    ];
+  }
+  if(!(state.data.micro||[]).length){
+    state.data.micro = [
+      {id:uid(),brand:'Enphase',model:'IQ7A',ac_va:366,peak:366,module_w:295_460,eff:97.0,price:650,note:'1 moduł / mikro'},
+      {id:uid(),brand:'Enphase',model:'IQ8M',ac_va:330,peak:330,module_w:235_460,eff:97.0,price:720,note:'grid-forming'},
+      {id:uid(),brand:'Hoymiles',model:'HM-1500',ac_va:1500,peak:1500,module_w:'4x 300–470',eff:96.7,price:1200,note:'4 wejścia'},
+      {id:uid(),brand:'APsystems',model:'QS1',ac_va:1200,peak:1200,module_w:'4x 250–375',eff:96.5,price:1100,note:'4 moduły'},
+      {id:uid(),brand:'TSUN',model:'TSOL-M800',ac_va:800,peak:800,module_w:'2x 300–450',eff:96.5,price:780,note:''}
+    ];
+  }
+  if(!(state.data.batt||[]).length){
+    state.data.batt = [
+      {id:uid(),brand:'Huawei',model:'LUNA2000-5/10/15',chem:'LFP',cap_kwh:5,stackable:'TAK',v:'HV',dod:100,cycles:10000,warr:10,price:11500,note:'moduł 5kWh, do 15kWh'},
+      {id:uid(),brand:'BYD',model:'HVM 11.0',chem:'LFP',cap_kwh:11,stackable:'TAK',v:'HV',dod:96,cycles:6000,warr:10,price:28000,note:'modułowa 5–22kWh'},
+      {id:uid(),brand:'Pylontech',model:'US3000C',chem:'LFP',cap_kwh:3.55,stackable:'TAK',v:'LV',dod:95,cycles:6000,warr:7,price:6200,note:''},
+      {id:uid(),brand:'FoxESS',model:'ECS 10.4',chem:'LFP',cap_kwh:10.4,stackable:'TAK',v:'LV',dod:90,cycles:6000,warr:10,price:21500,note:''},
+      {id:uid(),brand:'GoodWe',model:'Lynx Home F',chem:'LFP',cap_kwh:9.6,stackable:'TAK',v:'HV',dod:95,cycles:8000,warr:10,price:23000,note:''}
+    ];
+  }
+  if(!(state.data.mount||[]).length){
+    state.data.mount = [
+      {id:uid(),brand:'K2 Systems',model:'SingleRail',type:'Dach skośny',roof:'dachówka',tilt:'0–15°',mat:'AL/SS',price_kwp:320,note:'haki, szyna, klemmy'},
+      {id:uid(),brand:'Corab',model:'T1',type:'Dach skośny',roof:'blachodachówka',tilt:'0–15°',mat:'AL/SS',price_kwp:300,note:''},
+      {id:uid(),brand:'Energy5',model:'WF-10',type:'Dach płaski',roof:'balast',tilt:'10°',mat:'AL/SS',price_kwp:360,note:'balast 10°'},
+      {id:uid(),brand:'Corab',model:'WS-007',type:'Dach płaski',roof:'balast',tilt:'15°',mat:'AL/SS',price_kwp:380,note:''},
+      {id:uid(),brand:'Corab',model:'Ground N-8',type:'Grunt',roof:'—',tilt:'30–40°',mat:'stal/al',price_kwp:420,note:'2 rzędy x 5'}
+    ];
+  }
+  if(!(state.data.acc||[]).length){
+    state.data.acc = [
+      {id:uid(),cat:'DC',name:'Ogranicznik przepięć DC T2',spec:'1000V',price:280,note:''},
+      {id:uid(),cat:'AC',name:'Ogranicznik przepięć AC T2',spec:'400V 3F',price:300,note:''},
+      {id:uid(),cat:'DC',name:'Wyłącznik p.poż. (rapid shutdown)',spec:'string 1000V',price:950,note:''},
+      {id:uid(),cat:'Okablowanie',name:'Kabel PV 6mm² czarny',spec:'100m',price:520,note:''},
+      {id:uid(),cat:'Złącza',name:'Złącza MC4 komplet',spec:'para',price:24,note:''},
+      {id:uid(),cat:'Bezpieczniki',name:'Bezpiecznik DC 15A',spec:'10x38',price:18,note:''},
+      {id:uid(),cat:'Rozdzielnica',name:'Rozdzielnica AC/DC PV',spec:'IP65',price:820,note:''},
+      {id:uid(),cat:'Pomiar',name:'Licznik energii 3F',spec:'Modbus',price:420,note:''}
+    ];
+  }
+  if(!(state.data.sets||[]).length){
+    state.data.sets = [
+      {id:uid(),title:'6.1 kWp • Trina 505 + Fronius Primo 6',kwp:6.06,phase:'1F',storage:'NIE',items:'Moduły: 12× Trina Vertex S+ 505W; Falownik: Fronius Primo 6.0-1; Montaż: dach skośny',price:36900,note:'DC/AC≈1.01'},
+      {id:uid(),title:'9.1 kWp • JA 460 + Fronius Symo 10',kwp:9.2,phase:'3F',storage:'NIE',items:'Moduły: 20× JA Solar 460W; Falownik: Fronius Symo 10.0-3; Montaż: dach skośny',price:51200,note:'DC/AC≈0.92'},
+      {id:uid(),title:'5.0 kWp • LONGi 460 + Huawei L1 (hybryda)',kwp:5.06,phase:'1F',storage:'opcjonalnie',items:'Moduły: 11× LONGi 460W; Falownik: Huawei SUN2000-6KTL-L1; Montaż: dach skośny',price:38900,note:'LUNA ready'},
+      {id:uid(),title:'10.1 kWp • Jinko 475 + GoodWe ET 10 (hybryda)',kwp:10.45,phase:'3F',storage:'TAK',items:'Moduły: 22× Jinko 475W; Falownik: GoodWe GW10K-ET Plus; Magazyn: BYD HVM 11.0',price:84600,note:'hybryda HV'},
+      {id:uid(),title:'4.0 kWp • Enphase mikro + JA 410',kwp:4.1,phase:'1F',storage:'NIE',items:'Mikroinwertery: Enphase IQ7A ×10; Moduły: 10× JA 410W',price:45800,note:'mikroinwertery'}
+    ];
+  }
+}
+
+/* === column definitions per tab === */
+const COLS = {
+  sets:[
+    {k:'title',lbl:'Nazwa zestawu',w:280},
+    {k:'kwp',lbl:'Moc [kWp]',num:1},
+    {k:'phase',lbl:'Fazy',sel:['1F','3F']},
+    {k:'storage',lbl:'Magazyn',sel:['NIE','opcjonalnie','TAK']},
+    {k:'items',lbl:'Skład',w:420},
+    {k:'price',lbl:'Cena [zł]',num:0},
+    {k:'note',lbl:'Uwagi',w:220}
+  ],
+  modules:[
+    {k:'brand',lbl:'Marka'},
+    {k:'model',lbl:'Model',w:220},
+    {k:'tech',lbl:'Technologia',sel:['Mono PERC','TopCon N','HJT','HPBC','IBC','Inna']},
+    {k:'bifacial',lbl:'Bifacial',sel:['NIE','TAK']},
+    {k:'watt',lbl:'Moc [W]',num:0},
+    {k:'eff',lbl:'Sprawność [%]',num:2},
+    {k:'size',lbl:'Wymiar [mm]',w:150},
+    {k:'temp',lbl:'Coeff. [%/°C]'},
+    {k:'warr_prod',lbl:'Gwarancja prod. [l]',num:0},
+    {k:'warr_perf',lbl:'Gwarancja perf. [l]',num:0},
+    {k:'price',lbl:'Cena [zł]',num:0},
+    {k:'note',lbl:'Uwagi',w:180}
+  ],
+  inverters:[
+    {k:'brand',lbl:'Marka'},
+    {k:'model',lbl:'Model',w:220},
+    {k:'phase',lbl:'Fazy',sel:['1F','3F']},
+    {k:'hybrid',lbl:'Hybryda',sel:['NIE','TAK']},
+    {k:'ac_kw',lbl:'Moc AC [kW]',num:1},
+    {k:'mppt',lbl:'MPPT',num:0},
+    {k:'max_v',lbl:'V max [V]',num:0},
+    {k:'eff',lbl:'Sprawność [%]',num:1},
+    {k:'price',lbl:'Cena [zł]',num:0},
+    {k:'note',lbl:'Uwagi',w:200}
+  ],
+  micro:[
+    {k:'brand',lbl:'Marka'},
+    {k:'model',lbl:'Model',w:160},
+    {k:'ac_va',lbl:'Moc AC [VA]',num:0},
+    {k:'peak',lbl:'Szczyt [VA]',num:0},
+    {k:'module_w',lbl:'Zakres modułu [W]',w:160},
+    {k:'eff',lbl:'Sprawność [%]',num:1},
+    {k:'price',lbl:'Cena [zł]',num:0},
+    {k:'note',lbl:'Uwagi',w:200}
+  ],
+  batt:[
+    {k:'brand',lbl:'Marka'},
+    {k:'model',lbl:'Model',w:220},
+    {k:'chem',lbl:'Chemia',sel:['LFP','NMC','inne']},
+    {k:'cap_kwh',lbl:'Pojemność [kWh]',num:1},
+    {k:'stackable',lbl:'Modułowa',sel:['TAK','NIE']},
+    {k:'v',lbl:'Poziom V',sel:['LV','HV']},
+    {k:'dod',lbl:'DoD [%]',num:0},
+    {k:'cycles',lbl:'Cyklów',num:0},
+    {k:'warr',lbl:'Gwar. [l]',num:0},
+    {k:'price',lbl:'Cena [zł]',num:0},
+    {k:'note',lbl:'Uwagi',w:200}
+  ],
+  mount:[
+    {k:'brand',lbl:'Marka'},
+    {k:'model',lbl:'Model',w:200},
+    {k:'type',lbl:'Typ',sel:['Dach skośny','Dach płaski','Grunt']},
+    {k:'roof',lbl:'Pokrycie',w:140},
+    {k:'tilt',lbl:'Kąt',w:100},
+    {k:'mat',lbl:'Materiał',w:120},
+    {k:'price_kwp',lbl:'Cena / kWp [zł]',num:0},
+    {k:'note',lbl:'Uwagi',w:220}
+  ],
+  acc:[
+    {k:'cat',lbl:'Kategoria',sel:['DC','AC','Okablowanie','Złącza','Bezpieczniki','Rozdzielnica','Pomiar','Inne']},
+    {k:'name',lbl:'Nazwa',w:240},
+    {k:'spec',lbl:'Specyfikacja',w:160},
+    {k:'price',lbl:'Cena [zł]',num:0},
+    {k:'note',lbl:'Uwagi',w:220}
+  ]
+};
+
+/* === render filters depending on tab === */
+function renderDynamicFilters(){
+  const box = $('#dynFilters'); box.innerHTML='';
+  if(state.tab==='modules'){
+    box.innerHTML = `
+      <select id="f_tech">
+        <option value="">Technologia (wszystkie)</option>
+        ${['Mono PERC','TopCon N','HJT','HPBC','IBC','Inna'].map(t=>`<option>${t}</option>`).join('')}
+      </select>
+      <input id="f_pmin" type="number" placeholder="Moc min [W]" style="width:130px">
+      <input id="f_pmax" type="number" placeholder="Moc max [W]" style="width:130px">
+      <input id="f_eff" type="number" step="0.1" placeholder="Sprawność min [%]" style="width:160px">
+      <select id="f_bif">
+        <option value="">Bifacial?</option><option>TAK</option><option>NIE</option>
+      </select>`;
+    $('#f_tech').value = state.filters.modules.tech||'';
+    $('#f_pmin').value = state.filters.modules.pMin||'';
+    $('#f_pmax').value = state.filters.modules.pMax||'';
+    $('#f_eff').value  = state.filters.modules.effMin||'';
+    $('#f_bif').value  = state.filters.modules.bif||'';
+    ['f_tech','f_pmin','f_pmax','f_eff','f_bif'].forEach(id=>{ $('#'+id).addEventListener('input',applyFilters); $('#'+id).addEventListener('change',applyFilters); });
+  }else if(state.tab==='inverters'){
+    box.innerHTML = `
+      <select id="f_phase"><option value="">Fazy</option><option>1F</option><option>3F</option></select>
+      <select id="f_hyb"><option value="">Hybryda?</option><option>TAK</option><option>NIE</option></select>
+      <input id="f_acmin" type="number" step="0.1" placeholder="AC kW min" style="width:120px">
+      <input id="f_acmax" type="number" step="0.1" placeholder="AC kW max" style="width:120px">
+      <input id="f_mppt" type="number" placeholder="MPPT ≥" style="width:120px">`;
+    $('#f_phase').value = state.filters.inverters.phase||'';
+    $('#f_hyb').value   = state.filters.inverters.hybrid||'';
+    $('#f_acmin').value = state.filters.inverters.acMin||'';
+    $('#f_acmax').value = state.filters.inverters.acMax||'';
+    $('#f_mppt').value  = state.filters.inverters.mppt||'';
+    ['f_phase','f_hyb','f_acmin','f_acmax','f_mppt'].forEach(id=>{ $('#'+id).addEventListener('input',applyFilters); $('#'+id).addEventListener('change',applyFilters); });
+  }else if(state.tab==='micro'){
+    box.innerHTML = `
+      <input id="f_mbrand" placeholder="Marka (np. Enphase)" style="width:180px">
+      <input id="f_mvmin" type="number" placeholder="VA min" style="width:120px">
+      <input id="f_mvmax" type="number" placeholder="VA max" style="width:120px">`;
+    $('#f_mbrand').value = state.filters.micro.brand||'';
+    $('#f_mvmin').value  = state.filters.micro.acMin||'';
+    $('#f_mvmax').value  = state.filters.micro.acMax||'';
+    ['f_mbrand','f_mvmin','f_mvmax'].forEach(id=>{ $('#'+id).addEventListener('input',applyFilters); });
+  }else if(state.tab==='batt'){
+    box.innerHTML = `
+      <select id="f_chem"><option value="">Chemia</option><option>LFP</option><option>NMC</option></select>
+      <input id="f_cmin" type="number" step="0.1" placeholder="kWh min" style="width:120px">
+      <input id="f_cmax" type="number" step="0.1" placeholder="kWh max" style="width:120px">`;
+    $('#f_chem').value = state.filters.batt.chem||'';
+    $('#f_cmin').value = state.filters.batt.capMin||'';
+    $('#f_cmax').value = state.filters.batt.capMax||'';
+    ['f_chem','f_cmin','f_cmax'].forEach(id=>{ $('#'+id).addEventListener('input',applyFilters); $('#'+id).addEventListener('change',applyFilters); });
+  }else if(state.tab==='mount'){
+    box.innerHTML = `
+      <select id="f_roof"><option value="">Pokrycie</option><option>dachówka</option><option>blachodachówka</option><option>balast</option><option>—</option></select>
+      <select id="f_type"><option value="">Typ</option><option>Dach skośny</option><option>Dach płaski</option><option>Grunt</option></select>`;
+    $('#f_roof').value = state.filters.mount.roof||'';
+    $('#f_type').value = state.filters.mount.ground||'';
+    ['f_roof','f_type'].forEach(id=>{ $('#'+id).addEventListener('input',applyFilters); $('#'+id).addEventListener('change',applyFilters); });
+  }else if(state.tab==='sets'){
+    box.innerHTML = `
+      <input id="f_kwpmin" type="number" step="0.1" placeholder="kWp min" style="width:120px">
+      <input id="f_kwpmax" type="number" step="0.1" placeholder="kWp max" style="width:120px">
+      <select id="f_phase_s"><option value="">Fazy</option><option>1F</option><option>3F</option></select>
+      <select id="f_store"><option value="">Magazyn</option><option>NIE</option><option>opcjonalnie</option><option>TAK</option></select>`;
+    $('#f_kwpmin').value = state.filters.sets.kwpMin||'';
+    $('#f_kwpmax').value = state.filters.sets.kwpMax||'';
+    $('#f_phase_s').value = state.filters.sets.phase||'';
+    $('#f_store').value   = state.filters.sets.storage||'';
+    ['f_kwpmin','f_kwpmax','f_phase_s','f_store'].forEach(id=>{ $('#'+id).addEventListener('input',applyFilters); $('#'+id).addEventListener('change',applyFilters); });
+  }
+}
+
+/* === apply filters === */
+function applyFilters(){
+  if(state.tab==='modules'){
+    state.filters.modules.tech   = $('#f_tech').value;
+    state.filters.modules.pMin   = $('#f_pmin').value;
+    state.filters.modules.pMax   = $('#f_pmax').value;
+    state.filters.modules.effMin = $('#f_eff').value;
+    state.filters.modules.bif    = $('#f_bif').value;
+  }else if(state.tab==='inverters'){
+    state.filters.inverters.phase = $('#f_phase').value;
+    state.filters.inverters.hybrid= $('#f_hyb').value;
+    state.filters.inverters.acMin = $('#f_acmin').value;
+    state.filters.inverters.acMax = $('#f_acmax').value;
+    state.filters.inverters.mppt  = $('#f_mppt').value;
+  }else if(state.tab==='micro'){
+    state.filters.micro.brand = $('#f_mbrand').value.trim();
+    state.filters.micro.acMin = $('#f_mvmin').value;
+    state.filters.micro.acMax = $('#f_mvmax').value;
+  }else if(state.tab==='batt'){
+    state.filters.batt.chem   = $('#f_chem').value;
+    state.filters.batt.capMin = $('#f_cmin').value;
+    state.filters.batt.capMax = $('#f_cmax').value;
+  }else if(state.tab==='mount'){
+    state.filters.mount.roof  = $('#f_roof').value;
+    state.filters.mount.ground= $('#f_type').value;
+  }else if(state.tab==='sets'){
+    state.filters.sets.kwpMin  = $('#f_kwpmin').value;
+    state.filters.sets.kwpMax  = $('#f_kwpmax').value;
+    state.filters.sets.phase   = $('#f_phase_s').value;
+    state.filters.sets.storage = $('#f_store').value;
+  }
+  render();
+}
+
+/* === sorting === */
+function toggleSort(key){
+  if(state.sort.key===key){ state.sort.dir*=-1; } else { state.sort.key=key; state.sort.dir=1; }
+  render();
+}
+function sortFn(a,b){
+  const k=state.sort.key, d=state.sort.dir;
+  const va = String(a[k]??'').toLowerCase();
+  const vb = String(b[k]??'').toLowerCase();
+  if(!isNaN(+a[k]) && !isNaN(+b[k])) return d*(+a[k]-+b[k]);
+  return d*va.localeCompare(vb,'pl',{sensitivity:'base'});
+}
+
+/* === rendering table === */
+function renderHead(){
+  const cols = COLS[state.tab];
+  const ths = ['<th>Akcje</th>'].concat(cols.map(c=>`<th>${esc(c.lbl)}</th>`));
+  $('#thead').innerHTML = `<tr>${ths.join('')}</tr>`;
+  // clickable sort
+  Array.from($('#thead').querySelectorAll('th')).forEach((th,i)=>{
+    if(i===0) return;
+    const col = cols[i-1];
+    th.style.cursor='pointer';
+    th.title = 'Kliknij aby sortować';
+    th.addEventListener('click',()=>{ toggleSort(col.k); $('#sortLabel').textContent = col.lbl; });
+  });
+}
+function render(){
+  renderHead();
+  renderDynamicFilters();
+
+  const cols = COLS[state.tab];
+  let rows = (state.data[state.tab]||[]).slice();
+
+  // search
+  const q = (state.q||'').toLowerCase();
+  if(q){
+    rows = rows.filter(r=> JSON.stringify(r).toLowerCase().includes(q) );
+  }
+
+  // per-tab filters
+  if(state.tab==='modules'){
+    const f=state.filters.modules;
+    if(f.tech) rows=rows.filter(r=>r.tech===f.tech);
+    if(f.bif) rows=rows.filter(r=>String(r.bifacial).toUpperCase()===f.bif.toUpperCase());
+    if(+f.pMin) rows=rows.filter(r=>+r.watt >= +f.pMin);
+    if(+f.pMax) rows=rows.filter(r=>+r.watt <= +f.pMax);
+    if(+f.effMin) rows=rows.filter(r=>+r.eff >= +f.effMin);
+  }else if(state.tab==='inverters'){
+    const f=state.filters.inverters;
+    if(f.phase) rows=rows.filter(r=>r.phase===f.phase);
+    if(f.hybrid) rows=rows.filter(r=>r.hybrid===f.hybrid);
+    if(+f.acMin) rows=rows.filter(r=>+r.ac_kw >= +f.acMin);
+    if(+f.acMax) rows=rows.filter(r=>+r.ac_kw <= +f.acMax);
+    if(+f.mppt) rows=rows.filter(r=>+r.mppt >= +f.mppt);
+  }else if(state.tab==='micro'){
+    const f=state.filters.micro;
+    if(f.brand) rows=rows.filter(r=>String(r.brand).toLowerCase().includes(f.brand.toLowerCase()));
+    if(+f.acMin) rows=rows.filter(r=>+r.ac_va >= +f.acMin);
+    if(+f.acMax) rows=rows.filter(r=>+r.ac_va <= +f.acMax);
+  }else if(state.tab==='batt'){
+    const f=state.filters.batt;
+    if(f.chem) rows=rows.filter(r=>r.chem===f.chem);
+    if(+f.capMin) rows=rows.filter(r=>+r.cap_kwh >= +f.capMin);
+    if(+f.capMax) rows=rows.filter(r=>+r.cap_kwh <= +f.capMax);
+  }else if(state.tab==='mount'){
+    const f=state.filters.mount;
+    if(f.roof) rows=rows.filter(r=>String(r.roof).toLowerCase().includes(f.roof.toLowerCase()));
+    if(f.ground) rows=rows.filter(r=>r.type===f.ground);
+  }else if(state.tab==='sets'){
+    const f=state.filters.sets;
+    if(+f.kwpMin) rows=rows.filter(r=>+r.kwp >= +f.kwpMin);
+    if(+f.kwpMax) rows=rows.filter(r=>+r.kwp <= +f.kwpMax);
+    if(f.phase) rows=rows.filter(r=>r.phase===f.phase);
+    if(f.storage) rows=rows.filter(r=>r.storage===f.storage);
+  }
+
+  // sort
+  if(state.sort.key==='brand_model'){
+    rows.sort((a,b)=>{
+      const a1=(a.brand||'')+' '+(a.model||'');
+      const b1=(b.brand||'')+' '+(b.model||'');
+      return state.sort.dir * a1.localeCompare(b1,'pl',{sensitivity:'base'});
+    });
+  }else{
+    rows.sort(sortFn);
+  }
+
+  $('#countAll').textContent = (state.data[state.tab]||[]).length;
+  $('#countVis').textContent = rows.length;
+
+  const tb = $('#tbody'); tb.innerHTML='';
+  rows.forEach((r,ri)=>{
+    const tr=document.createElement('tr');
+    // actions
+    const act = document.createElement('td');
+    act.innerHTML = `
+      <div class="row">
+        <button class="btn ghost" data-act="dup" data-id="${r.id}">Duplikuj</button>
+        <button class="btn bad" data-act="del" data-id="${r.id}">Usuń</button>
+      </div>`;
+    tr.appendChild(act);
+
+    cols.forEach(col=>{
+      const td=document.createElement('td');
+      let v = r[col.k];
+      const id = r.id+'__'+col.k;
+      if(col.sel){
+        td.innerHTML = `<select id="${id}">${col.sel.map(o=>`<option ${o==v?'selected':''}>${esc(o)}</option>`).join('')}</select>`;
+      }else if(col.num!=null){
+        td.innerHTML = `<input id="${id}" type="number" step="${col.num===0?1:(col.num===1?0.1:0.01)}" value="${v??''}" style="max-width:120px">`;
+      }else{
+        td.innerHTML = `<input id="${id}" value="${v==null?'':esc(v)}" ${col.w?`style="min-width:${col.w}px"`:''}>`;
+      }
+      tr.appendChild(td);
+      const el = td.querySelector('#'+CSS.escape(id));
+      el.addEventListener('input', ()=> editCell(r.id, col.k, (col.num!=null? (el.value===''? '' : +el.value) : el.value)) );
+      el.addEventListener('change', ()=> editCell(r.id, col.k, (col.num!=null? (el.value===''? '' : +el.value) : el.value)) );
+    });
+
+    tb.appendChild(tr);
+  });
+
+  // bind actions
+  tb.querySelectorAll('[data-act="del"]').forEach(b=>b.addEventListener('click',()=>{
+    const id=b.dataset.id;
+    state.data[state.tab] = (state.data[state.tab]||[]).filter(x=>x.id!==id);
+    saveTab();
+  }));
+  tb.querySelectorAll('[data-act="dup"]').forEach(b=>b.addEventListener('click',()=>{
+    const id=b.dataset.id;
+    const src = (state.data[state.tab]||[]).find(x=>x.id===id);
+    if(!src) return;
+    const copy = JSON.parse(JSON.stringify(src)); copy.id=uid();
+    if(copy.title) copy.title = copy.title + ' (kopia)';
+    state.data[state.tab].unshift(copy);
+    saveTab();
+  }));
+}
+function editCell(id,key,val){
+  const arr = state.data[state.tab]||[];
+  const it = arr.find(x=>x.id===id); if(!it) return;
+  it[key]=val;
+  saveTab();
+}
+
+/* === UI binds === */
+// switch tab
+$$('.sb').forEach(b=>b.addEventListener('click',()=>{
+  $$('.sb').forEach(x=>x.setAttribute('aria-selected','false'));
+  b.setAttribute('aria-selected','true');
+  state.tab = b.dataset.k;
+  state.sort = {key:'brand_model',dir:1}; // reset sort
+  render();
+}));
+
+// search
+$('#q').addEventListener('input', e=>{ state.q = e.target.value.trim(); render(); });
+window.addEventListener('keydown', e=>{ if(e.key==='/' && document.activeElement.tagName!=='INPUT' && document.activeElement.tagName!=='SELECT'){ e.preventDefault(); $('#q').focus(); } });
+window.addEventListener('keydown', e=>{ if(e.altKey && (e.key==='n' || e.key==='N')) addRow(); });
+
+// add / export
+$('#btnAdd').addEventListener('click', addRow);
+$('#btnCSV').addEventListener('click', ()=>{
+  const cols = COLS[state.tab].map(c=>c.k);
+  toCSV(state.data[state.tab]||[], cols);
+});
+$('#btnJSON').addEventListener('click', ()=> saveJSON(state.data[state.tab]||[]) );
+$('#inJSON').addEventListener('change', async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  try{
+    const arr=await readJSON(f);
+    if(!Array.isArray(arr)) throw new Error('Zły plik JSON (oczekuję tablicy).');
+    state.data[state.tab]=arr;
+    saveTab();
+  }catch(err){ alert('Błąd importu: '+(err.message||err)); }
+  e.target.value='';
+});
+
+function addRow(){
+  const def = (tab)=>{
+    switch(tab){
+      case 'modules': return {id:uid(),brand:'',model:'',tech:'Mono PERC',bifacial:'NIE',watt:450,eff:21,size:'',temp:'-0.35',warr_prod:12,warr_perf:25,price:0,note:''};
+      case 'inverters': return {id:uid(),brand:'',model:'',phase:'3F',hybrid:'NIE',ac_kw:10,mppt:2,max_v:1000,eff:98,price:0,note:''};
+      case 'micro': return {id:uid(),brand:'',model:'',ac_va:800,peak:800,module_w:'2x 300–450',eff:96.5,price:0,note:''};
+      case 'batt': return {id:uid(),brand:'',model:'',chem:'LFP',cap_kwh:5,stackable:'TAK',v:'HV',dod:95,cycles:6000,warr:10,price:0,note:''};
+      case 'mount': return {id:uid(),brand:'',model:'',type:'Dach skośny',roof:'dachówka',tilt:'10°',mat:'AL/SS',price_kwp:0,note:''};
+      case 'acc': return {id:uid(),cat:'Inne',name:'',spec:'',price:0,note:''};
+      case 'sets': return {id:uid(),title:'Nowy zestaw',kwp:5.0,phase:'3F',storage:'NIE',items:'',price:0,note:''};
+    }
+  };
+  state.data[state.tab].unshift(def(state.tab));
+  saveTab();
+}
+
+/* === boot === */
+loadAll();
+seedIfEmpty();
+render();
+</script>
+</body>
+</html>
