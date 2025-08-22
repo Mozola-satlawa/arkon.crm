@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARKON — Baza danych (localStorage)</title>
+<style>
+  body{margin:0;background:#0b1020;color:#e8edff;font:14px/1.5 system-ui,Segoe UI,Roboto,Arial}
+  header{padding:16px;background:#11183a;border-bottom:1px solid #1c2750}
+  header h1{margin:0;font-size:22px}
+  nav{background:#172142;display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid #1c2750}
+  nav a{color:#cfe1ff;text-decoration:none;padding:8px 12px;border-radius:999px;border:1px solid #2a3a75}
+  nav a:hover{background:#223160}
+  .wrap{max-width:1200px;margin:auto;padding:16px}
+  textarea{width:100%;min-height:400px;background:#0d1530;color:#e8edff;border:1px solid #28356c;border-radius:10px;padding:10px;font:13px/1.4 monospace;white-space:pre}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
+  button{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:8px;padding:8px 12px;cursor:pointer}
+  button.ok{background:#194d34;border-color:#2b8a57}
+  button.bad{background:#3a1f2a;border-color:#7b3341}
+  .muted{color:#aeb8da;font-size:13px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>ARKON • Baza klientów (localStorage)</h1>
+  <div class="muted">Podgląd i edycja surowych danych JSON. To jest ta sama baza co w <b>klienci.html</b>.</div>
+</header>
+
+<nav>
+  <a href="index.html">Pulpit</a>
+  <a href="klienci.html">Klienci</a>
+  <a href="lidy.html">Lidy</a>
+  <a href="komponenty.html">Komponenty</a>
+  <a href="upload.html">Przesył plików</a>
+  <a href="ustawienia.html">Ustawienia</a>
+</nav>
+
+<div class="wrap">
+  <div class="toolbar">
+    <button id="btnLoad">🔄 Załaduj z localStorage</button>
+    <button id="btnSave" class="ok">💾 Zapisz do localStorage</button>
+    <button id="btnExport">⬇ Eksport JSON</button>
+    <label><button>⬆ Import JSON<input id="fileImport" type="file" accept="application/json" hidden></button></label>
+    <button id="btnClear" class="bad">🗑 Wyczyść bazę</button>
+  </div>
+
+  <textarea id="editor" placeholder="Tutaj zobaczysz surowe dane JSON klientów..."></textarea>
+</div>
+
+<script>
+'use strict';
+const LS = {
+  clients: 'arkon_clients_v1',
+  schema:  'arkon_clients_schema_v1',
+  leads:   'arkon_leads_v1'
+};
+const editor = document.getElementById('editor');
+
+/* Załaduj dane */
+function loadData(){
+  const clients = localStorage.getItem(LS.clients)||'[]';
+  const schema  = localStorage.getItem(LS.schema)||'[]';
+  const leads   = localStorage.getItem(LS.leads)||'[]';
+  editor.value = JSON.stringify({clients:JSON.parse(clients),schema:JSON.parse(schema),leads:JSON.parse(leads)},null,2);
+}
+document.getElementById('btnLoad').onclick = loadData;
+loadData();
+
+/* Zapisz dane */
+document.getElementById('btnSave').onclick = ()=>{
+  try{
+    const data = JSON.parse(editor.value);
+    if(!Array.isArray(data.clients)) throw new Error("Brak pola clients[]");
+    localStorage.setItem(LS.clients, JSON.stringify(data.clients));
+    if(Array.isArray(data.schema)) localStorage.setItem(LS.schema, JSON.stringify(data.schema));
+    if(Array.isArray(data.leads))  localStorage.setItem(LS.leads, JSON.stringify(data.leads));
+    alert("Zapisano do localStorage.");
+  }catch(e){ alert("Błąd JSON: "+e.message); }
+};
+
+/* Eksport JSON */
+document.getElementById('btnExport').onclick = ()=>{
+  const blob = new Blob([editor.value], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'arkon_baza.json';
+  a.click(); URL.revokeObjectURL(a.href);
+};
+
+/* Import JSON z pliku */
+document.getElementById('fileImport').onchange = e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ editor.value=r.result; };
+  r.readAsText(f);
+};
+
+/* Wyczyść bazę */
+document.getElementById('btnClear').onclick = ()=>{
+  if(confirm("Na pewno usunąć wszystkich klientów i lidy?")){
+    localStorage.removeItem(LS.clients);
+    localStorage.removeItem(LS.schema);
+    localStorage.removeItem(LS.leads);
+    loadData();
+  }
+};
+</script>
+</body>
+</html>
