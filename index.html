@@ -48,9 +48,10 @@
     .list-reset{list-style:none;margin:0;padding:0}
     .danger{color:#ffb4b4}
     .status{padding:2px 8px;border-radius:999px}
-    .status.W\ toku{background:#24336b}
-    .status.Podpisana{background:#1d3d2f}
-    .status.Anulowana{background:#4a1d1d}
+    /* >>> poprawione klasy statusu (bez spacji) */
+    .status.w-toku{background:#24336b}
+    .status.podpisana{background:#1d3d2f}
+    .status.anulowana{background:#4a1d1d}
     /* panel boczny (bez modali/okien) */
     .layout{display:grid;grid-template-columns:1fr 340px;gap:16px}
     .side{position:sticky;top:64px;max-height:calc(100vh - 96px);overflow:auto}
@@ -300,6 +301,17 @@
       { id:"C-002", name:"Jan Nowak",    email:"jan@example.com",  phone:"600-100-201", manager:"Paweł", notes:"VIP" , created_at:Date.now()-86400000*2},
       { id:"C-003", name:"Piotr Kamiński", email:"piotr@example.com", phone:"600-100-202", manager:"Kasia", notes:"" , created_at:Date.now()-86400000*1},
     ];
+    function defaultDocList(){
+      return [
+        "Umowa gotówkowa / do funduszu",
+        "Opinia kominiarza",
+        "Protokół odbioru instalacji",
+        "Oświadczenie o przekazaniu środków",
+        "Umowa z wykonawcą",
+        "Zaświadczenie o dochodach klienta",
+        "Inne załączniki",
+      ];
+    }
     const seedContracts = [
       { id:"U-1001", client_id:"C-001", customer:"Anna Kowalska", items:[{sku:"PV-410",qty:12,price:520},{sku:"PV-INV8",qty:1,price:4100}], total:21500, type:"gotówka", status:"W toku", docs:defaultDocList().map(n=>({name:n,done:false})) , created_at:Date.now()-86400000*2},
       { id:"U-1002", client_id:"C-002", customer:"Jan Nowak",     items:[{sku:"HP-9KW",qty:1,price:15500}], total:42000, type:"prefinansowanie", status:"Zakończona", docs:defaultDocList().map(n=>({name:n,done:true})) , created_at:Date.now()-86400000*1},
@@ -324,17 +336,6 @@
       { sku:"OC-PARA", name:"Parapety (szt.)",          category:"ocieplenie",   price:95 },
       { sku:"OC-FLASH",name:"Obróbki blacharskie (mb)", category:"ocieplenie",   price:55 },
     ];
-    function defaultDocList(){
-      return [
-        "Umowa gotówkowa / do funduszu",
-        "Opinia kominiarza",
-        "Protokół odbioru instalacji",
-        "Oświadczenie o przekazaniu środków",
-        "Umowa z wykonawcą",
-        "Zaświadczenie o dochodach klienta",
-        "Inne załączniki",
-      ];
-    }
 
     // ====== STAN / PERSIST ======
     const LSKEY = "arkonCRM_v2";
@@ -346,7 +347,7 @@
           contracts: s.contracts || seedContracts.slice(),
           docsMaster: s.docsMaster || defaultDocList().map(n=>({name:n,done:false})),
           chat: s.chat || [{from:"System",text:"Witaj w czacie ARKON 👋",at:Date.now()}],
-          cart: s.cart || [], // [{sku,qty,price}]
+          cart: s.cart || [],
         };
       }catch{
         return { clients:seedClients.slice(), contracts:seedContracts.slice(), docsMaster:defaultDocList().map(n=>({name:n,done:false})), chat:[{from:"System",text:"Witaj w czacie ARKON 👋",at:Date.now()}], cart:[] };
@@ -362,31 +363,29 @@
     const $ = sel => document.querySelector(sel);
     const $$ = sel => Array.from(document.querySelectorAll(sel));
     const money = x => (Math.round(x)||0).toLocaleString("pl-PL")+" zł";
-    function annuity(P, months, annualPct){
-      const r = (annualPct/100)/12;
-      if (!P||!months) return 0;
-      if (r===0) return Math.round(P/months);
-      const a = r*Math.pow(1+r,months)/(Math.pow(1+r,months)-1);
-      return Math.round(P*a);
-    }
+    function statusClass(s){ return (s||'').toString().trim().toLowerCase().replace(/\s+/g,'-'); }
     function uid(prefix, list){
-      let n = list.length + 1;
-      let id;
+      let n = list.length + 1, id;
       do { id = ${prefix}-${n.toString().padStart(3,"0")}; n++; } while(list.some(x=>x.id===id));
       return id;
     }
     function byId(map,id){ return map.find(x=>x.id===id); }
     function productBySku(sku){ return seedProducts.find(p=>p.sku===sku); }
+    function escapeHtml(s){ return (s||"").replace(/[&<>"]/g,c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c])); }
 
-    // ====== NAWIGACJA ======
-    $$(".tab").forEach(el=>{
-      el.addEventListener("click", ()=>{
-        $$(".tab").forEach(t=>t.classList.remove("active"));
-        el.classList.add("active");
-        const key = el.dataset.tab;
-        $$("section[id^='tab-']").forEach(s => s.hidden = true);
-        $("#tab-"+key).hidden = false;
-      });
+    // ====== NAWIGACJA (delegacja + bezpieczny switch) ======
+    function showTab(key){
+      if(!key) return;
+      document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active", t.dataset.tab===key));
+      document.querySelectorAll("section[id^='tab-']").forEach(s=>s.hidden = true);
+      const sec = document.getElementById("tab-"+key);
+      if(sec) sec.hidden = false;
+    }
+    document.querySelector(".nav").addEventListener("click",(e)=>{
+      const btn = e.target.closest(".tab");
+      if(!btn) return;
+      e.preventDefault();
+      showTab(btn.dataset.tab);
     });
 
     // ====== DASHBOARD ======
@@ -423,7 +422,6 @@
       });
       $("#cli-empty").style.display = list.length? "none":"block";
 
-      // linki do panelu bocznego
       rows.querySelectorAll(".cli-link").forEach(a=>{
         a.addEventListener("click",(e)=>{
           e.preventDefault();
@@ -465,11 +463,11 @@
       const ul = $("#cli-s-contracts"); ul.innerHTML="";
       state.contracts.filter(u=>u.client_id===id).forEach(u=>{
         const li=document.createElement("li");
-        li.innerHTML = <a href="#" data-id="${u.id}" class="ctr-link">${u.id}</a> – ${u.customer} • <span class="status ${u.status}">${u.status}</span> • ${money(u.total)};
+        li.innerHTML = <a href="#" data-id="${u.id}" class="ctr-link">${u.id}</a> – ${u.customer} • <span class="status ${statusClass(u.status)}">${u.status}</span> • ${money(u.total)};
         ul.appendChild(li);
       });
       ul.querySelectorAll(".ctr-link").forEach(a=>{
-        a.addEventListener("click",(e)=>{ e.preventDefault(); openContractSide(a.dataset.id); });
+        a.addEventListener("click",(e)=>{ e.preventDefault(); openContractSide(a.dataset.id); showTab("contracts"); });
       });
     }
     $("#cli-s-save").addEventListener("click",()=>{
@@ -490,7 +488,7 @@
           <td>${c.customer}</td>
           <td>${money(c.total)}</td>
           <td><span class="chip">${c.type}</span></td>
-          <td><span class="status ${c.status}">${c.status}</span></td>
+          <td><span class="status ${statusClass(c.status)}">${c.status}</span></td>
           <td>
             <button class="btn ghost ctr-open" data-id="${c.id}">Szczegóły</button>
           </td>`;
@@ -517,6 +515,7 @@
       $("#ctr-s-client").textContent = ${c.customer} (${c.client_id});
       $("#ctr-s-total").textContent = money(c.total);
       $("#ctr-s-type").textContent = c.type;
+      $("#ctr-s-status").className = "chip " + statusClass(c.status);
       $("#ctr-s-status").textContent = c.status;
       // dokumenty
       const ul=$("#ctr-docs"); ul.innerHTML="";
@@ -559,7 +558,7 @@
       state.contracts=[ctr, ...state.contracts];
       state.cart=[]; saveState();
       renderContracts(); renderCart(); openContractSide(id);
-      document.querySelector('.tab[data-tab="contracts"]').click();
+      showTab("contracts");
     });
 
     // ====== PRODUKTY + KOSZYK ======
@@ -612,7 +611,6 @@
         `;
         box.appendChild(div);
       });
-      // zmiana ilości / kasowanie
       box.querySelectorAll('input[type="number"]').forEach(inp=>{
         inp.addEventListener("input",()=>{
           const i=+inp.dataset.i; const v=Math.max(1, +inp.value||1);
@@ -624,7 +622,7 @@
       });
       const sum = state.cart.reduce((s,i)=>s+i.price*i.qty,0);
       $("#cart-sum").textContent = money(sum);
-      $("#cart-sum-disc").textContent = money(sum); // rabat ustawiany przy tworzeniu umowy
+      $("#cart-sum-disc").textContent = money(sum);
     }
 
     // ====== DOKUMENTY (wzorzec) ======
@@ -667,7 +665,6 @@
       });
       box.scrollTop=box.scrollHeight;
     }
-    function escapeHtml(s){ return (s||"").replace(/[&<>"]/g,c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c])); }
     $("#chat-send").addEventListener("click",()=>{
       const t=$("#chat-text").value.trim(); if(!t) return;
       state.chat.push({from:"Ja",text:t,at:Date.now()}); $("#chat-text").value=""; saveState(); renderChat();
@@ -688,7 +685,7 @@
       r.onload = () => {
         try{
           const obj = JSON.parse(r.result);
-          state = Object.assign(loadState(), obj); // bezpieczne nadpisanie
+          state = Object.assign(loadState(), obj);
           saveState(); boot();
           alert("Import zakończony.");
         }catch{ alert("Plik nieprawidłowy."); }
@@ -703,19 +700,14 @@
 
     // ====== SKRÓTY KLAWIATUROWE ======
     window.addEventListener("keydown",(e)=>{
-      if(e.key==="/" && !["INPUT","TEXTAREA"].includes(document.activeElement.tagName)){ e.preventDefault(); $("#cli-q").focus(); document.querySelector('.tab[data-tab="clients"]').click(); }
-      if(e.altKey && (e.key==="n" || e.key==="N")){ e.preventDefault(); document.querySelector('.tab[data-tab="clients"]').click(); $("#cli-name").focus(); }
-      if(e.altKey && (e.key==="u" || e.key==="U")){ e.preventDefault(); document.querySelector('.tab[data-tab="contracts"]').click(); $("#ctr-create").focus(); }
+      if(e.key==="/" && !["INPUT","TEXTAREA"].includes(document.activeElement.tagName)){ e.preventDefault(); $("#cli-q").focus(); showTab("clients"); }
+      if(e.altKey && (e.key==="n" || e.key==="N")){ e.preventDefault(); showTab("clients"); $("#cli-name").focus(); }
+      if(e.altKey && (e.key==="u" || e.key==="U")){ e.preventDefault(); showTab("contracts"); $("#ctr-create").focus(); }
     });
 
     // ====== BOOT ======
     function boot(){
-      // start na Pulpit
-      $$(".tab").forEach(t=>t.classList.remove("active"));
-      document.querySelector('.tab[data-tab="dashboard"]').classList.add("active");
-      $$("section[id^='tab-']").forEach(s=>s.hidden=true);
-      $("#tab-dashboard").hidden=false;
-
+      showTab("dashboard");
       renderDashboard();
       renderClients();
       renderContracts();
