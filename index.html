@@ -3,41 +3,105 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ARKON Portal</title>
+<title>ARKON — Pulpit</title>
+<meta name="description" content="Pulpit ARKON: szybkie przejścia do kalkulatora, komponentów, dokumentów, klientów, leadów, komunikatora i ustawień.">
 <style>
-  body{margin:0;font:15px/1.5 system-ui,Segoe UI,Roboto,Arial;background:#0b1020;color:#e8edff}
-  header{background:#121a34;padding:16px;display:flex;align-items:center;gap:12px}
+  :root{ --bg:#0b1020; --p1:#121a34; --p2:#172142; --ink:#e8edff; --muted:#aeb8da; --accent:#4cc9f0; --ok:#2b8a57; --grid:#243059; --card:#0f1533; }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#0a0f1e,#0c1230 60%,#0a0f1e);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
+  header{display:flex;gap:12px;align-items:center;padding:16px;background:#11183a;position:sticky;top:0;z-index:5;border-bottom:1px solid #1c2750}
+  header .logo{width:48px;height:48px;border-radius:10px;background:#0e1538;border:1px solid #1f2a55;display:grid;place-items:center;overflow:hidden}
   header h1{margin:0;font-size:20px}
-  nav{background:#172142;display:flex;gap:12px;padding:10px 16px}
-  nav a{color:#aeb8da;text-decoration:none;padding:6px 12px;border-radius:6px}
-  nav a:hover{background:#233261;color:#fff}
-  .container{max-width:960px;margin:auto;padding:24px}
-  .card{background:#121a34;border:1px solid #243059;border-radius:12px;padding:16px;margin-bottom:16px}
-  h2{margin-top:0}
+  nav{background:#172142;display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid #1c2750}
+  nav a{color:#cfe1ff;text-decoration:none;padding:8px 12px;border-radius:999px;border:1px solid #2a3a75}
+  nav a:hover{background:#223160}
+  .wrap{max-width:1200px;margin:auto;padding:20px 16px 60px}
+  .grid{display:grid;gap:14px}
+  @media(min-width:980px){.cols-3{grid-template-columns:1fr 1fr 1fr}.cols-4{grid-template-columns:repeat(4,1fr)}}
+  .card{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid #1c2750;border-radius:14px;padding:16px}
+  .muted{color:var(--muted);font-size:13px}
+  h2{margin:0 0 8px 0;font-size:18px}
+  .kpi{display:flex;align-items:baseline;gap:8px}
+  .kpi b{font-size:26px}
+  .list{list-style:none;margin:0;padding:0}
+  .list li{display:flex;justify-content:space-between;gap:10px;padding:10px;border-bottom:1px solid #223160}
+  .list li:last-child{border-bottom:0}
+  .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 12px;text-decoration:none;display:inline-flex;gap:8px;align-items:center}
+  .btn.ghost{background:transparent;border:1px dashed #3a4ca3}
+  .right{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+  .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;margin:4px 8px 0 0;font-size:12px;color:#aeb8da}
 </style>
 </head>
 <body>
 
 <header>
-  <div class="logo" style="width:48px;height:48px;border-radius:8px;background:#0e1538;display:grid;place-items:center">
-    <img src="logo.png" alt="ARKON" style="max-width:80%">
+  <div class="logo" aria-hidden="true">
+    <img alt="ARKON" src="logo.png" style="width:100%;height:100%;object-fit:cover">
   </div>
-  <h1>Panel ARKON</h1>
+  <div>
+    <h1>ARKON — Pulpit</h1>
+    <div class="muted">Szybkie skróty do modułów i ostatnie aktywności.</div>
+  </div>
 </header>
 
 <nav>
   <a href="kalkulator.html">Kalkulator</a>
   <a href="komponenty.html">Komponenty</a>
+  <a href="dokumenty.html">Dokumenty</a>
+  <a href="klienci.html">Klienci</a>
+  <a href="leady.html">Leady</a>
   <a href="chat.html">Komunikator</a>
   <a href="ustawienia.html">Ustawienia</a>
 </nav>
 
-<div class="container">
-  <div class="card">
-    <h2>Witaj w Portalu ARKON</h2>
-    <p>Wybierz sekcję w menu powyżej, aby rozpocząć.</p>
+<div class="wrap">
+  <div class="grid cols-3">
+    <div class="card">
+      <h2>Przychody (symulacja)</h2>
+      <div class="kpi"><b id="kpiRevenue">0 zł</b><span class="muted">/ 30 dni</span></div>
+      <div class="pill">Aktywne umowy: <b id="kpiContracts">0</b></div>
+      <div class="pill">Brakujące dokumenty: <b id="kpiDocs">0</b></div>
+      <div class="right" style="margin-top:10px">
+        <a class="btn" href="komponenty.html">Przejdź do komponentów</a>
+        <a class="btn ghost" href="dokumenty.html">Zobacz dokumenty</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Szybkie akcje</h2>
+      <div class="right">
+        <a class="btn" href="kalkulator.html">Nowa kalkulacja</a>
+        <a class="btn" href="klienci.html">Dodaj klienta</a>
+        <a class="btn" href="leady.html">Dodaj lead</a>
+      </div>
+      <div class="muted" style="margin-top:10px">Wskazówka: skróty klawiaturowe wprowadzimy w kolejnych wersjach.</div>
+    </div>
+
+    <div class="card">
+      <h2>Ostatnie</h2>
+      <ul class="list" id="lastList">
+        <li><span>U-2025/02 • Teresa Siek • komponenty uzupełnione</span><a class="btn ghost" href="komponenty.html">Otwórz</a></li>
+        <li><span>Dodano plik: Pełnomocnictwo</span><a class="btn ghost" href="dokumenty.html">Pobierz</a></li>
+        <li><span>Nowy lead: „Pompa 12 kW”</span><a class="btn ghost" href="leady.html">Zobacz</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <h2>Skróty</h2>
+    <div class="right">
+      <a class="btn" href="dokumenty.html">Dokumenty do pobrania</a>
+      <a class="btn" href="chat.html">Komunikator</a>
+      <a class="btn" href="ustawienia.html">Eksport/Import</a>
+    </div>
   </div>
 </div>
 
+<script>
+  // Prosta atrapa KPI (możesz podmienić na dane z backendu w przyszłości)
+  document.getElementById('kpiRevenue').textContent = (63500).toLocaleString('pl-PL') + ' zł';
+  document.getElementById('kpiContracts').textContent = '3';
+  document.getElementById('kpiDocs').textContent = '3';
+</script>
 </body>
 </html>
