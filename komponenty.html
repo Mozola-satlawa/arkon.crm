@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARKON — Komponenty (hub)</title>
+<meta name="description" content="Szybki dostęp do kategorii komponentów: Pompy, Piece, Fotowoltaika, Ocieplenie, Stolarka.">
+<style>
+  :root{ --bg:#0b1020; --p1:#121a34; --p2:#172142; --ink:#e8edff; --muted:#aeb8da; --accent:#4cc9f0; --grid:#243059; --card:#0f1533; --line:#1c2750;}
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#0a0f1e,#0c1230 60%,#0a0f1e);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
+  header{padding:16px;background:#11183a;border-bottom:1px solid var(--line)}
+  header h1{margin:0;font-size:22px}
+  nav{background:#172142;display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line)}
+  nav a{color:#cfe1ff;text-decoration:none;padding:8px 12px;border-radius:999px;border:1px solid #2a3a75}
+  nav a:hover{background:#223160}
+  .wrap{max-width:1200px;margin:auto;padding:16px}
+  .grid{display:grid;gap:14px}
+  @media(min-width:900px){ .cols-3{grid-template-columns:repeat(3,1fr)}}
+  .card{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;padding:14px}
+  .tile{display:block;padding:16px;border:1px solid #2b3a77;border-radius:12px;text-decoration:none;color:#e8edff;background:#0d1530}
+  .tile h3{margin:0 0 6px}
+  .muted{color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Komponenty • Hub</h1>
+  <div class="muted">Wybierz kategorię. Dane każdej kategorii zapisują się lokalnie w przeglądarce i mają własny import/eksport.</div>
+</header>
+<nav>
+  <a href="index.html">Pulpit</a>
+  <a href="kalkulator.html">Kalkulator</a>
+  <a href="komponenty.html" style="background:#223160">Komponenty</a>
+  <a href="komponenty-pompy.html">Pompy</a>
+  <a href="komponenty-piece.html">Piece</a>
+  <a href="komponenty-fotowoltaika.html">Fotowoltaika</a>
+  <a href="komponenty-ocieplenie.html">Ocieplenie</a>
+  <a href="komponenty-stolarka.html">Stolarka</a>
+</nav>
+
+<div class="wrap">
+  <div class="grid cols-3">
+    <a class="tile" href="komponenty-pompy.html">
+      <h3>Pompy ciepła</h3>
+      <div class="muted">Moc, SCOP, typ, cena</div>
+    </a>
+    <a class="tile" href="komponenty-piece.html">
+      <h3>Piece / Kotły</h3>
+      <div class="muted">Pellet, gaz, elektryczne, drewno</div>
+    </a>
+    <a class="tile" href="komponenty-fotowoltaika.html">
+      <h3>Fotowoltaika</h3>
+      <div class="muted">Moduły, inwertery, zestawy</div>
+    </a>
+    <a class="tile" href="komponenty-ocieplenie.html">
+      <h3>Ocieplenie</h3>
+      <div class="muted">Materiał, λ, grubość, cena/m²</div>
+    </a>
+    <a class="tile" href="komponenty-stolarka.html">
+      <h3>Stolarka</h3>
+      <div class="muted">Okna, drzwi, bramy, rolety</div>
+    </a>
+  </div>
+</div>
+</body>
+</html>
