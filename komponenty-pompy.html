@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Komponenty — Pompy ciepła • ARKON</title>
+<meta name="description" content="Komponenty — Pompy ciepła • ARKON — ARKON CRM komponenty: lista, filtry, edycja, eksport/import, localStorage.">
+<style>
+
+:root{ --bg:#0b1020; --p1:#121a34; --p2:#172142; --ink:#e8edff; --muted:#aeb8da; --accent:#4cc9f0; --ok:#2b8a57; --grid:#243059; --card:#0f1533; --line:#1c2750; --bad:#ff6b6b; }
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#0a0f1e,#0c1230 60%,#0a0f1e);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
+header{padding:16px;background:#11183a;border-bottom:1px solid var(--line)}
+header h1{margin:0;font-size:22px}
+nav{background:#172142;display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line)}
+nav a{color:#cfe1ff;text-decoration:none;padding:8px 12px;border-radius:999px;border:1px solid #2a3a75}
+nav a:hover{background:#223160}
+.wrap{max-width:1400px;margin:auto;padding:16px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+.btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
+.btn.ghost{background:transparent;border:1px dashed #3a4ca3}
+.btn.bad{background:#3a1f2a;border-color:#7b3341}
+.btn.ok{background:#194d34;border-color:var(--ok)}
+input,select,textarea{background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:8px 10px;color:var(--ink);font:inherit}
+input::placeholder{color:#aeb8da99}
+.muted{color:var(--muted);font-size:13px}
+.card{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;padding:14px}
+table{width:100%;border-collapse:separate;border-spacing:0}
+th,td{padding:10px;border-bottom:1px solid var(--grid);text-align:left;vertical-align:top}
+th{font-size:13px;color:var(--muted)}
+.pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
+.grid{display:grid;gap:12px}
+.col{display:grid;gap:8px}
+.small{font-size:12px;color:#aeb8da}
+.scroll{overflow:auto}
+@media print{ nav,.toolbar,.filters,.actions{display:none!important} }
+
+</style>
+</head>
+<body>
+<header>
+  <h1>Komponenty — Pompy ciepła • ARKON</h1>
+  <div class="muted">Edycja szybka (okna podpowiedzi), filtry, eksport/import JSON/CSV, autosave (localStorage). Możesz tworzyć własne pozycje i filtrować po cenie.</div>
+</header>
+
+<nav>
+  <a href="index.html">Pulpit</a>
+  <a href="kalkulator.html">Kalkulator</a>
+  <a href="komponenty-pompy.html">Komponenty: Pompy</a>
+  <a href="komponenty-piece.html">Komponenty: Piece/Kotły</a>
+  <a href="komponenty-fotowoltaika.html">Komponenty: Fotowoltaika</a>
+  <a href="komponenty-ocieplenie.html">Komponenty: Ocieplenie</a>
+  <a href="komponenty-stolarka.html">Komponenty: Stolarka</a>
+  <a href="dokumenty.html">Dokumenty</a>
+  <a href="upload.html">Przesył plików</a>
+  <a href="chat.html">Komunikator</a>
+  <a href="ustawienia.html">Ustawienia</a>
+  <a href="lidy.html">Lidy</a>
+</nav>
+
+<div class="wrap">
+  <div class="toolbar">
+    <button id="btnAdd" class="btn ok">+ Dodaj pozycję</button>
+    <button id="btnJSON" class="btn ghost">Eksport JSON</button>
+    <label class="btn ghost">Import JSON <input id="inJSON" type="file" accept="application/json" hidden></label>
+    <button id="btnCSV" class="btn ghost">Eksport CSV</button>
+    <span class="pill">Widocznych: <b id="count">0</b></span>
+  </div>
+
+  <div class="card filters">
+  <div class="grid" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr; gap:8px">
+    <input id="q" placeholder="🔎 Szukaj tekstowo (np. marka/model/uwagi)">
+    <select id="f_select1"><option value="">— filtr z pola typu select —</option></select>
+    <div class="col"><label class="small">Cena min [zł]</label><input id="f_price_min" type="number" placeholder="0"></div>
+    <div class="col"><label class="small">Cena max [zł]</label><input id="f_price_max" type="number" placeholder="999999"></div>
+    <button id="btnClear" class="btn ghost" type="button">Wyczyść filtry</button>
+  </div>
+
+</div>
+
+  <div class="card scroll">
+    <table>
+      <thead><tr><th>Marka</th><th>Model</th><th>Typ układu</th><th>Hydraulika</th><th>Moc A-7/W35 [kW]</th><th>COP A7/W35</th><th>SCOP</th><th>Czynnik</th><th>Hałas [dB(A)]</th><th>Zasilanie</th><th>Gwarancja [lata]</th><th>Cena netto [zł]</th><th>Akcesoria w zestawie</th><th>Uwagi</th><th>Akcje</th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+
+'use strict';
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
+const fmt = new Intl.NumberFormat('pl-PL',{maximumFractionDigits:0});
+function escapeHtml(s){ return (s==null?'':String(s)).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function downloadFile(name, text, mime='application/json'){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([text],{type:mime}));
+  a.download=name; a.click(); URL.revokeObjectURL(a.href);
+}
+function readFileAsText(f){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=()=>rej(r.error); r.readAsText(f); }); }
+function escCsv(v){ let s=(v==null?'':String(v)); if(/[;\n"]/.test(s)) s='"'+s.replace(/"/g,'""')+'"'; return s; }
+function bytes(n){ n=+n||0; if(n<1024) return n+' B'; if(n<1048576) return (n/1024).toFixed(1)+' KB'; if(n<1073741824) return (n/1048576).toFixed(1)+' MB'; return (n/1073741824).toFixed(1)+' GB'; }
+
+const LS_KEY = 'arkon_cmp_pompy_v2';
+let rows = [];
+let filter = { q:'', select1:'', priceMin:'', priceMax:'' };
+const COLUMNS = [{"key": "brand", "label": "Marka", "type": "text"}, {"key": "model", "label": "Model", "type": "text"}, {"key": "type", "label": "Typ układu", "type": "select", "opts": ["powietrze", "grunt", "woda"]}, {"key": "hydro", "label": "Hydraulika", "type": "select", "opts": ["monoblok", "split", "hydrobox"]}, {"key": "power_kw", "label": "Moc A-7/W35 [kW]", "type": "number"}, {"key": "cop_a7", "label": "COP A7/W35", "type": "number"}, {"key": "scop", "label": "SCOP", "type": "number"}, {"key": "refrig", "label": "Czynnik", "type": "select", "opts": ["R32", "R290", "R410A", "inne"]}, {"key": "noise_db", "label": "Hałas [dB(A)]", "type": "number"}, {"key": "phase", "label": "Zasilanie", "type": "select", "opts": ["1F 230V", "3F 400V"]}, {"key": "warranty", "label": "Gwarancja [lata]", "type": "number"}, {"key": "price", "label": "Cena netto [zł]", "type": "number"}, {"key": "acc", "label": "Akcesoria w zestawie", "type": "text"}, {"key": "note", "label": "Uwagi", "type": "text"}];
+const PRICE_KEY = 'price';
+
+function load(){ try{ rows = JSON.parse(localStorage.getItem(LS_KEY)||'[]'); }catch{ rows=[]; } if(!rows.length){ rows = [{"brand": "Panasonic", "model": "Aquarea T-CAP 9kW", "type": "powietrze", "hydro": "split", "power_kw": 9, "cop_a7": 4.7, "scop": 4.6, "refrig": "R32", "noise_db": 53, "phase": "1F 230V", "warranty": 5, "price": 24500, "acc": "hydrobox, CWU 200l", "note": ""}, {"brand": "Viessmann", "model": "Vitocal 250-A 10kW", "type": "powietrze", "hydro": "monoblok", "power_kw": 10, "cop_a7": 5.0, "scop": 4.9, "refrig": "R290", "noise_db": 48, "phase": "3F 400V", "warranty": 5, "price": 29900, "acc": "moduł internet", "note": "bardzo cicha"}, {"brand": "Nibe", "model": "F1255-12", "type": "grunt", "hydro": "hydrobox", "power_kw": 12, "cop_a7": 5.4, "scop": 5.2, "refrig": "R410A", "noise_db": 42, "phase": "3F 400V", "warranty": 5, "price": 42000, "acc": "wbud. zasobnik", "note": "inwerter"}]; save(); } }
+function save(){ localStorage.setItem(LS_KEY, JSON.stringify(rows)); render(); }
+
+function initFilters(){ 
+  const sel = document.getElementById('f_select1');
+  const selCol = COLUMNS.find(c=>c.type==='select');
+  if(!selCol){ sel.innerHTML='<option value="">(brak pola select)</option>'; return; }
+  const values = Array.from(new Set(rows.map(r=>r[selCol.key]).filter(Boolean))).sort();
+  sel.innerHTML = '<option value="">— '+selCol.label+' —</option>' + values.map(v=>'<option>'+escapeHtml(v)+'</option>').join('');
+  if(filter.select1) sel.value = filter.select1;
+}
+
+function renderRow(r, i){
+  const tr = document.createElement('tr');
+  COLUMNS.forEach(c=>{
+    const td=document.createElement('td');
+    let v = r[c.key];
+    if(c.type==='checkbox') td.textContent = v?'TAK':'NIE';
+    else td.textContent = v==null?'':v;
+    tr.appendChild(td);
+  });
+  const tdAct = document.createElement('td');
+  tdAct.innerHTML = '<button class="btn ghost" data-ed="'+i+'">Edytuj</button> <button class="btn bad" data-del="'+i+'">Usuń</button>';
+  tr.appendChild(tdAct);
+  return tr;
+}
+
+function render(){
+  const tb = document.getElementById('tbody'); tb.innerHTML='';
+  const q=(filter.q||'').toLowerCase();
+  const list = rows.filter(r=>{
+    if(q && !JSON.stringify(r).toLowerCase().includes(q)) return false;
+    const price = Number(r[PRICE_KEY]||0);
+    if(filter.priceMin!=='' && price < Number(filter.priceMin)) return false;
+    if(filter.priceMax!=='' && price > Number(filter.priceMax)) return false;
+    if(filter.select1){ const selCol=COLUMNS.find(c=>c.type==='select'); if(selCol && (r[selCol.key]||'')!==filter.select1) return false; }
+    return true;
+  });
+  list.forEach((r,i)=> tb.appendChild(renderRow(r,i)));
+  tb.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{ const i=+b.dataset.del; if(confirm('Usunąć pozycję?')){ rows.splice(i,1); save(); } }));
+  tb.querySelectorAll('[data-ed]').forEach(b=>b.addEventListener('click',()=>editRow(+b.dataset.ed)));
+  document.getElementById('count').textContent = list.length;
+  initFilters();
+}
+
+function addBlank(){
+  const blank={}; COLUMNS.forEach(c=> blank[c.key] = (c.type==='number'?0:(c.type==='checkbox'?false:'')) );
+  rows.unshift(blank); save();
+}
+
+function editRow(i){
+  const r = rows[i]; if(!r) return;
+  const edited = {...r};
+  for(const c of COLUMNS){
+    if(c.type==='checkbox'){ const v = confirm(c.label+' (OK=TAK, Cancel=NIE)\nAktualnie: '+(edited[c.key]?'TAK':'NIE')); edited[c.key]=v; }
+    else { const v = prompt(c.label+' ('+c.key+')', edited[c.key]??''); if(v===null) return; edited[c.key] = c.type==='number'? Number(v)||0 : v; }
+  }
+  rows[i]=edited; save();
+}
+
+function exportCSV(){
+  const cols = ["brand", "model", "type", "hydro", "power_kw", "cop_a7", "scop", "refrig", "noise_db", "phase", "warranty", "price", "acc", "note"];
+  const out = [ cols.join(';') ];
+  rows.forEach(r=> out.push( cols.map(k=>escCsv(r[k])).join(';') ) );
+  downloadFile('arkon_cmp_pompy_v2.csv', out.join('\n'), 'text/csv;charset=utf-8');
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('btnAdd').addEventListener('click', addBlank);
+  document.getElementById('btnJSON').addEventListener('click', ()=> downloadFile('arkon_cmp_pompy_v2.json', JSON.stringify(rows,null,2)));
+  document.getElementById('btnCSV').addEventListener('click', exportCSV);
+  document.getElementById('inJSON').addEventListener('change', async e=>{ const f=e.target.files[0]; if(!f) return; try{ const arr=JSON.parse(await readFileAsText(f)); if(!Array.isArray(arr)) throw 0; rows=arr; save(); alert('Zaimportowano.'); }catch{ alert('Błędny plik JSON.'); } e.target.value=''; });
+
+  document.getElementById('q').addEventListener('input', e=>{ filter.q=e.target.value.trim(); render(); });
+  document.getElementById('f_select1').addEventListener('change', e=>{ filter.select1=e.target.value; render(); });
+  document.getElementById('f_price_min').addEventListener('input', e=>{ filter.priceMin=e.target.value; render(); });
+  document.getElementById('f_price_max').addEventListener('input', e=>{ filter.priceMax=e.target.value; render(); });
+  document.getElementById('btnClear').addEventListener('click', ()=>{ filter={q:'',select1:'',priceMin:'',priceMax:''}; ['q','f_select1','f_price_min','f_price_max'].forEach(id=>document.getElementById(id).value=''); render(); });
+
+  load(); render();
+});
+</script>
+
+</body>
+</html>
