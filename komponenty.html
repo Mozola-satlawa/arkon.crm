@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ARKON CRM — Umowy i Komponenty</title>
+<style>
+  :root{
+    --bg:#0b1020;--card:#0f1636;--line:#263168;--accent:#3a6df0;
+    --text:#e7ecff;--muted:#a3b3ff;--chip:#1a244d;
+    --good:#2fbf71;--warn:#ffb84d;--bad:#ff6b6b;
+  }
+  body{margin:0;font:14px/1.45 system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+  .nav{display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--bg);position:sticky;top:0}
+  .brand{font-weight:700}
+  .tab{padding:6px 10px;border-radius:8px;cursor:pointer}
+  .tab.active{background:var(--chip)}
+  .container{max-width:1200px;margin:0 auto;padding:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+  h1{margin:0 0 10px}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left}
+  th{color:var(--muted);font-size:13px}
+  .status{padding:2px 8px;border-radius:999px;font-size:13px}
+  .status.w-toku{background:#24336b;color:#ffb84d}
+  .status.podpisana{background:#1d3d2f;color:#2fbf71}
+  .status.anulowana{background:#4a1d1d;color:#ff6b6b}
+</style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <div class="nav">
+    <div class="brand">ARKON CRM</div>
+    <div class="tab active" data-tab="contracts">Umowy</div>
+    <div class="tab" data-tab="components">Komponenty</div>
+  </div>
+
+  <div class="container">
+    <!-- UMOWY -->
+    <section id="tab-contracts" class="grid">
+      <h1>Umowy</h1>
+      <div class="card">
+        <table>
+          <thead>
+            <tr><th>Numer umowy</th><th>Klient</th><th>Wartość</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>U-2025/01</td><td>Jan Kowalski</td><td>43 000 zł</td><td><span class="status podpisana">✔ Podpisana</span></td></tr>
+            <tr><td>U-2025/02</td><td>Teresa Siek</td><td>29 975 zł</td><td><span class="status w-toku">⏳ W realizacji</span></td></tr>
+            <tr><td>U-2025/03</td><td>Michalina Mozoła</td><td>13 237 zł</td><td><span class="status anulowana">❌ Anulowana</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- KOMPONENTY -->
+    <section id="tab-components" class="grid" hidden>
+      <h1>Komponenty</h1>
+      <div class="card">
+        <table>
+          <thead>
+            <tr><th>Nazwa</th><th>Kategoria</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Pompa ciepła Panasonic 12kW</td><td>Ogrzewanie</td><td><span class="status w-toku">⏳ Oczekuje</span></td></tr>
+            <tr><td>Zbiornik buforowy 200L</td><td>Ogrzewanie</td><td><span class="status podpisana">✔ Gotowe</span></td></tr>
+            <tr><td>Rury PEX fi 16</td><td>Hydraulika</td><td><span class="status anulowana">❌ Brak</span></td></tr>
+            <tr><td>Grzejnik dwukomorowy</td><td>Hydraulika</td><td><span class="status w-toku">⏳ Oczekuje</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+<script>
+/* ====== Nawigacja ====== */
+function showTab(key){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.tab===key));
+  document.querySelectorAll("section[id^='tab-']").forEach(s=>s.hidden=true);
+  document.getElementById("tab-"+key).hidden=false;
+}
+document.querySelector(".nav").addEventListener("click",(e)=>{
+  const el=e.target.closest(".tab"); if(!el) return;
+  e.preventDefault(); showTab(el.dataset.tab);
+});
+</script>
+</body>
+</html>
