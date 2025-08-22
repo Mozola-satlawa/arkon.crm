@@ -205,9 +205,10 @@ function appendMsg(m,scroll=true){
   const dt = new Date(m.at||Date.now());
   const time = dt.toLocaleTimeString("pl-PL",{hour:"2-digit",minute:"2-digit"});
   const div=document.createElement("div"); div.className="bubble";
-  let html = <div class="meta"><strong>${esc(m.user||"Anon")}</strong> • ${time}</div><div>${esc(m.text||"")}</div>;
+  let html = `<div class="meta"><strong>${esc(m.user||"Anon")}</strong> • ${time}</div>
+  <div class="text">${esc(m.text||"")}</div>`;
   if(m.files && m.files.length){
-    html += <div style="margin-top:6px"> + m.files.map(f=><a class="file-pill" href="#" data-dlid="${f.id}" title="${esc(f.name)}"><span>📎</span>${esc(f.name)} <small>(${bytes(f.size)})</small></a>).join("") + </div>;
+    html += `<div style="margin-top:6px">` + m.files.map(f=>`<a class="file-pill" href="#" data-dlid="${f.id}" title="${esc(f.name)}"><span>📎</span>${esc(f.name)} <small>(${bytes(f.size)})</small></a>`).join("") + `</div>`;
   }
   div.innerHTML = html;
   chatBox.appendChild(div);
@@ -259,7 +260,7 @@ function renderPendingFiles(){
 function handleFiles(fileList){
   const maxPerFile = 50 * 1024 * 1024; // 50MB
   Array.from(fileList||[]).forEach(f=>{
-    if(f.size>maxPerFile){ alert(Plik ${f.name} jest większy niż 50MB); return; }
+    if(f.size>maxPerFile){ alert(`Plik ${f.name} jest większy niż 50MB`); return; }
     const id = "F_"+Date.now()+"_"+Math.random().toString(36).slice(2);
     pendingFiles.push({ id, name:f.name, type:f.type||"application/octet-stream", size:f.size, blob:f });
   });
