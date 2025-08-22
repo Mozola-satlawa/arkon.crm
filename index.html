@@ -384,7 +384,7 @@
     function statusClass(s){ return (s||'').toString().trim().toLowerCase().replace(/\s+/g,'-'); }
     function uid(prefix, list){
       let n = list.length + 1, id;
-      do { id = ${prefix}-${n.toString().padStart(3,"0")}; n++; } while(list.some(x=>x.id===id));
+      do { id = `${prefix}-${n.toString().padStart(3,"0")}`; n++; } while(list.some(x=>x.id===id));
       return id;
     }
     function byId(map,id){ return map.find(x=>x.id===id); }
@@ -496,7 +496,7 @@
       const ul = $("#cli-s-contracts"); ul.innerHTML="";
       state.contracts.filter(u=>u.client_id===id).forEach(u=>{
         const li=document.createElement("li");
-        li.innerHTML = <a href="#" data-id="${u.id}" class="ctr-link">${u.id}</a> – ${u.customer} • <span class="status ${statusClass(u.status)}">${u.status}</span> • ${money(u.total)};
+        li.innerHTML = `<a href="#" data-id="${u.id}" class="ctr-link">${u.id}</a> – ${u.customer} • <span class="status ${statusClass(u.status)}">${u.status}</span> • ${money(u.total)}`;
         ul.appendChild(li);
       });
       ul.querySelectorAll(".ctr-link").forEach(a=>{
@@ -531,7 +531,7 @@
       const sel=$("#ctr-client"); sel.innerHTML="";
       state.clients.slice().sort((a,b)=>a.name.localeCompare(b.name,"pl")).forEach(c=>{
         const o=document.createElement("option");
-        o.value=c.id; o.textContent=${c.name} (${c.id});
+        o.value=c.id; o.textContent=`${c.name} (${c.id})`;
         sel.appendChild(o);
       });
     }
@@ -542,7 +542,7 @@
       $("#ctr-side-none").hidden = true;
       $("#ctr-side-body").hidden = false;
       $("#ctr-s-id").textContent = c.id;
-      $("#ctr-s-client").textContent = ${c.customer} (${c.client_id});
+      $("#ctr-s-client").textContent = `${c.customer} (${c.client_id})`;
       $("#ctr-s-total").textContent = money(c.total);
       $("#ctr-s-type").textContent = c.type;
       $("#ctr-s-status").className = "chip " + statusClass(c.status);
@@ -723,7 +723,7 @@
         const dt = new Date(m.at||Date.now());
         const hh = dt.toLocaleTimeString("pl-PL",{hour:"2-digit",minute:"2-digit"});
         div.className="msg";
-        div.innerHTML = <strong>[${hh}] ${m.from}:</strong> <span>${escapeHtml(m.text)}</span>;
+        div.innerHTML = `<strong>[${hh}] ${m.from}:</strong> <span>${escapeHtml(m.text)}</span>`;
         box.appendChild(div);
       });
       box.scrollTop=box.scrollHeight;
