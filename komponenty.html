@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARKON — Komponenty (Pompy, Piece, PV, Ocieplenie, Bramy)</title>
+<meta name="description" content="Moduł komponentów ARKON CRM: 5 kategorii, szybkie wyszukiwanie, import/eksport CSV i JSON, edycja inline, licznik widocznych, przypięte kolumny.">
+<style>
+  :root{ --bg:#0b1020; --p1:#0f1636; --p2:#111b3f; --ink:#e7ecff; --muted:#aeb8da; --line:#263168; --chip:#1a244d; --accent:#3a6df0; --ok:#2fbf71; --bad:#ff6b6b; }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:linear-gradient(180deg,#0a0f1e,#0c1230 60%,#0a0f1e);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
+  header{padding:16px;background:#11183a;border-bottom:1px solid var(--line)}
+  header h1{margin:0;font-size:22px}
+  nav{background:#172142;display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line)}
+  nav a{color:#cfe1ff;text-decoration:none;padding:8px 12px;border-radius:999px;border:1px solid #2a3a75}
+  nav a:hover{background:#223160}
+
+  .wrap{max-width:1280px;margin:auto;padding:16px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+  .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px dashed #3a4ca3}
+  .btn.bad{background:#3a1f2a;border-color:#7b3341}
+  .btn.ok{background:#194d34;border-color:#2b8a57}
+  input,select{background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:8px 10px;color:var(--ink);font:inherit}
+  input::placeholder{color:#aeb8da99}
+  .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
+
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 10px}
+  .tab{padding:8px 12px;border-radius:999px;border:1px solid #2a3a75;background:#101a45;color:#cfe1ff;cursor:pointer}
+  .tab[aria-selected="true"]{background:#1b2550;border-color:#67a1ff}
+
+  .card{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;padding:14px}
+  .grid{display:grid;gap:12px}
+  .cols-2{grid-template-columns:1fr 1fr}
+  @media(max-width:1100px){ .cols-2{grid-template-columns:1fr} }
+
+  .scroll{overflow:auto}
+  table{width:100%;border-collapse:separate;border-spacing:0}
+  th,td{padding:10px;border-bottom:1px solid #1a244d;text-align:left;vertical-align:top;white-space:nowrap}
+  th{font-size:13px;color:#aeb8da;position:sticky;top:0;background:#111a44;z-index:1}
+  td input,td select{width:100%}
+  .right{display:flex;gap:8px;justify-content:flex-end}
+
+  .hint{font-size:12px;color:#aeb8da}
+  .small{font-size:12px;color:#aeb8da}
+  .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
+
+  @media print{ nav,.toolbar,.tabs,.btn,.pill{display:none!important} }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Komponenty • ARKON CRM</h1>
+  <div class="small">Baza pozycji (5 kategorii). Szybka edycja inline, import/eksport CSV/JSON, licznik widocznych. Dane trzymane w <code>localStorage</code>.</div>
+</header>
+
+<nav>
+  <a href="index.html">Pulpit</a>
+  <a href="klienci.html">Klienci</a>
+  <a href="lidy.html">Lidy</a>
+  <a href="komponenty.html">Komponenty</a>
+  <a href="upload.html">Przesył plików</a>
+  <a href="dokumenty.html">Dokumenty</a>
+  <a href="chat.html">Komunikator</a>
+  <a href="ustawienia.html">Ustawienia</a>
+  <a href="baza.html">Baza</a>
+  <a href="kalkulator.html" target="_blank" rel="noopener">Kalkulator ↗️</a>
+</nav>
+
+<div class="wrap">
+  <div class="card">
+    <div class="tabs" role="tablist" aria-label="Kategorie komponentów">
+      <button class="tab" data-k="pumps"   aria-selected="true">Pompy ciepła</button>
+      <button class="tab" data-k="boilers" aria-selected="false">Piece / kotły</button>
+      <button class="tab" data-k="pv"      aria-selected="false">Fotowoltaika</button>
+      <button class="tab" data-k="insul"   aria-selected="false">Ocieplenie</button>
+      <button class="tab" data-k="garage"  aria-selected="false">Bramy garażowe</button>
+    </div>
+
+    <div class="toolbar">
+      <input id="q" placeholder="🔎 Szukaj w kategorii…" style="min-width:260px">
+      <button id="btnAdd" class="btn ok">+ Dodaj pozycję</button>
+      <button id="btnCSV" class="btn ghost">CSV eksport</button>
+      <label class="btn ghost">CSV import<input id="inCSV" type="file" accept=".csv" hidden></label>
+      <button id="btnJSON" class="btn ghost">JSON eksport</button>
+      <label class="btn ghost">JSON import<input id="inJSON" type="file" accept="application/json" hidden></label>
+      <span class="pill">Widocznych: <b id="vis">0</b></span>
+      <span class="pill">Łącznie: <b id="all">0</b></span>
+      <span class="pill">Kategoria: <b id="catName">Pompy ciepła</b></span>
+      <span class="pill">Skopiuj kolumny: <span class="kbd">Alt+C</span></span>
+    </div>
+
+    <div id="tblWrap" class="card" style="padding:0">
+      <!-- tabele są dynamiczne -->
+    </div>
+
+    <div class="hint" style="margin-top:8px">
+      CSV używa średników (<code>;</code>). JSON to pełna tablica obiektów. Zmiany zapisują się automatycznie.
+    </div>
+  </div>
+
+  <div class="grid cols-2" style="margin-top:12px">
+    <div class="card">
+      <h3 style="margin:0 0 6px">Podgląd statystyk</h3>
+      <div class="small">Suma cen bieżącej kategorii i liczba pozycji z uzupełnioną ceną.</div>
+      <div id="stats" class="pill" style="margin-top:8px">—</div>
+    </div>
+    <div class="card">
+      <h3 style="margin:0 0 6px">Wskazówki</h3>
+      <ul class="small" style="margin:6px 0 0 16px">
+        <li>Kopiuj wiersze z Excela — wklejaj w komórki po kolei.</li>
+        <li>Użyj <b>CSV import</b> do masowego ładowania (nagłówki muszą pasować do kolumn).</li>
+        <li>Przełącz kategorię skrótem: <span class="kbd">Alt+1…Alt+5</span>.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ====== helpers ====== */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const byId = id => document.getElementById(id);
+const INT0 = new Intl.NumberFormat('pl-PL',{maximumFractionDigits:0});
+const fmt = n => isFinite(n)? INT0.format(Math.round(n)) : '—';
+function esc(s){return (s??'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function csvEsc(v){ let s=v==null?'':String(v); if(/[;\\n"]/.test(s)) s='"'+s.replace(/"/g,'""')+'"' ; return s; }
+function csvUnesc(s){ if(s?.startsWith('"')&&s.endsWith('"')) return s.slice(1,-1).replace(/""/g,'"'); return s; }
+function downloadText(name, text, mime){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:mime||'application/json'})); a.download=name; a.click(); URL.revokeObjectURL(a.href); }
+
+/* ====== storage keys ====== */
+const KEYS = {
+  pumps:   'arkon_cmp_pumps_v1',
+  boilers: 'arkon_cmp_boilers_v1',
+  pv:      'arkon_cmp_pv_v1',
+  insul:   'arkon_cmp_insul_v1',
+  garage:  'arkon_cmp_garage_v1',
+};
+/* ====== schemas (kolumny) ====== */
+const SCHEMA = {
+  pumps: [
+    {key:'brand',label:'Marka',type:'text'},
+    {key:'model',label:'Model',type:'text'},
+    {key:'power',label:'Moc [kW]',type:'number',step:'0.1'},
+    {key:'type',label:'Typ',type:'select',opts:['powietrze','grunt']},
+    {key:'scop',label:'SCOP',type:'number',step:'0.01'},
+    {key:'price',label:'Cena [zł]',type:'number',step:'1'},
+    {key:'note',label:'Uwagi',type:'text'}
+  ],
+  boilers: [
+    {key:'brand',label:'Marka',type:'text'},
+    {key:'model',label:'Model',type:'text'},
+    {key:'kind',label:'Rodzaj',type:'select',opts:['pellet','gaz','elektryczny','drewno']},
+    {key:'power',label:'Moc [kW]',type:'number',step:'0.1'},
+    {key:'eff',label:'Sprawność',type:'number',step:'0.01'},
+    {key:'price',label:'Cena [zł]',type:'number',step:'1'},
+    {key:'note',label:'Uwagi',type:'text'}
+  ],
+  pv: [
+    {key:'brand',label:'Marka',type:'text'},
+    {key:'model',label:'Model',type:'text'},
+    {key:'watt',label:'Moc modułu [W]',type:'number',step:'1'},
+    {key:'tech',label:'Technologia',type:'select',opts:['mono PERC','mono TopCon','heterozłącze','inny']},
+    {key:'inverter',label:'Falownik',type:'text'},
+    {key:'set_kwp',label:'Zestaw [kWp]',type:'number',step:'0.1'},
+    {key:'price',label:'Cena zestawu [zł]',type:'number',step:'1'},
+    {key:'note',label:'Uwagi',type:'text'}
+  ],
+  insul: [
+    {key:'pos',label:'Pozycja',type:'select',opts:['ściany','strop','podłoga']},
+    {key:'mat',label:'Materiał',type:'select',opts:['styropian','wełna','pianka PUR','inne']},
+    {key:'lambda',label:'λ [W/mK]',type:'number',step:'0.001'},
+    {key:'thick_cm',label:'Grubość [cm]',type:'number',step:'1'},
+    {key:'price_m2',label:'Cena / m² [zł]',type:'number',step:'1'},
+    {key:'note',label:'Uwagi',type:'text'}
+  ],
+  garage: [
+    {key:'brand',label:'Marka',type:'text'},
+    {key:'model',label:'Model',type:'text'},
+    {key:'size',label:'Wymiar [mm]',type:'text'},
+    {key:'panel_mm',label:'Panel [mm]',type:'number',step:'1'},
+    {key:'drive',label:'Napęd',type:'select',opts:['TAK','NIE']},
+    {key:'u',label:'Współ. U',type:'number',step:'0.01'},
+    {key:'price',label:'Cena [zł]',type:'number',step:'1'},
+    {key:'note',label:'Uwagi',type:'text'}
+  ]
+};
+
+/* ====== state + load/save ====== */
+let state = {
+  active: 'pumps',
+  q: ''
+};
+let data = {pumps:[], boilers:[], pv:[], insul:[], garage:[]};
+
+function loadAll(){
+  for(const k of Object.keys(KEYS)){
+    try{ data[k] = JSON.parse(localStorage.getItem(KEYS[k]) || '[]'); }
+    catch{ data[k] = []; }
+  }
+}
+function save(k){
+  localStorage.setItem(KEYS[k], JSON.stringify(data[k]||[]));
+  renderTable();
+  renderStats();
+}
+loadAll();
+
+/* ====== seed examples (only if all empty) ====== */
+(function seedIfEmpty(){
+  const total = Object.values(data).reduce((a,arr)=>a+(arr?.length||0),0);
+  if(total>0) return;
+  data.pumps = [
+    {brand:'Daikin',model:'Altherma 3',power:12,type:'powietrze',scop:4.1,price:29000,note:'R32'},
+    {brand:'Panasonic',model:'T-CAP',power:9,type:'powietrze',scop:4.0,price:27000,note:''}
+  ];
+  data.boilers = [{brand:'Kostrzewa',model:'Twin Bio',kind:'pellet',power:20,eff:0.91,price:18000,note:''}];
+  data.pv = [{brand:'JA Solar',model:'JAM54S31',watt:440,tech:'mono PERC',inverter:'Fronius',set_kwp:5.28,price:23500,note:''}];
+  data.insul = [{pos:'ściany',mat:'styropian',lambda:0.036,thick_cm:15,price_m2:120,note:''}];
+  data.garage = [{brand:'Wiśniowski',model:'UniPro',size:'2500x2125',panel_mm:40,drive:'TAK',u:1.3,price:5200,note:''}];
+  for(const k of Object.keys(data)) save(k);
+})();
+
+/* ====== UI binding ====== */
+$('#q').addEventListener('input', e=>{ state.q=e.target.value.trim(); renderTable(); });
+$('#btnAdd').addEventListener('click', addRow);
+$('#btnCSV').addEventListener('click', exportCSV);
+$('#btnJSON').addEventListener('click', exportJSON);
+$('#inCSV').addEventListener('change', e=>{ const f=e.target.files[0]; if(f) importCSV(f); e.target.value=''; });
+$('#inJSON').addEventListener('change', e=>{ const f=e.target.files[0]; if(f) importJSON(f); e.target.value=''; });
+
+// Tabs
+$$('.tab').forEach(b=>b.addEventListener('click', ()=>{
+  $$('.tab').forEach(x=>x.setAttribute('aria-selected','false'));
+  b.setAttribute('aria-selected','true');
+  state.active = b.dataset.k;
+  byId('catName').textContent = b.textContent;
+  renderTable();
+  renderStats();
+  location.hash = b.dataset.k;
+}));
+
+// Keyboard shortcuts
+window.addEventListener('keydown', (e)=>{
+  if(e.altKey){
+    if(e.code==='Digit1'){ selectTab('pumps'); }
+    if(e.code==='Digit2'){ selectTab('boilers'); }
+    if(e.code==='Digit3'){ selectTab('pv'); }
+    if(e.code==='Digit4'){ selectTab('insul'); }
+    if(e.code==='Digit5'){ selectTab('garage'); }
+    if(e.code==='KeyC'){ copyHeaders(); }
+  }
+});
+function selectTab(k){
+  const btn = document.querySelector('.tab[data-k="'+k+'"]');
+  if(btn){ btn.click(); }
+}
+function copyHeaders(){
+  const cols = SCHEMA[state.active].map(c=>c.label).join(';');
+  navigator.clipboard?.writeText(cols);
+  alert('Skopiowano nazwy kolumn do schowka.');
+}
+
+/* ====== table render ====== */
+function renderTable(){
+  const k = state.active;
+  const schema = SCHEMA[k];
+  const rows = (data[k]||[]).slice();
+  const q = (state.q||'').toLowerCase();
+
+  const wrap = byId('tblWrap');
+  const tbl = document.createElement('table');
+  const thead = document.createElement('thead');
+  const trh = document.createElement('tr');
+  trh.innerHTML = '<th style="position:sticky;left:0;background:#111a44;z-index:2">Akcje</th>' + schema.map(c=>'<th>'+esc(c.label)+'</th>').join('');
+  thead.appendChild(trh);
+  tbl.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  let vis=0;
+  rows.forEach((r,idx)=>{
+    const hay = JSON.stringify(r).toLowerCase();
+    if(q && !hay.includes(q)) return;
+
+    vis++;
+    const tr = document.createElement('tr');
+    // actions
+    const tdAct = document.createElement('td');
+    tdAct.style.position='sticky'; tdAct.style.left='0'; tdAct.style.background='#0f1636';
+    tdAct.innerHTML = '<div class="right"><button class="btn ghost" data-ed="'+idx+'">Edytuj</button><button class="btn bad" data-del="'+idx+'">Usuń</button></div>';
+    tr.appendChild(tdAct);
+
+    schema.forEach(col=>{
+      const td = document.createElement('td');
+      td.appendChild(cellEditor(k, idx, col, r[col.key]));
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody);
+  wrap.innerHTML='';
+  wrap.appendChild(tbl);
+
+  byId('vis').textContent = vis;
+  byId('all').textContent = (data[k]||[]).length;
+
+  // bind actions
+  wrap.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{
+    const i=+b.dataset.del;
+    if(confirm('Usunąć pozycję?')){ data[k].splice(i,1); save(k); }
+  }));
+  wrap.querySelectorAll('[data-ed]').forEach(b=>b.addEventListener('click',()=>{
+    const i=+b.dataset.ed;
+    // nic specjalnego — edytujemy inline; przycisk zostawiamy dla jasności UI
+    const first = wrap.querySelector('tbody tr:nth-child('+(i+1)+') input, select');
+    first?.focus();
+  }));
+}
+function cellEditor(cat, idx, col, val){
+  const el = (col.type==='select')? document.createElement('select') : document.createElement('input');
+  if(col.type!=='select'){ el.type = col.type||'text'; if(col.step) el.step=col.step; }
+  if(col.type==='select'){
+    (col.opts||[]).forEach(o=>{ const op=document.createElement('option'); op.textContent=o; op.value=o; if(val===o) op.selected=true; el.appendChild(op); });
+  }else{
+    el.value = (val??''); 
+  }
+  el.addEventListener(col.type==='select'?'change':'input', ()=>{
+    let v = (col.type==='number')? Number(el.value||0) : (col.type==='select'? el.value : el.value);
+    if(col.type==='number' && !isFinite(v)) v=0;
+    data[cat][idx][col.key] = v;
+    save(cat);
+  });
+  return el;
+}
+
+/* ====== add / import / export ====== */
+function blankRowFor(cat){
+  switch(cat){
+    case 'pumps': return {brand:'',model:'',power:0,type:'powietrze',scop:3.5,price:0,note:''};
+    case 'boilers': return {brand:'',model:'',kind:'pellet',power:0,eff:0.9,price:0,note:''};
+    case 'pv': return {brand:'',model:'',watt:450,tech:'mono PERC',inverter:'',set_kwp:5.0,price:0,note:''};
+    case 'insul': return {pos:'ściany',mat:'styropian',lambda:0.036,thick_cm:15,price_m2:0,note:''};
+    case 'garage': return {brand:'',model:'',size:'2500x2125',panel_mm:40,drive:'TAK',u:1.3,price:0,note:''};
+  }
+  return {};
+}
+function addRow(){
+  const k = state.active;
+  data[k].push(blankRowFor(k));
+  save(k);
+  // focus last row first editable cell
+  setTimeout(()=>{
+    const last = byId('tblWrap').querySelector('tbody tr:last-child input, tbody tr:last-child select');
+    last?.focus();
+  }, 0);
+}
+function exportCSV(){
+  const k = state.active;
+  const cols = SCHEMA[k].map(c=>c.key);
+  const rows = [cols.join(';')];
+  (data[k]||[]).forEach(r=>{ rows.push(cols.map(c=>csvEsc(r[c])).join(';')); });
+  downloadText('komponenty_'+k+'.csv', rows.join('\\n'), 'text/csv;charset=utf-8');
+}
+function exportJSON(){
+  const k = state.active;
+  downloadText('komponenty_'+k+'.json', JSON.stringify(data[k]||[],null,2));
+}
+async function importCSV(file){
+  try{
+    const txt = await file.text();
+    const lines = txt.split(/\\r?\\n/).filter(Boolean);
+    const head = lines.shift();
+    const cols = head.split(';');
+    const arr = lines.map(line=>{
+      const vals = line.split(';');
+      const o = {}; cols.forEach((k,i)=> o[k] = csvUnesc(vals[i]||'')); return o;
+    });
+    data[state.active] = arr;
+    save(state.active);
+    alert('Zaimportowano CSV.');
+  }catch(e){ alert('Błąd importu CSV: '+(e.message||e)); }
+}
+async function importJSON(file){
+  try{
+    const txt = await file.text();
+    const arr = JSON.parse(txt);
+    if(!Array.isArray(arr)) throw new Error('Oczekiwana tablica obiektów.');
+    data[state.active] = arr;
+    save(state.active);
+    alert('Zaimportowano JSON.');
+  }catch(e){ alert('Błąd importu JSON: '+(e.message||e)); }
+}
+
+/* ====== stats ====== */
+function renderStats(){
+  const k = state.active;
+  let sum = 0, count = 0;
+  (data[k]||[]).forEach(r=>{
+    const p = Number(r.price ?? r.price_m2);
+    if(isFinite(p) && p>0){ sum += p; count++; }
+  });
+  byId('stats').textContent = 'Pozycji z ceną: '+count+' • Suma: '+fmt(sum)+' zł';
+}
+
+/* ====== boot: set tab from hash, then render ====== */
+(function bootFromHash(){
+  const k = (location.hash||'').replace('#','');
+  if(k && KEYS[k]){
+    state.active = k;
+    $$('.tab').forEach(x=>x.setAttribute('aria-selected', String(x.dataset.k===k)));
+    const btn = document.querySelector('.tab[data-k="'+k+'"]');
+    if(btn) byId('catName').textContent = btn.textContent;
+  }
+})();
+
+renderTable();
+renderStats();
+</script>
+
+</body>
+</html>
