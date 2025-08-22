@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARKON CRM — Lidy</title>
+<meta name="description" content="CRM Lidy: dodawanie, edycja, filtrowanie, eksport/import leadów sprzedażowych.">
+<style>
+  :root{
+    --bg:#0b1020;--card:#0f1636;--line:#263168;--accent:#3a6df0;
+    --text:#e7ecff;--muted:#a3b3ff;--chip:#1a244d;--good:#2fbf71;--warn:#ffb84d;--bad:#ff6b6b;
+  }
+  body{margin:0;font:15px/1.5 system-ui,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+  header{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line);background:var(--card);position:sticky;top:0;z-index:5}
+  .brand{font-weight:800}
+  .nav{display:flex;gap:8px;flex-wrap:wrap}
+  .link{padding:6px 10px;border-radius:10px;border:1px solid var(--line);text-decoration:none;color:inherit;background:var(--chip)}
+  .wrap{max-width:1200px;margin:0 auto;padding:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+  h1{margin:0 0 12px 0;font-size:20px}
+  h2{margin:0 0 10px 0;font-size:16px;color:var(--muted)}
+  input,select,textarea,button{font:inherit}
+  .field{background:#0d1530;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:8px;outline:0;width:100%}
+  textarea{resize:vertical;min-height:60px}
+  .btn{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:8px 12px;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px solid var(--accent);color:var(--accent)}
+  .btn.bad{background:transparent;border:1px solid var(--bad);color:var(--bad)}
+  .row{display:flex;gap:8px;flex-wrap:wrap}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left}
+  th{cursor:pointer;color:var(--muted)}
+  tr:hover{background:rgba(255,255,255,0.04)}
+  .actions button{margin-right:6px}
+  .filter-row{margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">📋 ARKON — Lidy</div>
+  <nav class="nav">
+    <a class="link" href="index.html">🏠 Pulpit</a>
+    <a class="link" href="klienci.html">👥 Klienci</a>
+    <a class="link" href="komponenty.html">🧩 Komponenty</a>
+    <a class="link" href="dokumenty.html">📄 Dokumenty</a>
+    <a class="link" href="chat.html">💬 Komunikator</a>
+    <a class="link" href="kalkulator.html">🧮 Kalkulator</a>
+    <a class="link" href="ustawienia.html">⚙ Ustawienia</a>
+  </nav>
+</header>
+
+<div class="wrap">
+
+  <!-- Formularz dodawania/edycji -->
+  <section class="card">
+    <h1>Dodaj / Edytuj Lida</h1>
+    <div class="grid" style="display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
+      <div><label>Imię <input id="fName" class="field"></label></div>
+      <div><label>Nazwisko <input id="fSurname" class="field"></label></div>
+      <div><label>E-mail <input id="fEmail" class="field" type="email"></label></div>
+      <div><label>Telefon <input id="fPhone" class="field" type="tel"></label></div>
+      <div><label>Źródło <select id="fSource" class="field">
+        <option>Reklama</option><option>Strona www</option><option>Polecenie</option><option>Targi</option><option>Inne</option>
+      </select></label></div>
+      <div><label>Etap <select id="fStage" class="field">
+        <option>Nowy</option><option>Kontakt</option><option>Spotkanie</option><option>Oferta</option><option>Negocjacje</option><option>Wygrany</option><option>Przegrany</option>
+      </select></label></div>
+      <div><label>Status <select id="fStatus" class="field">
+        <option>Aktywny</option><option>Nieaktywny</option>
+      </select></label></div>
+      <div><label>Notatki <textarea id="fNotes" class="field"></textarea></label></div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button id="btnSave" class="btn">Zapisz</button>
+      <button id="btnReset" class="btn ghost">Wyczyść</button>
+    </div>
+  </section>
+
+  <!-- Filtry -->
+  <section class="card">
+    <h2>Filtry</h2>
+    <div class="filter-row">
+      <select id="filterStage" class="field">
+        <option value="">— Etap —</option>
+        <option>Nowy</option><option>Kontakt</option><option>Spotkanie</option><option>Oferta</option><option>Negocjacje</option><option>Wygrany</option><option>Przegrany</option>
+      </select>
+      <select id="filterStatus" class="field">
+        <option value="">— Status —</option>
+        <option>Aktywny</option><option>Nieaktywny</option>
+      </select>
+      <button id="btnClearFilters" class="btn ghost">Wyczyść filtry</button>
+    </div>
+  </section>
+
+  <!-- Lista leadów -->
+  <section class="card">
+    <h1>Lista leadów</h1>
+    <div class="row" style="margin-bottom:10px">
+      <button id="btnExport" class="btn ghost">Eksportuj JSON</button>
+      <label class="btn ghost">Importuj JSON<input type="file" id="importFile" hidden accept="application/json"></label>
+    </div>
+    <div style="overflow:auto">
+      <table id="leadsTable">
+        <thead>
+          <tr>
+            <th data-sort="name">Imię</th>
+            <th data-sort="surname">Nazwisko</th>
+            <th data-sort="email">E-mail</th>
+            <th data-sort="phone">Telefon</th>
+            <th data-sort="source">Źródło</th>
+            <th data-sort="stage">Etap</th>
+            <th data-sort="status">Status</th>
+            <th>Notatki</th>
+            <th data-sort="date">Data</th>
+            <th>Akcje</th>
+          </tr>
+        </thead>
+        <tbody id="leadsBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+
+<script>
+'use strict';
+const STORAGE_KEY = 'arkon_leads_v1';
+let leads = [];
+let editIndex = null;
+let sortKey = null;
+let sortDir = 1;
+
+function saveLS(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(leads)); }
+function loadLS(){ try{ leads = JSON.parse(localStorage.getItem(STORAGE_KEY))||[]; }catch{ leads=[]; } }
+
+function resetForm(){
+  ['fName','fSurname','fEmail','fPhone','fSource','fStage','fStatus','fNotes'].forEach(id=>document.getElementById(id).value='');
+  editIndex=null;
+}
+function saveForm(){
+  const obj={
+    name: fName.value.trim(),
+    surname: fSurname.value.trim(),
+    email: fEmail.value.trim(),
+    phone: fPhone.value.trim(),
+    source: fSource.value,
+    stage: fStage.value,
+    status: fStatus.value,
+    notes: fNotes.value.trim(),
+    date: new Date().toLocaleDateString()
+  };
+  if(editIndex!=null){ leads[editIndex]=obj; } else { leads.push(obj); }
+  saveLS(); resetForm(); render();
+}
+function render(){
+  const body=document.getElementById('leadsBody'); body.innerHTML='';
+  let data=[...leads];
+  const fs=filterStage.value, ft=filterStatus.value;
+  if(fs) data=data.filter(l=>l.stage===fs);
+  if(ft) data=data.filter(l=>l.status===ft);
+  if(sortKey){ data.sort((a,b)=> (a[sortKey]||'').localeCompare(b[sortKey]||'') * sortDir); }
+  data.forEach((l,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=<td>${l.name}</td><td>${l.surname}</td><td>${l.email}</td><td>${l.phone}</td><td>${l.source}</td><td>${l.stage}</td><td>${l.status}</td><td>${l.notes}</td><td>${l.date}</td><td class="actions"></td>;
+    const td=tr.querySelector('.actions');
+    const btnE=document.createElement('button'); btnE.textContent='✏'; btnE.className='btn ghost'; btnE.onclick=()=>editLead(i);
+    const btnD=document.createElement('button'); btnD.textContent='🗑'; btnD.className='btn bad'; btnD.onclick=()=>{ if(confirm('Usunąć?')){ leads.splice(i,1); saveLS(); render(); } };
+    td.appendChild(btnE); td.appendChild(btnD);
+    body.appendChild(tr);
+  });
+}
+function editLead(i){
+  const l=leads[i];
+  fName.value=l.name; fSurname.value=l.surname; fEmail.value=l.email; fPhone.value=l.phone; fSource.value=l.source; fStage.value=l.stage; fStatus.value=l.status; fNotes.value=l.notes;
+  editIndex=i;
+}
+
+// Sortowanie po nagłówkach
+document.querySelectorAll('#leadsTable th[data-sort]').forEach(th=>{
+  th.addEventListener('click',()=>{
+    const key=th.dataset.sort;
+    if(sortKey===key){ sortDir*=-1; } else { sortKey=key; sortDir=1; }
+    render();
+  });
+});
+
+// Eventy
+btnSave.onclick=saveForm;
+btnReset.onclick=resetForm;
+btnClearFilters.onclick=()=>{ filterStage.value=''; filterStatus.value=''; render(); };
+btnExport.onclick=()=>{ const blob=new Blob([JSON.stringify(leads,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='arkon-leads.json'; a.click(); };
+importFile.onchange=async(e)=>{ const f=e.target.files[0]; if(!f) return; const txt=await f.text(); try{ leads=JSON.parse(txt)||[]; saveLS(); render(); }catch{ alert('Błąd importu'); } };
+
+// Init
+loadLS(); render();
+</script>
+</body>
+</html>
