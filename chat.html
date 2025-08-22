@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chat pracownicy • ARKON</title>
+<style>
+  body{margin:0;font:15px/1.5 system-ui;background:#0b1020;color:#e8edff}
+  header{padding:12px;background:#121a34;border-bottom:1px solid #243059}
+  .chat-wrap{display:grid;grid-template-columns:260px 1fr;height:calc(100vh - 50px)}
+  .users{border-right:1px solid #243059;background:#121a34;overflow:auto}
+  .users h3{margin:10px;font-size:14px;color:#aeb8da}
+  .user{padding:10px;cursor:pointer;display:flex;align-items:center;gap:8px}
+  .user .dot{width:10px;height:10px;border-radius:50%}
+  .user.online .dot{background:#2b8a57}
+  .user.busy .dot{background:#f0a500}
+  .user.offline .dot{background:#555}
+  .messages{display:flex;flex-direction:column;height:100%}
+  .msg-list{flex:1;overflow-y:auto;padding:12px}
+  .msg{margin:8px 0;padding:8px 12px;background:#172142;border-radius:8px;max-width:70%}
+  .msg.me{background:#24336b;margin-left:auto}
+  .msg small{display:block;font-size:11px;color:#aeb8da;margin-top:4px}
+  .input{display:flex;padding:10px;border-top:1px solid #243059;gap:8px}
+  .input textarea{flex:1;background:#0d1530;border:1px solid #28356c;border-radius:10px;color:#fff;resize:none;height:50px;padding:6px}
+  .btn{padding:8px 12px;background:#233261;border:1px solid #3a4ca3;border-radius:8px;color:#fff;cursor:pointer}
+  .emoji-panel{position:absolute;bottom:60px;left:20px;right:20px;max-height:200px;overflow:auto;display:none;background:#121a34;padding:8px;border:1px solid #243059;border-radius:8px;grid-template-columns:repeat(auto-fill,32px);gap:6px}
+  .emoji-panel span{cursor:pointer;font-size:20px}
+  .task{background:#0f1533;border-left:4px solid #4cc9f0;padding:6px;margin-top:6px;border-radius:6px;font-size:13px}
+</style>
+</head>
+<body>
+<header><h2>💬 Komunikator pracowników</h2></header>
+
+<div class="chat-wrap">
+  <div class="users">
+    <h3>Pracownicy</h3>
+    <div class="user online"><span class="dot"></span> Jan Kowalski</div>
+    <div class="user busy"><span class="dot"></span> Anna Nowak</div>
+    <div class="user offline"><span class="dot"></span> Piotr Wiśniewski</div>
+  </div>
+  <div class="messages">
+    <div id="msgList" class="msg-list"></div>
+    <div class="input">
+      <textarea id="msgBox" placeholder="Napisz wiadomość..."></textarea>
+      <button id="btnEmoji" class="btn">😊</button>
+      <button id="btnSend" class="btn">Wyślij</button>
+    </div>
+    <div id="emojiPanel" class="emoji-panel"></div>
+  </div>
+</div>
+
+<script src="emoji.js"></script>
+<script>
+const msgList = document.getElementById("msgList");
+const msgBox  = document.getElementById("msgBox");
+const btnSend = document.getElementById("btnSend");
+const emojiPanel = document.getElementById("emojiPanel");
+const btnEmoji = document.getElementById("btnEmoji");
+
+function addMessage(text, me=true){
+  const div=document.createElement("div");
+  div.className="msg "+(me?"me":"");
+  const ts=new Date().toLocaleString("pl-PL");
+  div.innerHTML=text+"<small>"+ts+"</small>";
+  msgList.appendChild(div);
+  msgList.scrollTop=msgList.scrollHeight;
+}
+btnSend.onclick=()=>{ if(msgBox.value.trim()){ addMessage(msgBox.value.trim(),true); msgBox.value=""; }};
+btnEmoji.onclick=()=>{ emojiPanel.style.display=emojiPanel.style.display==="grid"?"none":"grid"; };
+EMOJIS.forEach(e=>{ let span=document.createElement("span"); span.textContent=e; span.onclick=()=>{ msgBox.value+=e; }; emojiPanel.appendChild(span); });
+</script>
+</body>
+</html>
