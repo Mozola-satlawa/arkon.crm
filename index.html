@@ -1,354 +1,108 @@
-
 <!doctype html>
 <html lang="pl">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>ARKON CRM — 1 plik (lokalny chat + załączniki)</title>
+<title>ARKON CRM — Umowy / Komponenty / Dokumenty</title>
 <style>
   :root{
     --bg:#0b1020;--card:#0f1636;--line:#263168;--accent:#3a6df0;
-    --text:#e7ecff;--muted:#a3b3ff;--chip:#1a244d;--field:#0e1330;
+    --text:#e7ecff;--muted:#a3b3ff;--chip:#1a244d;
     --good:#2fbf71;--warn:#ffb84d;--bad:#ff6b6b;
   }
-  *{box-sizing:border-box}
-  html,body{margin:0;height:100%}
-  body{font:14px/1.45 system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
-  a{color:#cfe0ff;text-decoration:none}
-  .container{max-width:1280px;margin:0 auto;padding:16px}
-  .nav{position:sticky;top:0;z-index:10;display:flex;gap:12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--bg)}
-  .brand{font-weight:700;letter-spacing:.4px}
+  body{margin:0;font:14px/1.45 system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+  .nav{display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--bg);position:sticky;top:0}
+  .brand{font-weight:700}
   .tab{padding:6px 10px;border-radius:8px;cursor:pointer}
   .tab.active{background:var(--chip)}
-  .grid{display:grid;gap:16px}
-  .cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
-  .cols-2{grid-template-columns:1fr 1fr}
-  @media (max-width:1000px){ .cols-3,.cols-2{grid-template-columns:1fr} .side{position:static;max-height:none} }
+  .container{max-width:1200px;margin:0 auto;padding:16px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
-  .small{opacity:.85;color:var(--muted);font-size:13px}
   h1{margin:0 0 10px}
-  h2{margin:0 0 10px;font-size:18px}
-  .chip{display:inline-block;padding:4px 8px;border-radius:999px;background:var(--chip)}
-  input,select,button,textarea{font:inherit}
-  .field{background:var(--field);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:10px 12px;outline:0;width:100%}
-  .row{display:flex;gap:8px;flex-wrap:wrap}
-  .btn{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:10px 14px;cursor:pointer}
-  .btn.ghost{background:transparent;border:1px solid var(--accent);color:#cfe0ff}
-  .btn.bad{background:transparent;border:1px solid var(--bad);color:#ffb4b4}
-  .btn.good{background:var(--good)}
   table{width:100%;border-collapse:collapse}
-  th{font-weight:600;text-align:left;border-bottom:1px solid var(--line);padding:8px 6px;color:var(--muted);font-size:13px;white-space:nowrap}
-  td{border-bottom:1px solid #1a244d;padding:8px 6px;vertical-align:top}
-  .scroll{overflow:auto}
-  .right{display:flex;gap:8px;justify-content:flex-end}
-  .spacer{height:6px}
-  .muted{opacity:.7}
+  th,td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left}
+  th{color:var(--muted);font-size:13px}
+  .status{padding:2px 8px;border-radius:999px;font-size:13px}
+  .status.w-toku{background:#24336b;color:#ffb84d}
+  .status.podpisana{background:#1d3d2f;color:#2fbf71}
+  .status.anulowana{background:#4a1d1d;color:#ff6b6b}
   .list-reset{list-style:none;margin:0;padding:0}
-  .status{padding:2px 8px;border-radius:999px}
-  .layout{display:grid;grid-template-columns:1fr 340px;gap:16px}
-  .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
-
-  /* Chat */
-  .chat-box{border:1px solid var(--line);border-radius:8px;padding:12px;min-height:240px;max-height:380px;overflow:auto;background:#0d1330}
-  .chat-input{display:flex;gap:8px;margin-top:8px;align-items:center}
-  .bubble{background:#142057;border:1px solid #2a3777;border-radius:10px;padding:8px 10px;margin:6px 0}
-  .bubble .meta{font-size:12px;color:#a8b3ff;opacity:.9;margin-bottom:4px}
-  .dropzone{border:2px dashed #2a3777;border-radius:10px;padding:10px;text-align:center;cursor:pointer}
-  .dropzone.drag{background:#111a3f}
-  .files{margin-top:8px}
-  .file-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid #2a3777;border-radius:999px;margin:4px 6px 0 0}
-  .file-pill small{opacity:.8}
+  .list-reset li{margin:6px 0}
+  a{color:#cfe0ff;text-decoration:none}
 </style>
 </head>
 <body>
+
   <!-- NAV -->
   <div class="nav">
     <div class="brand">ARKON CRM</div>
-    <div class="tab" data-tab="dashboard" tabindex="0">Pulpit</div>
-    <div class="tab" data-tab="clients" tabindex="0">Klienci</div>
-    <div class="tab" data-tab="contracts" tabindex="0">Umowy</div>
-    <div class="tab" data-tab="products" tabindex="0">Produkty</div>
-    <div class="tab" data-tab="components" tabindex="0">Komponenty</div>
-    <div class="tab" data-tab="docs" tabindex="0">Dokumenty</div>
-    <div class="tab" data-tab="chat" tabindex="0">Komunikator</div>
-    <div class="tab" data-tab="settings" tabindex="0">Ustawienia</div>
+    <div class="tab active" data-tab="contracts">Umowy</div>
+    <div class="tab" data-tab="components">Komponenty</div>
+    <div class="tab" data-tab="docs">Dokumenty</div>
   </div>
 
   <div class="container">
-    <!-- DASHBOARD -->
-    <section id="tab-dashboard" class="grid" hidden>
-      <h1>Pulpit</h1>
-      <div class="grid cols-3">
-        <div class="card"><div class="small">Przychód (symulacja)</div><h2 id="db-revenue">0 zł</h2></div>
-        <div class="card"><div class="small">Aktywne umowy</div><h2 id="db-open">0</h2></div>
-        <div class="card"><div class="small">Brakujące dokumenty</div><h2 id="db-missing">0</h2></div>
-      </div>
-      <div class="card small">
-        Porady: <span class="kbd">/</span> fokus wyszukiwania • <span class="kbd">Alt+N</span> nowy klient •
-        <span class="kbd">Alt+U</span> nowa umowa • zapisz/odtwórz dane w Ustawieniach.
+    <!-- UMOWY -->
+    <section id="tab-contracts">
+      <h1>Umowy</h1>
+      <div class="card">
+        <table>
+          <thead>
+            <tr><th>Numer umowy</th><th>Klient</th><th>Wartość</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>U-2025/01</td><td>Jan Kowalski</td><td>43 000 zł</td><td><span class="status podpisana">✔ Podpisana</span></td></tr>
+            <tr><td>U-2025/02</td><td>Teresa Siek</td><td>29 975 zł</td><td><span class="status w-toku">⏳ W realizacji</span></td></tr>
+            <tr><td>U-2025/03</td><td>Michalina Mozoła</td><td>13 237 zł</td><td><span class="status anulowana">❌ Anulowana</span></td></tr>
+          </tbody>
+        </table>
       </div>
     </section>
 
-    <!-- Klienci / Umowy (placeholdery, na przyszłość) -->
-    <section id="tab-clients" class="grid" hidden><h1>Klienci</h1><div class="card">Tu wkleisz listę klientów.</div></section>
-    <section id="tab-contracts" class="grid" hidden><h1>Umowy</h1><div class="card">Tu wkleisz listę umów.</div></section>
-    <section id="tab-products" class="grid" hidden><h1>Produkty</h1><div class="card">Tu wkleisz produkty.</div></section>
-    <section id="tab-components" class="grid" hidden><h1>Komponenty</h1><div class="card">Tu wkleisz komponenty.</div></section>
+    <!-- KOMPONENTY -->
+    <section id="tab-components" hidden>
+      <h1>Komponenty</h1>
+      <div class="card">
+        <table>
+          <thead>
+            <tr><th>Nazwa</th><th>Kategoria</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Pompa ciepła Panasonic 12kW</td><td>Ogrzewanie</td><td><span class="status w-toku">⏳ Oczekuje</span></td></tr>
+            <tr><td>Zbiornik buforowy 200L</td><td>Ogrzewanie</td><td><span class="status podpisana">✔ Gotowe</span></td></tr>
+            <tr><td>Rury PEX fi 16</td><td>Hydraulika</td><td><span class="status anulowana">❌ Brak</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
-    <!-- DOCUMENTS -->
-    <section id="tab-docs" class="grid" hidden>
+    <!-- DOKUMENTY -->
+    <section id="tab-docs" hidden>
       <h1>Dokumenty do pobrania</h1>
       <div class="card">
         <ul class="list-reset">
-          <li><a href="zalacznik_do_instrukcji_wniosku_o_dofinansowanie_wzor_dyspozycji_wyplaty_zaliczki-14-06-2024.pdf" download>📄 Wzór dyspozycji wypłaty zaliczki (PDF)</a></li>
-          <li><a href="UMOWA Z WYKONAWCĄ  arkon.pdf" download>📄 Umowa z wykonawcą (PDF)</a></li>
-          <li><a href="PEŁNOMOCNICTWO.docx" download>📄 Pełnomocnictwo (DOCX)</a></li>
           <li><a href="OŚWIADCZENIE O DOKONANIU ZAPŁATY.docx" download>📄 Oświadczenie o dokonaniu zapłaty (DOCX)</a></li>
-          <li><a href="OŚWIADCZENIE WSPÓŁWŁAŚCICIELA.docx" download>📄 Oświadczenie współwłaściciela (DOCX)</a></li>
-          <li><a href="OŚWIADCZENIE WSPÓŁMAŁŻONKA.docx" download>📄 Oświadczenie współmałżonka (DOCX)</a></li>
+          <li><a href="OŚWIADCZENIE WSPÓŁMAŁŻONKA.docx" download>📄 Oświadczenie współmałżonka (DOCX)</a></li>
+          <li><a href="OŚWIADCZENIE WSPÓŁWŁAŚCICIELA.docx" download>📄 Oświadczenie współwłaściciela (DOCX)</a></li>
+          <li><a href="Pełnomocnictwo.docx" download>📄 Pełnomocnictwo (DOCX)</a></li>
+          <li><a href="UMOWA Z WYKONAWCĄ  arkon.pdf" download>📄 Umowa z wykonawcą (PDF)</a></li>
+          <li><a href="zalacznik_do_instrukcji_wniosku_o_dofinansowanie_wzor_dyspozycji_wyplaty_zaliczki-14-06-2024.pdf" download>📄 Załącznik – wzór dyspozycji wypłaty (PDF)</a></li>
         </ul>
-        <div class="small muted" style="margin-top:10px">
-          Kliknij w wybrany dokument, aby go pobrać.
-        </div>
-      </div>
-    </section>
-
-    <!-- CHAT (lokalny, z załącznikami) -->
-    <section id="tab-chat" class="grid" hidden>
-      <h1>Komunikator (lokalny)</h1>
-      <div class="card">
-        <div id="chat-box" class="chat-box"></div>
-
-        <div class="dropzone" id="dz">
-          Upuść pliki tutaj lub kliknij, aby wybrać…
-          <input type="file" id="file-input" multiple hidden />
-        </div>
-        <div class="files" id="pending-files"></div>
-
-        <div class="chat-input">
-          <input id="chat-name" class="field" placeholder="Twoje imię (domyślnie: Anon)" style="max-width:240px">
-          <input id="chat-text" class="field" placeholder="Napisz wiadomość…" />
-          <button id="chat-send" class="btn">Wyślij</button>
-        </div>
-        <div class="small muted" style="margin-top:8px">
-          Wiadomości i pliki zapisują się lokalnie (IndexedDB). Użyj „Eksportuj stan” w Ustawieniach, by przenieść wszystko na inny komputer.
-        </div>
-      </div>
-    </section>
-
-    <!-- SETTINGS -->
-    <section id="tab-settings" class="grid" hidden>
-      <h1>Ustawienia</h1>
-      <div class="grid cols-2">
-        <div class="card">
-          <h2>Eksport / Import stanu</h2>
-          <div class="row">
-            <button id="export" class="btn">Eksportuj stan (JSON)</button>
-            <label class="btn ghost">Importuj
-              <input id="import" type="file" accept="application/json" hidden>
-            </label>
-          </div>
-          <div class="small" style="margin-top:10px">
-            Zapis lokalny: <code>localStorage</code> (wiadomości) + <code>IndexedDB</code> (pliki).
-          </div>
-          <div class="row" style="margin-top:8px">
-            <button id="wipe" class="btn bad">Wyczyść wszystkie dane lokalne</button>
-          </div>
-        </div>
-        <div class="card">
-          <h2>Druk / PDF</h2>
-          <div class="row">
-            <button class="btn" onclick="window.print()">Drukuj / Zapisz jako PDF</button>
-          </div>
-        </div>
+        <div class="small muted">Kliknij dokument, aby pobrać.</div>
       </div>
     </section>
   </div>
 
 <script>
-/* ====== POMOCNICZE ====== */
-const $ = sel => document.querySelector(sel);
-const $$ = sel => Array.from(document.querySelectorAll(sel));
-function esc(s){return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]))}
-function bytes(n){ if(n<1024) return n+" B"; if(n<1024*1024) return (n/1024).toFixed(1)+" KB"; if(n<1024*1024*1024) return (n/1024/1024).toFixed(1)+" MB"; return (n/1024/1024/1024).toFixed(1)+" GB"; }
-
-/* ====== ZAKŁADKI (klik, klawiatura, hash, pamięć ostatniej) ====== */
-const LS_TAB = "arkon_last_tab";
-function showTab(key,{push=true}={}){
-  // układ
-  $$(".tab").forEach(t=>t.classList.toggle("active",t.dataset.tab===key));
-  $$("section[id^='tab-']").forEach(s=>s.hidden=true);
-  const sec=$("#tab-"+key); if(sec) sec.hidden=false;
-  // URL + pamięć
-  if(push) location.hash = key;
-  localStorage.setItem(LS_TAB,key);
+/* ====== Nawigacja ====== */
+function showTab(key){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.tab===key));
+  document.querySelectorAll("section[id^='tab-']").forEach(s=>s.hidden=true);
+  document.getElementById("tab-"+key).hidden=false;
 }
 document.querySelector(".nav").addEventListener("click",(e)=>{
   const el=e.target.closest(".tab"); if(!el) return;
   e.preventDefault(); showTab(el.dataset.tab);
 });
-$$(".tab").forEach(tab=>{
-  tab.addEventListener("keydown",(e)=>{
-    if(e.key==="Enter"||e.key===" "){ e.preventDefault(); showTab(tab.dataset.tab); }
-  });
-});
-window.addEventListener("hashchange",()=>{
-  const key=(location.hash||"").replace(/^#/,"")||"dashboard";
-  showTab(key,{push:false});
-});
-
-/* ====== DEMO PULPIT ====== */
-function renderDashboard(){
-  $("#db-revenue").textContent=(63500).toLocaleString("pl-PL")+" zł";
-  $("#db-open").textContent="1";
-  $("#db-missing").textContent="2";
-}
-
-/* ====== CHAT LOKALNY Z ZAŁĄCZNIKAMI ====== */
-const LS_MSGS = "arkon_msgs_v1";
-
-/* IndexedDB proste API */
-let db;
-function dbOpen(){
-  return new Promise((res,rej)=>{
-    const r = indexedDB.open("arkonCRM_local",1);
-    r.onupgradeneeded = ()=>{ const d=r.result; if(!d.objectStoreNames.contains("files")) d.createObjectStore("files",{keyPath:"id"}); };
-    r.onsuccess = ()=>{ db=r.result; res(); };
-    r.onerror   = ()=>rej(r.error);
-  });
-}
-function dbPut(fileObj){ return new Promise((res,rej)=>{ const tx=db.transaction("files","readwrite"); tx.objectStore("files").put(fileObj); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
-function dbGet(id){ return new Promise((res,rej)=>{ const tx=db.transaction("files","readonly"); const req=tx.objectStore("files").get(id); req.onsuccess=()=>res(req.result); req.onerror=()=>rej(req.error); }); }
-function dbAll(){ return new Promise((res,rej)=>{ const tx=db.transaction("files","readonly"); const req=tx.objectStore("files").getAll(); req.onsuccess=()=>res(req.result); req.onerror=()=>rej(req.error); }); }
-function dbClear(){ return new Promise((res,rej)=>{ const tx=db.transaction("files","readwrite"); tx.objectStore("files").clear(); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
-
-/* Stan wiadomości */
-function loadMsgs(){ try{return JSON.parse(localStorage.getItem(LS_MSGS)||"[]")}catch{return[]} }
-function saveMsgs(list){ localStorage.setItem(LS_MSGS, JSON.stringify(list)); }
-
-let messages = loadMsgs();
-let pendingFiles = []; // {id,name,type,size,blob}
-
-/* UI chat */
-const chatBox = $("#chat-box");
-function renderChat(){
-  chatBox.innerHTML="";
-  messages.forEach(m=>appendMsg(m,false));
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
-function appendMsg(m,scroll=true){
-  const dt = new Date(m.at||Date.now());
-  const time = dt.toLocaleTimeString("pl-PL",{hour:"2-digit",minute:"2-digit"});
-  const div=document.createElement("div"); div.className="bubble";
-  let html = `<div class="meta"><strong>${esc(m.user||"Anon")}</strong> • ${time}</div>
-  <div class="text">${esc(m.text||"")}</div>`;
-  if(m.files && m.files.length){
-    html += <div style="margin-top:6px"> + m.files.map(f=><a class="file-pill" href="#" data-dlid="${f.id}" title="${esc(f.name)}"><span>📎</span>${esc(f.name)} <small>(${bytes(f.size)})</small></a>).join("") + </div>;
-  }
-  div.innerHTML = html;
-  chatBox.appendChild(div);
-  if(scroll) chatBox.scrollTop=chatBox.scrollHeight;
-  // pobieranie plików
-  div.querySelectorAll("[data-dlid]").forEach(a=>{
-    a.addEventListener("click", async (e)=>{
-      e.preventDefault();
-      const id=a.getAttribute("data-dlid");
-      const rec = await dbGet(id);
-      if(!rec){ alert("Plik niedostępny."); return; }
-      const url = URL.createObjectURL(rec.blob);
-      const link = document.createElement("a"); link.href=url; link.download=rec.name; document.body.appendChild(link); link.click(); link.remove();
-      setTimeout(()=>URL.revokeObjectURL(url), 2500);
-    });
-  });
-}
-
-/* Dodawanie wiadomości */
-async function sendMessage(){
-  const text = ($("#chat-text").value||"").trim();
-  if(!text && pendingFiles.length===0) return;
-  const user = ($("#chat-name").value||"").trim() || "Anon";
-  const fileRefs = pendingFiles.map(f=>({id:f.id,name:f.name,type:f.type,size:f.size}));
-  const msg = { id: Date.now()+"_"+Math.random().toString(36).slice(2), user, text, at: Date.now(), files:fileRefs };
-  messages.push(msg); saveMsgs(messages); appendMsg(msg);
-  for(const f of pendingFiles){ await dbPut(f); }
-  pendingFiles = []; renderPendingFiles();
-  $("#chat-text").value=""; $("#chat-text").focus();
-}
-
-/* Obsługa dodawania plików */
-const dz = $("#dz"), fi = $("#file-input"), pendingBox=$("#pending-files");
-dz.addEventListener("click",()=>fi.click());
-dz.addEventListener("dragover",(e)=>{ e.preventDefault(); dz.classList.add("drag"); });
-dz.addEventListener("dragleave",()=>dz.classList.remove("drag"));
-dz.addEventListener("drop",(e)=>{ e.preventDefault(); dz.classList.remove("drag"); handleFiles(e.dataTransfer.files); });
-fi.addEventListener("change",()=>{ handleFiles(fi.files); fi.value=""; });
-
-function renderPendingFiles(){
-  if(!pendingFiles.length){ pendingBox.innerHTML=""; return; }
-  pendingBox.innerHTML = pendingFiles.map((f,i)=><span class="file-pill">📎 ${esc(f.name)} <small>(${bytes(f.size)})</small> <a href="#" data-rm="${i}" title="Usuń">&times;</a></span>).join("");
-  pendingBox.querySelectorAll("[data-rm]").forEach(a=>a.addEventListener("click",(e)=>{ e.preventDefault(); const idx=+a.getAttribute("data-rm"); pendingFiles.splice(idx,1); renderPendingFiles(); }));
-}
-function handleFiles(fileList){
-  const maxPerFile = 50 * 1024 * 1024; // 50MB
-  Array.from(fileList||[]).forEach(f=>{
-    if(f.size>maxPerFile){ alert(Plik ${f.name} jest większy niż 50MB); return; }
-    const id = "F_"+Date.now()+"_"+Math.random().toString(36).slice(2);
-    pendingFiles.push({ id, name:f.name, type:f.type||"application/octet-stream", size:f.size, blob:f });
-  });
-  renderPendingFiles();
-}
-$("#chat-send").addEventListener("click", sendMessage);
-$("#chat-text").addEventListener("keydown",(e)=>{ if(e.key==="Enter"){ e.preventDefault(); sendMessage(); }});
-
-/* ====== EKSPORT / IMPORT ====== */
-function blobToBase64(blob){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result.split(",")[1]); r.onerror=()=>rej(r.error); r.readAsDataURL(blob); }); }
-async function exportAll(){
-  const files = await dbAll();
-  const files64 = [];
-  for(const f of files){
-    files64.push({ id:f.id, name:f.name, type:f.type, size:f.size, b64: await blobToBase64(f.blob) });
-  }
-  const dump = { version:1, messages, files:files64 };
-  const data = JSON.stringify(dump,null,2);
-  const url = URL.createObjectURL(new Blob([data],{type:"application/json"}));
-  const a=document.createElement("a"); a.href=url; a.download="arkon-crm-export.json"; a.click(); URL.revokeObjectURL(url);
-}
-async function importAll(file){
-  try{
-    const txt = await file.text();
-    const dump = JSON.parse(txt);
-    if(!dump || !dump.messages || !Array.isArray(dump.files)) throw new Error("Struktura pliku niepoprawna.");
-    await dbClear(); messages = []; saveMsgs(messages);
-    for(const f of dump.files){
-      const bin = Uint8Array.from(atob(f.b64), c=>c.charCodeAt(0));
-      await dbPut({ id:f.id, name:f.name, type:f.type, size:f.size, blob:new Blob([bin],{type:f.type}) });
-    }
-    messages = dump.messages; saveMsgs(messages); renderChat();
-    alert("Import zakończony.");
-  }catch(e){ alert("Błąd importu: "+e.message); }
-}
-$("#export").addEventListener("click", exportAll);
-$("#import").addEventListener("change",(e)=>{ const f=e.target.files[0]; if(f) importAll(f); e.target.value=""; });
-$("#wipe").addEventListener("click", async ()=>{
-  if(confirm("Usunąć wszystkie dane lokalne?")){
-    localStorage.removeItem(LS_MSGS);
-    await dbClear();
-    messages=[]; renderChat();
-    alert("Wyczyszczono.");
-  }
-});
-
-/* ====== BOOT ====== */
-(async function boot(){
-  await dbOpen();
-  renderDashboard();
-  renderChat();
-  // startowa zakładka: #hash > pamięć > dashboard
-  const fromHash=(location.hash||"").replace(/^#/,"");
-  const remembered=localStorage.getItem(LS_TAB)||"";
-  const initial = fromHash || remembered || "dashboard";
-  showTab(initial,{push:false});
-})();
 </script>
 </body>
 </html>
