@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ARKON CRM — monolit (Pulpit, Klienci, Komponenty, Dokumenty, Upload, Leady, Chat, Ustawienia, Eksport/Import)</title>
+<meta name="description" content="ARKON CRM — wszystko w jednym pliku: pulpity, klienci, komponenty, dokumenty do pobrania, przesył plików, leady, komunikator, ustawienia, eksport/import.">
+<style>
+  :root{
+    --bg:#0b1020;--card:#0f1636;--line:#263168;--accent:#3a6df0;
+    --text:#e7ecff;--muted:#a3b3ff;--chip:#1a244d;--field:#0e1330;
+    --good:#2fbf71;--warn:#ffb84d;--bad:#ff6b6b;--grid:#243059;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font:14px/1.45 system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+  a{color:#cfe0ff;text-decoration:none}
+  .container{max-width:1280px;margin:0 auto;padding:16px}
+  .nav{position:sticky;top:0;z-index:10;display:flex;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--bg)}
+  .brand{font-weight:700;letter-spacing:.4px;margin-right:6px}
+  .tab{padding:6px 10px;border-radius:8px;cursor:pointer;border:1px solid transparent}
+  .tab.active{background:var(--chip);border-color:#324189}
+  .grid{display:grid;gap:16px}
+  .cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .cols-2{grid-template-columns:1fr 1fr}
+  @media (max-width:1100px){ .cols-3,.cols-2{grid-template-columns:1fr} .side{position:static;max-height:none} }
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .small{opacity:.85;color:var(--muted);font-size:13px}
+  h1{margin:0 0 10px}
+  h2{margin:0 0 10px;font-size:18px}
+  h3{margin:0 0 8px}
+  .chip{display:inline-block;padding:4px 8px;border-radius:999px;background:var(--chip)}
+  input,select,button,textarea{font:inherit}
+  .field{background:var(--field);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:10px 12px;outline:0;width:100%}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .btn{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:10px 14px;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px solid var(--accent);color:#cfe0ff}
+  .btn.bad{background:transparent;border:1px solid var(--bad);color:#ffb4b4}
+  .btn.good{background:var(--good)}
+  table{width:100%;border-collapse:separate;border-spacing:0}
+  th{font-weight:600;text-align:left;border-bottom:1px solid var(--line);padding:8px 6px;color:var(--muted);font-size:13px;white-space:nowrap}
+  td{border-bottom:1px solid #1a244d;padding:8px 6px;vertical-align:top}
+  .scroll{overflow:auto}
+  .right{display:flex;gap:8px;justify-content:flex-end}
+  .muted{opacity:.7}
+  .list-reset{list-style:none;margin:0;padding:0}
+  .status{padding:2px 8px;border-radius:999px}
+  .status.w-toku{background:#24336b}
+  .status.podpisana{background:#1d3d2f}
+  .status.anulowana{background:#4a1d1d}
+  .layout{display:grid;grid-template-columns:1fr 360px;gap:16px}
+  .side{position:sticky;top:64px;max-height:calc(100vh - 96px);overflow:auto}
+  .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
+  /* chat */
+  .chat-box{border:1px solid var(--line);border-radius:8px;padding:12px;min-height:240px;max-height:380px;overflow:auto;background:#0d1330}
+  .bubble{background:#142057;border:1px solid #2a3777;border-radius:10px;padding:8px 10px;margin:6px 0}
+  .bubble .meta{font-size:12px;color:#a8b3ff;opacity:.9;margin-bottom:4px}
+  .dropzone{border:2px dashed #2a3777;border-radius:10px;padding:10px;text-align:center;cursor:pointer}
+  .dropzone.drag{background:#111a3f}
+  .file-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid #2a3777;border-radius:999px;margin:4px 6px 0 0}
+  .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
+  /* components inner tabs */
+  .subtabs{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 10px}
+  .subtabs .sb{padding:6px 10px;border-radius:999px;border:1px solid #2a3a75;cursor:pointer}
+  .subtabs .sb[aria-selected="true"]{background:#1b2550;border-color:#67a1ff}
+  /* print */
+  @media print{
+    .nav,.btn,.dropzone,.right,.subtabs{display:none!important}
+    .layout{grid-template-columns:1fr!important}
+  }
+</style>
+</head>
+<body>
+  <!-- NAV -->
+  <div class="nav" role="navigation" aria-label="Główne">
+    <div class="brand">ARKON CRM</div>
+    <div class="tab active" data-tab="dashboard" tabindex="0">Pulpit</div>
+    <div class="tab" data-tab="clients" tabindex="0">Klienci</div>
+    <div class="tab" data-tab="components" tabindex="0">Komponenty</div>
+    <div class="tab" data-tab="docs" tabindex="0">Dokumenty</div>
+    <div class="tab" data-tab="upload" tabindex="0">Przesył plików</div>
+    <div class="tab" data-tab="leads" tabindex="0">Leady</div>
+    <div class="tab" data-tab="chat" tabindex="0">Komunikator</div>
+    <div class="tab" data-tab="settings" tabindex="0">Ustawienia</div>
+    <div class="tab" data-tab="export" tabindex="0">Eksport/Import</div>
+    <a class="tab" href="kalkulator.html" target="_blank" rel="noopener">Kalkulator ↗</a>
+  </div>
+
+  <div class="container">
+    <!-- DASHBOARD -->
+    <section id="tab-dashboard" class="grid">
+      <h1>Pulpit</h1>
+      <div class="grid cols-3">
+        <div class="card"><div class="small">Przychód (symulacja)</div><h2 id="db-revenue">0 zł</h2></div>
+        <div class="card"><div class="small">Klienci</div><h2 id="db-clients">0</h2></div>
+        <div class="card"><div class="small">Leady</div><h2 id="db-leads">0</h2></div>
+      </div>
+      <div class="card small">
+        Skróty: <span class="kbd">/</span> szukaj w Klientach • <span class="kbd">Alt+N</span> nowy klient •
+        <span class="kbd">Alt+U</span> nowa pozycja (komponenty) • zapisz/odtwórz dane w Eksport/Import.
+      </div>
+    </section>
+
+    <!-- KLIENCI (CRM) -->
+    <section id="tab-clients" class="grid" hidden>
+      <h1>Klienci</h1>
+      <div class="grid cols-2">
+        <div class="card">
+          <div class="row" style="margin-bottom:6px">
+            <input id="cli-q" class="field" placeholder="🔎 Szukaj: nazwa, e-mail, telefon, tag…" style="min-width:280px">
+            <select id="cli-status" class="field" style="max-width:200px">
+              <option value="">Status (wszystkie)</option>
+              <option>LEAD</option><option>ZAPYTANIE</option><option>W TOKU</option><option>KLIENT</option><option>UTRACONY</option>
+            </select>
+            <select id="cli-sort" class="field" style="max-width:200px">
+              <option value="name.asc">Sort: Nazwa ↑</option>
+              <option value="name.desc">Sort: Nazwa ↓</option>
+              <option value="created.desc">Sort: Najnowsze</option>
+              <option value="created.asc">Sort: Najstarsze</option>
+            </select>
+            <button id="cli-add" class="btn good">+ Nowy klient</button>
+          </div>
+          <div class="scroll">
+            <table id="cli-table">
+              <thead>
+                <tr>
+                  <th>▶</th><th>Nazwa</th><th>Status</th><th>Kontakt</th><th>Adres</th><th>Tagi</th>
+                </tr>
+              </thead>
+              <tbody id="cli-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <aside class="card side">
+          <h3>Edycja klienta</h3>
+          <div class="small muted">Wybierz klienta z listy, by edytować.</div>
+          <div class="spacer" style="height:8px"></div>
+          <div class="grid">
+            <input id="e_name" class="field" placeholder="Nazwa / Imię i nazwisko">
+            <select id="e_status" class="field">
+              <option>LEAD</option><option>ZAPYTANIE</option><option>W TOKU</option><option>KLIENT</option><option>UTRACONY</option>
+            </select>
+            <input id="e_email" class="field" placeholder="email@domena.pl">
+            <input id="e_phone" class="field" placeholder="+48 …">
+            <input id="e_addr" class="field" placeholder="adres">
+            <input id="e_tags" class="field" placeholder="tagi po przecinku">
+            <textarea id="e_notes" class="field" placeholder="Notatki" rows="4"></textarea>
+            <div class="right">
+              <button id="cli-dup" class="btn ghost">Duplikuj</button>
+              <button id="cli-del" class="btn bad">Usuń</button>
+            </div>
+          </div>
+          <div class="small" style="margin-top:8px">Pole „projekty/umowy/dokumenty” dodasz w zakładce <b>Przesył plików</b> (przypisując do klienta).</div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- KOMPONENTY -->
+    <section id="tab-components" class="grid" hidden>
+      <h1>Komponenty</h1>
+      <div class="card">
+        <div class="subtabs" role="tablist" aria-label="Kategorie komponentów">
+          <button class="sb" data-sb="pumps" aria-selected="true">Pompy ciepła</button>
+          <button class="sb" data-sb="boilers">Piece / kotły</button>
+          <button class="sb" data-sb="pv">Fotowoltaika</button>
+          <button class="sb" data-sb="insul">Ocieplenie</button>
+          <button class="sb" data-sb="garage">Bramy garażowe</button>
+        </div>
+        <!-- wspólny toolbar -->
+        <div class="row" style="margin-bottom:6px">
+          <input id="cmp-q" class="field" placeholder="🔎 Szukaj w aktualnej kategorii…" style="min-width:280px">
+          <button id="cmp-add" class="btn good">+ Dodaj pozycję</button>
+          <button id="cmp-csv" class="btn ghost">CSV eksport</button>
+          <label class="btn ghost">CSV import <input id="cmp-csv-in" type="file" accept=".csv" hidden></label>
+          <button id="cmp-json" class="btn ghost">JSON eksport</button>
+          <label class="btn ghost">JSON import <input id="cmp-json-in" type="file" accept="application/json" hidden></label>
+          <span class="pill">Widocznych: <b id="cmp-vis">0</b></span>
+        </div>
+        <!-- tabele -->
+        <div id="cmp-pumps" class="card" style="padding:0">
+          <div class="scroll"><table><thead><tr>
+            <th>Akcje</th><th>Marka</th><th>Model</th><th>Moc [kW]</th><th>Typ (air/ground)</th><th>SCOP</th><th>Cena [zł]</th><th>Uwagi</th>
+          </tr></thead><tbody id="tb-pumps"></tbody></table></div>
+        </div>
+        <div id="cmp-boilers" class="card" style="padding:0;display:none">
+          <div class="scroll"><table><thead><tr>
+            <th>Akcje</th><th>Marka</th><th>Model</th><th>Rodzaj (pellet/gaz/elektryczny/drewno)</th><th>Moc [kW]</th><th>Sprawność</th><th>Cena [zł]</th><th>Uwagi</th>
+          </tr></thead><tbody id="tb-boilers"></tbody></table></div>
+        </div>
+        <div id="cmp-pv" class="card" style="padding:0;display:none">
+          <div class="scroll"><table><thead><tr>
+            <th>Akcje</th><th>Marka</th><th>Model</th><th>Moc modułu [W]</th><th>Technologia</th><th>Falownik</th><th>Zestaw [kWp]</th><th>Cena zestawu [zł]</th><th>Uwagi</th>
+          </tr></thead><tbody id="tb-pv"></tbody></table></div>
+        </div>
+        <div id="cmp-insul" class="card" style="padding:0;display:none">
+          <div class="scroll"><table><thead><tr>
+            <th>Akcje</th><th>Pozycja</th><th>Materiał</th><th>λ [W/mK]</th><th>Grubość [cm]</th><th>Cena / m² [zł]</th><th>Uwagi</th>
+          </tr></thead><tbody id="tb-insul"></tbody></table></div>
+        </div>
+        <div id="cmp-garage" class="card" style="padding:0;display:none">
+          <div class="scroll"><table><thead><tr>
+            <th>Akcje</th><th>Marka</th><th>Model</th><th>Wymiar [mm]</th><th>Panel [mm]</th><th>Napęd</th><th>Współ. U</th><th>Cena [zł]</th><th>Uwagi</th>
+          </tr></thead><tbody id="tb-garage"></tbody></table></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DOKUMENTY DO POBRANIA (statyczne, wg przesłanych nazw plików) -->
+    <section id="tab-docs" class="grid" hidden>
+      <h1>Dokumenty do pobrania</h1>
+      <div class="card">
+        <ul class="list-reset">
+          <li><a href="zalacznik_do_instrukcji_wniosku_o_dofinansowanie_wzor_dyspozycji_wyplaty_zaliczki-14-06-2024.pdf" download>📄 Wzór dyspozycji wypłaty zaliczki (PDF)</a></li>
+          <li><a href="UMOWA Z WYKONAWCĄ  arkon.pdf" download>📄 Umowa z wykonawcą (PDF)</a></li>
+          <li><a href="PEŁNOMOCNICTWO.docx" download>📄 Pełnomocnictwo (DOCX)</a></li>
+          <li><a href="OŚWIADCZENIE O DOKONANIU ZAPŁATY.docx" download>📄 Oświadczenie o dokonaniu zapłaty (DOCX)</a></li>
+          <li><a href="OŚWIADCZENIE WSPÓŁWŁAŚCICIELA.docx" download>📄 Oświadczenie współwłaściciela (DOCX)</a></li>
+          <li><a href="OŚWIADCZENIE WSPÓŁMAŁŻONKA.docx" download>📄 Oświadczenie współmałżonka (DOCX)</a></li>
+        </ul>
+        <div class="small muted" style="margin-top:10px">
+          Pliki muszą leżeć obok <code>index.html</code> pod dokładnie taką nazwą, jak wyżej.
+        </div>
+      </div>
+    </section>
+
+    <!-- PRZESYŁ PLIKÓW (IndexedDB, kategorie) -->
+    <section id="tab-upload" class="grid" hidden>
+      <h1>Przesył plików (z przypisaniem do klienta i kategorii)</h1>
+      <div class="card">
+        <div class="row">
+          <select id="up-client" class="field" style="max-width:320px"></select>
+          <select id="up-cat" class="field" style="max-width:320px">
+            <option>Umowa z firmą</option>
+            <option>Audyt</option>
+            <option>Dokument do audytu Czyste Powietrze</option>
+            <option>Audyt rozprowadzenia instalacji</option>
+            <option>Pomiary budynku</option>
+            <option>Rzut budynku</option>
+            <option>Zdjęcia kotłowni</option>
+            <option>Faktura za prąd</option>
+            <option>Zdjęcia falownika</option>
+            <option>Zdjęcia budynku</option>
+          </select>
+          <label class="btn">Dodaj pliki… <input id="up-files" type="file" multiple hidden></label>
+          <button id="up-refresh" class="btn ghost">Odśwież</button>
+        </div>
+        <div class="small muted" style="margin-top:6px">Pliki zapisywane lokalnie (IndexedDB). Możesz je wyeksportować w „Eksport/Import”.</div>
+      </div>
+      <div class="card">
+        <div class="row" style="margin-bottom:6px">
+          <input id="up-q" class="field" placeholder="🔎 filtruj po nazwie/kliencie/kategorii…">
+          <button id="up-clear" class="btn ghost">Wyczyść filtr</button>
+        </div>
+        <div class="scroll">
+          <table>
+            <thead><tr>
+              <th>Akcje</th><th>Nazwa</th><th>Klient</th><th>Kategoria</th><th>Typ</th><th>Rozmiar</th><th>Data</th>
+            </tr></thead>
+            <tbody id="up-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- LEADY -->
+    <section id="tab-leads" class="grid" hidden>
+      <h1>Leady</h1>
+      <div class="card">
+        <div class="row">
+          <input id="ld-q" class="field" placeholder="🔎 Szukaj w leadach" style="min-width:260px">
+          <select id="ld-status" class="field">
+            <option value="">Status (wszystkie)</option>
+            <option>NOWY</option><option>KONTAKT</option><option>QUALIFIED</option><option>OFERTA</option><option>WYGRANY</option><option>PRZEGRANY</option>
+          </select>
+          <button id="ld-add" class="btn good">+ Nowy lead</button>
+          <button id="ld-json" class="btn ghost">Eksport JSON</button>
+          <label class="btn ghost">Import JSON <input id="ld-json-in" type="file" accept="application/json" hidden></label>
+        </div>
+        <div class="scroll" style="margin-top:6px">
+          <table>
+            <thead><tr><th>Akcje</th><th>Tytuł</th><th>Klient (opc.)</th><th>Status</th><th>Źródło</th><th>Data</th></tr></thead>
+            <tbody id="ld-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- CHAT -->
+    <section id="tab-chat" class="grid" hidden>
+      <h1>Komunikator (lokalny)</h1>
+      <div class="card">
+        <div id="chat-box" class="chat-box"></div>
+        <div class="dropzone" id="dz">
+          Upuść pliki tutaj lub kliknij, aby wybrać…
+          <input type="file" id="file-input" multiple hidden />
+        </div>
+        <div class="files" id="pending-files"></div>
+        <div class="row" style="margin-top:8px">
+          <input id="chat-name" class="field" placeholder="Twoje imię (domyślnie: Anon)" style="max-width:240px">
+          <input id="chat-text" class="field" placeholder="Napisz wiadomość…" />
+          <button id="chat-send" class="btn">Wyślij</button>
+        </div>
+        <div class="small muted" style="margin-top:8px">
+          Wiadomości i pliki zapisują się lokalnie (IndexedDB). Eksport całości — w „Eksport/Import”.
+        </div>
+      </div>
+    </section>
+
+    <!-- USTAWIENIA -->
+    <section id="tab-settings" class="grid" hidden>
+      <h1>Ustawienia</h1>
+      <div class="grid cols-2">
+        <div class="card">
+          <h2>Druk / PDF</h2>
+          <div class="row">
+            <button class="btn" onclick="window.print()">Drukuj / Zapisz jako PDF</button>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Kalkulator</h2>
+          <div class="row">
+            <a class="btn" href="https://arkonkalkulator.netlify.app/" target="_blank" rel="noopener">Otwórz kalkulator ↗</a>
+            <a class="btn ghost" href="kalkulator.html" target="_blank" rel="noopener">Lokalny kalkulator (jeśli dodasz plik)</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- EKSPORT / IMPORT (pełny backup JSON, CSV klientów) -->
+    <section id="tab-export" class="grid" hidden>
+      <h1>Eksport / Import</h1>
+      <div class="card">
+        <div class="row">
+          <button id="ex-full" class="btn">Eksport — pełny JSON</button>
+          <label class="btn ghost">Import — pełny JSON <input id="im-full" type="file" accept="application/json" hidden></label>
+          <button id="ex-cli-csv" class="btn ghost">Eksport CSV — klienci</button>
+          <button id="wipe-all" class="btn bad">Wyczyść wszystkie dane lokalne</button>
+        </div>
+        <div class="small muted" style="margin-top:8px">
+          Pełny JSON zawiera: klientów, leady, komponenty (wszystkie kategorie), wiadomości czatu, metadane plików oraz <b>same pliki</b> (base64 z IndexedDB).
+        </div>
+      </div>
+    </section>
+  </div>
+
+<script>
+/* ====== MINI FRAMEWORK / COMMON ====== */
+const $ = sel => document.querySelector(sel);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
+const INT0 = new Intl.NumberFormat('pl-PL',{maximumFractionDigits:0});
+const fmt = n => isFinite(n)? INT0.format(Math.round(n)) : '—';
+const bytes = n => n<1024? n+' B' : n<1048576? (n/1024).toFixed(1)+' KB' : n<1073741824? (n/1048576).toFixed(1)+' MB' : (n/1073741824).toFixed(1)+' GB';
+const uid = ()=> 'ID_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2);
+function esc(s){return (s||"").toString().replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]))}
+
+/* ====== ZAKŁADKI ====== */
+const LS_TAB = "arkon_last_tab";
+function showTab(key,{push=true}={}){ $$(".tab").forEach(t=>t.classList.toggle("active",t.dataset.tab===key)); $$("section[id^='tab-']").forEach(s=>s.hidden=true); const sec=$("#tab-"+key); if(sec) sec.hidden=false; if(push) location.hash=key; localStorage.setItem(LS_TAB,key); refreshDashboard(); }
+document.querySelector(".nav").addEventListener("click",(e)=>{ const el=e.target.closest(".tab"); if(!el || el.tagName==='A') return; e.preventDefault(); showTab(el.dataset.tab); });
+$$(".tab").forEach(tab=>tab.addEventListener("keydown",(e)=>{ if(e.key==="Enter"||e.key===" "){e.preventDefault(); showTab(tab.dataset.tab)} }));
+window.addEventListener("hashchange",()=>{ const key=(location.hash||"").replace(/^#/,"")||"dashboard"; showTab(key,{push:false}); });
+
+/* ====== IndexedDB plików (wspólne dla Upload + Chat) ====== */
+let db;
+function dbOpen(){
+  return new Promise((res,rej)=>{
+    const r = indexedDB.open("arkonCRM_local",2);
+    r.onupgradeneeded = ()=>{ const d=r.result; if(!d.objectStoreNames.contains("files")) d.createObjectStore("files",{keyPath:"id"}); };
+    r.onsuccess = ()=>{ db=r.result; res(); };
+    r.onerror   = ()=>rej(r.error);
+  });
+}
+function dbPut(fileObj){ return new Promise((res,rej)=>{ const tx=db.transaction("files","readwrite"); tx.objectStore("files").put(fileObj); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
+function dbGet(id){ return new Promise((res,rej)=>{ const tx=db.transaction("files","readonly"); const req=tx.objectStore("files").get(id); req.onsuccess=()=>res(req.result); req.onerror=()=>rej(req.error); }); }
+function dbAll(){ return new Promise((res,rej)=>{ const tx=db.transaction("files","readonly"); const req=tx.objectStore("files").getAll(); req.onsuccess=()=>res(req.result||[]); req.onerror=()=>rej(req.error); }); }
+function dbDel(id){ return new Promise((res,rej)=>{ const tx=db.transaction("files","readwrite"); tx.objectStore("files").delete(id); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
+function dbClear(){ return new Promise((res,rej)=>{ const tx=db.transaction("files","readwrite"); tx.objectStore("files").clear(); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
+
+/* ====== KLIENCI (prosty CRM) ====== */
+const LS_CLIENTS="arkon_clients_v2";
+let clients=[];
+function loadClients(){ try{return JSON.parse(localStorage.getItem(LS_CLIENTS)||"[]")}catch{return[]} }
+function saveClients(){ localStorage.setItem(LS_CLIENTS, JSON.stringify(clients)); renderClients(); refreshDashboard(); }
+function seedClients(){ if(!clients.length){ clients=[ {id:uid(),created:Date.now()-86400000*2,name:"Jan Kowalski",status:"LEAD",email:"jan@kowalski.pl",phone:"+48 500 000 111",address:"Przemków",tags:["pompa"],notes:"Preferuje kontakt rano."}, {id:uid(),created:Date.now()-86400000,name:"Firma XYZ Sp. z o.o.",status:"W TOKU",email:"biuro@xyz.pl",phone:"+48 600 100 200",address:"Legnica",tags:["fotowoltaika","serwis"],notes:"Serwis falownika."} ]; saveClients(); } }
+let cliFilter={q:"",status:"",sort:"name.asc"};
+let openClientId=null;
+
+function renderClients(){
+  const q = cliFilter.q.toLowerCase();
+  let rows = clients.filter(c=>{
+    if(cliFilter.status && c.status!==cliFilter.status) return false;
+    if(q){
+      const hay=[c.name,c.email,c.phone,c.address,(c.tags||[]).join(" ")].join(" ").toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  rows.sort((a,b)=>{
+    switch(cliFilter.sort){
+      case 'name.asc': return a.name.localeCompare(b.name,'pl',{sensitivity:'base'});
+      case 'name.desc': return b.name.localeCompare(a.name,'pl',{sensitivity:'base'});
+      case 'created.desc': return (b.created||0)-(a.created||0);
+      case 'created.asc': return (a.created||0)-(b.created||0);
+      default: return 0;
+    }
+  });
+  const tb=$("#cli-tbody"); tb.innerHTML="";
+  rows.forEach(c=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td><button class="btn ghost o" data-id="${c.id}">▶</button></td>
+      <td><b>${esc(c.name)}</b><div class="small">${new Date(c.created||Date.now()).toLocaleString('pl-PL')}</div></td>
+      <td><span class="status ${c.status==='KLIENT'?'podpisana':c.status==='W TOKU'?'w-toku':c.status==='UTRACONY'?'anulowana':''}">${esc(c.status)}</span></td>
+      <td>${esc(c.email||"")}<div class="small">${esc(c.phone||"")}</div></td>
+      <td>${esc(c.address||"")}</td>
+      <td>${(c.tags||[]).map(t=><span class="pill">${esc(t)}</span>).join("")}</td>`;
+    tr.querySelector(".o").addEventListener("click",()=>openClient(c.id));
+    tb.appendChild(tr);
+  });
+  // Selects list for Upload
+  const sel=$("#up-client"); sel.innerHTML=<option value="">(bez przypisania)</option> + clients.map(x=><option value="${x.id}">${esc(x.name)}</option>).join("");
+}
+
+function openClient(id){
+  openClientId=id;
+  const c=clients.find(x=>x.id===id); if(!c) return;
+  $("#e_name").value=c.name||""; $("#e_status").value=c.status||"LEAD";
+  $("#e_email").value=c.email||""; $("#e_phone").value=c.phone||"";
+  $("#e_addr").value=c.address||""; $("#e_tags").value=(c.tags||[]).join(", ");
+  $("#e_notes").value=c.notes||"";
+}
+
+function bindClientsUI(){
+  $("#cli-q").addEventListener("input",e=>{cliFilter.q=e.target.value.trim(); renderClients();});
+  $("#cli-status").addEventListener("change",e=>{cliFilter.status=e.target.value; renderClients();});
+  $("#cli-sort").addEventListener("change",e=>{cliFilter.sort=e.target.value; renderClients();});
+  $("#cli-add").addEventListener("click",()=>{ const c={id:uid(),created:Date.now(),name:"Nowy klient",status:"LEAD",email:"",phone:"",address:"",tags:[],notes:""}; clients.unshift(c); saveClients(); openClient(c.id); });
+  $("#cli-del").addEventListener("click",()=>{ if(!openClientId) return; if(confirm("Usunąć klienta?")){ clients=clients.filter(x=>x.id!==openClientId); openClientId=null; saveClients(); } });
+  $("#cli-dup").addEventListener("click",()=>{ if(!openClientId) return; const src=clients.find(x=>x.id===openClientId); const d=JSON.parse(JSON.stringify(src)); d.id=uid(); d.name=(src.name||"")+" (kopia)"; d.created=Date.now(); clients.unshift(d); saveClients(); openClient(d.id); });
+  ["#e_name","#e_email","#e_phone","#e_addr","#e_tags","#e_notes"].forEach(sel=>{
+    $(sel).addEventListener("input",()=>{ if(!openClientId) return; const c=clients.find(x=>x.id===openClientId); if(!c) return;
+      c.name=$("#e_name").value.trim(); c.status=$("#e_status").value; c.email=$("#e_email").value.trim(); c.phone=$("#e_phone").value.trim();
+      c.address=$("#e_addr").value.trim(); c.tags=$("#e_tags").value.split(",").map(s=>s.trim()).filter(Boolean); c.notes=$("#e_notes").value; saveClients();
+    });
+  });
+  $("#e_status").addEventListener("change",()=>{ if(!openClientId) return; const c=clients.find(x=>x.id===openClientId); if(!c) return; c.status=$("#e_status").value; saveClients(); });
+}
+
+/* ====== KOMPONENTY (5 kategorii) ====== */
+const CMP_KEYS={pumps:"arkon_cmp_pumps_v1",boilers:"arkon_cmp_boilers_v1",pv:"arkon_cmp_pv_v1",insul:"arkon_cmp_insul_v1",garage:"arkon_cmp_garage_v1"};
+const cmpState={active:"pumps", q:"", data:{pumps:[],boilers:[],pv:[],insul:[],garage:[]}};
+
+function loadCmp(){ Object.entries(CMP_KEYS).forEach(([k,key])=>{ try{cmpState.data[k]=JSON.parse(localStorage.getItem(key)||"[]")}catch{cmpState.data[k]=[]} }); }
+function saveCmp(k){ localStorage.setItem(CMP_KEYS[k], JSON.stringify(cmpState.data[k]||[])); renderCmp(); }
+
+function renderCmp(){
+  const q=(cmpState.q||"").toLowerCase();
+  const act=cmpState.active;
+  $("#cmp-vis").textContent="0";
+  const filterRow = row => JSON.stringify(row).toLowerCase().includes(q);
+
+  // helper to draw body from schema
+  function draw(tbId, arr, cols){
+    const tb=$(tbId); tb.innerHTML=""; let vis=0;
+    (arr||[]).forEach((r,idx)=>{
+      if(q && !filterRow(r)) return;
+      vis++;
+      const tr=document.createElement("tr");
+      const delBtn=<button class="btn bad" data-del="${idx}">Usuń</button>;
+      tr.innerHTML = <td class="row">${delBtn}</td> + cols.map(col=>{
+        const v=r[col.key]??""; const type=col.type||"text"; const step=col.step||""; const opt=col.opt||[];
+        if(type==="select"){
+          return <td><select data-i="${idx}" data-k="${col.key}" class="field">${opt.map(o=><option ${v===o?'selected':''}>${o}</option>).join("")}</select></td>;
+        }
+        return `<td><input data-i="${idx}" data-k="${col.key}" class="field" ${type!=="text"?type="${type}":''} ${step?step="${step}":''} value="${esc(v)}"></td>`;
+      }).join("");
+      tb.appendChild(tr);
+    });
+    $("#cmp-vis").textContent=vis;
+    // bind edits
+    tb.querySelectorAll("input,select").forEach(el=>{
+      el.addEventListener("input",()=>{ const i=+el.dataset.i; const k=el.dataset.k; let v=el.value; if(el.type==="number") v=Number(v)||0; cmpState.data[act][i][k]=v; saveCmp(act); });
+    });
+    tb.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",()=>{ const i=+b.dataset.del; if(confirm("Usuń pozycję?")){ cmpState.data[act].splice(i,1); saveCmp(act);} }));
+  }
+
+  if(act==="pumps"){
+    draw("#tb-pumps", cmpState.data.pumps, [
+      {key:"brand"},{key:"model"},{key:"power",type:"number",step:"0.1"},
+      {key:"type",type:"select",opt:["powietrze","grunt"]},
+      {key:"scop",type:"number",step:"0.01"},{key:"price",type:"number",step:"1"},{key:"note"}
+    ]);
+  }else if(act==="boilers"){
+    draw("#tb-boilers", cmpState.data.boilers, [
+      {key:"brand"},{key:"model"},
+      {key:"kind",type:"select",opt:["pellet","gaz","elektryczny","drewno"]},
+      {key:"power",type:"number",step:"0.1"},{key:"eff",type:"number",step:"0.01"},
+      {key:"price",type:"number"},{key:"note"}
+    ]);
+  }else if(act==="pv"){
+    draw("#tb-pv", cmpState.data.pv, [
+      {key:"brand"},{key:"model"},{key:"watt",type:"number"},
+      {key:"tech",type:"select",opt:["mono PERC","mono TopCon","heterozłącze","inny"]},
+      {key:"inverter"},{key:"set_kwp",type:"number",step:"0.1"},{key:"price",type:"number"},{key:"note"}
+    ]);
+  }else if(act==="insul"){
+    draw("#tb-insul", cmpState.data.insul, [
+      {key:"pos",type:"select",opt:["ściany","strop","podłoga"]},
+      {key:"mat",type:"select",opt:["styropian","wełna","pianka PUR","inne"]},
+      {key:"lambda",type:"number",step:"0.001"},
+      {key:"thick_cm",type:"number",step:"1"},{key:"price_m2",type:"number"},{key:"note"}
+    ]);
+  }else if(act==="garage"){
+    draw("#tb-garage", cmpState.data.garage, [
+      {key:"brand"},{key:"model"},{key:"size",type:"text"},
+      {key:"panel_mm",type:"number"},{key:"drive",type:"select",opt:["TAK","NIE"]},
+      {key:"u",type:"number",step:"0.01"},{key:"price",type:"number"},{key:"note"}
+    ]);
+  }
+
+  // toggle tables visibility
+  $("#cmp-pumps").style.display = act==="pumps"?"block":"none";
+  $("#cmp-boilers").style.display= act==="boilers"?"block":"none";
+  $("#cmp-pv").style.display     = act==="pv"?"block":"none";
+  $("#cmp-insul").style.display  = act==="insul"?"block":"none";
+  $("#cmp-garage").style.display = act==="garage"?"block":"none";
+}
+function bindCmpUI(){
+  $$(".subtabs .sb").forEach(b=>b.addEventListener("click",()=>{
+    $$(".subtabs .sb").forEach(x=>x.setAttribute("aria-selected","false"));
+    b.setAttribute("aria-selected","true");
+    cmpState.active=b.dataset.sb; renderCmp();
+  }));
+  $("#cmp-q").addEventListener("input",e=>{ cmpState.q=e.target.value.trim(); renderCmp(); });
+  $("#cmp-add").addEventListener("click",()=>{
+    const a=cmpState.active;
+    const blank={pumps:{brand:"",model:"",power:0,type:"powietrze",scop:3.5,price:0,note:""},
+                 boilers:{brand:"",model:"",kind:"pellet",power:0,eff:0.9,price:0,note:""},
+                 pv:{brand:"",model:"",watt:450,tech:"mono PERC",inverter:"",set_kwp:5.0,price:0,note:""},
+                 insul:{pos:"ściany",mat:"styropian",lambda:0.036,thick_cm:15,price_m2:0,note:""},
+                 garage:{brand:"",model:"",size:"2500x2125",panel_mm:40,drive:"TAK",u:1.3,price:0,note:""} }[a];
+    cmpState.data[a].push(blank); saveCmp(a);
+  });
+  $("#cmp-csv").addEventListener("click",()=>{ const a=cmpState.active; const rows=cmpState.data[a]; const cols=Object.keys(rows[0]||{brand:"",model:""}); const out=[cols.join(";")].concat(rows.map(r=>cols.map(k=>csvEsc(r[k])).join(";"))); downloadText(komponenty_${a}.csv, out.join("\n"), "text/csv;charset=utf-8"); });
+  $("#cmp-json").addEventListener("click",()=>{ const a=cmpState.active; downloadText(komponenty_${a}.json, JSON.stringify(cmpState.data[a],null,2)); });
+  $("#cmp-csv-in").addEventListener("change",async e=>{
+    const f=e.target.files[0]; if(!f) return; const txt=await f.text(); const [head,...lines]=txt.split(/\r?\n/).filter(Boolean); const cols=head.split(";"); const arr=lines.map(line=>{const v=line.split(";"); const o={}; cols.forEach((k,i)=>o[k]=csvUnesc(v[i]||"")); return o;}); cmpState.data[cmpState.active]=arr; saveCmp(cmpState.active); e.target.value="";
+  });
+  $("#cmp-json-in").addEventListener("change",async e=>{ const f=e.target.files[0]; if(!f) return; try{ const arr=JSON.parse(await f.text()); if(!Array.isArray(arr)) throw 0; cmpState.data[cmpState.active]=arr; saveCmp(cmpState.active); }catch{ alert("Zły JSON."); } e.target.value=""; });
+}
+function csvEsc(v){ let s=v==null?"":String(v); if(/[;\n"]/.test(s)) s='"'+s.replace(/"/g,'""')+'"'; return s; }
+function csvUnesc(s){ if(s?.startsWith('"')&&s.endsWith('"')) return s.slice(1,-1).replace(/""/g,'"'); return s; }
+function downloadText(name, text, mime){ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([text],{type:mime||"application/json"})); a.download=name; a.click(); URL.revokeObjectURL(a.href); }
+
+/* ====== UPLOAD ====== */
+const upQ = {q:""};
+function fillUploadClientSelect(){ const sel=$("#up-client"); sel.innerHTML=<option value="">(bez przypisania)</option>+clients.map(c=><option value="${c.id}">${esc(c.name)}</option>).join(""); }
+function handleUploadFiles(files){
+  const clientId = $("#up-client").value||null;
+  const clientName = clientId ? (clients.find(c=>c.id===clientId)?.name||"") : "";
+  const cat=$("#up-cat").value||"Inne";
+  Array.from(files||[]).forEach(async f=>{
+    const id=uid();
+    await dbPut({ id, name:f.name, type:f.type||"application/octet-stream", size:f.size, blob:f, at:Date.now(), category:cat, clientId, clientName, origin:"upload" });
+  });
+  renderUploads();
+}
+async function renderUploads(){
+  const q=(upQ.q||"").toLowerCase();
+  const list=await dbAll();
+  const tb=$("#up-tbody"); tb.innerHTML="";
+  list.sort((a,b)=>(b.at||0)-(a.at||0));
+  list.filter(x=>{
+    const hay=[x.name,x.clientName,x.category,x.type].join(" ").toLowerCase();
+    return !q || hay.includes(q);
+  }).forEach(rec=>{
+    const tr=document.createElement("tr");
+    const when = rec.at ? new Date(rec.at).toLocaleString('pl-PL') : '';
+    tr.innerHTML = `<td class="row">
+        <button class="btn ghost" data-dl="${rec.id}">Pobierz</button>
+        <button class="btn bad" data-del="${rec.id}">Usuń</button>
+      </td>
+      <td>${esc(rec.name)}</td>
+      <td>${esc(rec.clientName||"")}</td>
+      <td>${esc(rec.category||"")}</td>
+      <td>${esc(rec.type||"")}</td>
+      <td>${bytes(rec.size||0)}</td>
+      <td>${when}</td>`;
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll("[data-dl]").forEach(b=>b.addEventListener("click",async ()=>{
+    const rec=await dbGet(b.dataset.dl); if(!rec){ alert("Plik niedostępny."); return; }
+    const url=URL.createObjectURL(rec.blob); const a=document.createElement("a"); a.href=url; a.download=rec.name; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1500);
+  }));
+  tb.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",async ()=>{
+    if(!confirm("Usunąć plik?")) return; await dbDel(b.dataset.del); renderUploads();
+  }));
+}
+function bindUploadUI(){
+  $("#up-files").addEventListener("change",e=>{handleUploadFiles(e.target.files); e.target.value="";});
+  $("#up-refresh").addEventListener("click",renderUploads);
+  $("#up-q").addEventListener("input",e=>{ upQ.q=e.target.value.trim(); renderUploads(); });
+  $("#up-clear").addEventListener("click",()=>{ upQ.q=""; $("#up-q").value=""; renderUploads(); });
+}
+
+/* ====== LEADY ====== */
+const LS_LEADS="arkon_leads_v1";
+let leads=[];
+function loadLeads(){ try{return JSON.parse(localStorage.getItem(LS_LEADS)||"[]")}catch{return[]} }
+function saveLeads(){ localStorage.setItem(LS_LEADS, JSON.stringify(leads)); renderLeads(); refreshDashboard(); }
+function renderLeads(){
+  const q=($("#ld-q").value||"").toLowerCase(); const st=$("#ld-status").value||"";
+  const tb=$("#ld-tbody"); tb.innerHTML="";
+  leads.filter(l=>{
+    if(st && l.status!==st) return false;
+    const hay=[l.title,l.clientName,l.source].join(" ").toLowerCase();
+    return !q || hay.includes(q);
+  }).sort((a,b)=>(b.created||0)-(a.created||0)).forEach((l,idx)=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td class="row">
+      <button class="btn ghost" data-ed="${idx}">Edytuj</button>
+      <button class="btn bad" data-del="${idx}">Usuń</button>
+    </td>
+    <td>${esc(l.title)}</td>
+    <td>${esc(l.clientName||"")}</td>
+    <td>${esc(l.status)}</td>
+    <td>${esc(l.source||"")}</td>
+    <td>${new Date(l.created||Date.now()).toLocaleString('pl-PL')}</td>`;
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",()=>{ if(confirm("Usunąć lead?")){ leads.splice(+b.dataset.del,1); saveLeads(); } }));
+  tb.querySelectorAll("[data-ed]").forEach(b=>b.addEventListener("click",()=>editLead(+b.dataset.ed)));
+}
+function editLead(i){
+  const l=leads[i]; if(!l) return;
+  const title=prompt("Tytuł", l.title)||l.title;
+  const client=prompt("Klient (nazwa, opcjonalnie)", l.clientName||"")||l.clientName||"";
+  const status=prompt("Status: NOWY/KONTAKT/QUALIFIED/OFERTA/WYGRANY/PRZEGRANY", l.status)||l.status;
+  const source=prompt("Źródło (np. WWW, FB, telefon)", l.source||"")||l.source||"";
+  leads[i]={...l,title,clientName:client,status,source};
+  saveLeads();
+}
+function bindLeadsUI(){
+  $("#ld-add").addEventListener("click",()=>{ leads.unshift({title:"Nowy lead",clientName:"",status:"NOWY",source:"",created:Date.now()}); saveLeads(); });
+  $("#ld-json").addEventListener("click",()=>downloadText("arkon_leady.json", JSON.stringify(leads,null,2)));
+  $("#ld-json-in").addEventListener("change",async e=>{ const f=e.target.files[0]; if(!f) return; try{ const arr=JSON.parse(await f.text()); if(!Array.isArray(arr)) throw 0; leads=arr; saveLeads(); }catch{ alert("Zły plik JSON"); } e.target.value=""; });
+  $("#ld-q").addEventListener("input",renderLeads);
+  $("#ld-status").addEventListener("change",renderLeads);
+}
+
+/* ====== CHAT ====== */
+const LS_MSGS = "arkon_msgs_v1";
+function loadMsgs(){ try{return JSON.parse(localStorage.getItem(LS_MSGS)||"[]")}catch{return[]} }
+function saveMsgs(list){ localStorage.setItem(LS_MSGS, JSON.stringify(list)); }
+let messages = loadMsgs();
+let pendingFiles = []; // {id,name,type,size,blob}
+const chatBox = $("#chat-box");
+function renderChat(){ chatBox.innerHTML=""; messages.forEach(m=>appendMsg(m,false)); chatBox.scrollTop = chatBox.scrollHeight; }
+function appendMsg(m,scroll=true){
+  const dt = new Date(m.at||Date.now());
+  const time = dt.toLocaleTimeString("pl-PL",{hour:"2-digit",minute:"2-digit"});
+  const div=document.createElement("div"); div.className="bubble";
+  let html = <div class="meta"><strong>${esc(m.user||"Anon")}</strong> • ${time}</div><div class="text">${esc(m.text||"")}</div>;
+  if(m.files && m.files.length){
+    html += <div style="margin-top:6px"> + m.files.map(f=><a class="file-pill" href="#" data-dlid="${f.id}" title="${esc(f.name)}"><span>📎</span>${esc(f.name)} <small>(${bytes(f.size)})</small></a>).join("") + </div>;
+  }
+  div.innerHTML = html; chatBox.appendChild(div); if(scroll) chatBox.scrollTop=chatBox.scrollHeight;
+  div.querySelectorAll("[data-dlid]").forEach(a=>{
+    a.addEventListener("click", async (e)=>{
+      e.preventDefault();
+      const id=a.getAttribute("data-dlid");
+      const rec = await dbGet(id);
+      if(!rec){ alert("Plik niedostępny."); return; }
+      const url = URL.createObjectURL(rec.blob);
+      const link = document.createElement("a"); link.href=url; link.download=rec.name; document.body.appendChild(link); link.click(); link.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 1200);
+    });
+  });
+}
+async function sendMessage(){
+  const text = ($("#chat-text").value||"").trim();
+  if(!text && pendingFiles.length===0) return;
+  const user = ($("#chat-name").value||"").trim() || "Anon";
+  const fileRefs = pendingFiles.map(f=>({id:f.id,name:f.name,type:f.type,size:f.size}));
+  const msg = { id: uid(), user, text, at: Date.now(), files:fileRefs };
+  messages.push(msg); saveMsgs(messages); appendMsg(msg);
+  for(const f of pendingFiles){ await dbPut({ ...f, at:Date.now(), origin:"chat", category:"chat" }); }
+  pendingFiles = []; renderPendingFiles();
+  $("#chat-text").value=""; $("#chat-text").focus();
+}
+const dz = $("#dz"), fi = $("#file-input"), pendingBox=$("#pending-files");
+dz.addEventListener("click",()=>fi.click());
+dz.addEventListener("dragover",(e)=>{ e.preventDefault(); dz.classList.add("drag"); });
+dz.addEventListener("dragleave",()=>dz.classList.remove("drag"));
+dz.addEventListener("drop",(e)=>{ e.preventDefault(); dz.classList.remove("drag"); handleFiles(e.dataTransfer.files); });
+fi.addEventListener("change",()=>{ handleFiles(fi.files); fi.value=""; });
+function renderPendingFiles(){
+  if(!pendingFiles.length){ pendingBox.innerHTML=""; return; }
+  pendingBox.innerHTML = pendingFiles.map((f,i)=><span class="file-pill">📎 ${esc(f.name)} <small>(${bytes(f.size)})</small> <a href="#" data-rm="${i}" title="Usuń">&times;</a></span>).join("");
+  pendingBox.querySelectorAll("[data-rm]").forEach(a=>a.addEventListener("click",(e)=>{ e.preventDefault(); const idx=+a.getAttribute("data-rm"); pendingFiles.splice(idx,1); renderPendingFiles(); }));
+}
+function handleFiles(fileList){
+  const maxPerFile = 50 * 1024 * 1024; // 50MB
+  Array.from(fileList||[]).forEach(f=>{
+    if(f.size>maxPerFile){ alert(Plik ${f.name} jest większy niż 50MB); return; }
+    const id = uid();
+    pendingFiles.push({ id, name:f.name, type:f.type||"application/octet-stream", size:f.size, blob:f });
+  });
+  renderPendingFiles();
+}
+$("#chat-send").addEventListener("click", sendMessage);
+$("#chat-text").addEventListener("keydown",(e)=>{ if(e.key==="Enter"){ e.preventDefault(); sendMessage(); }});
+
+/* ====== EKSPORT / IMPORT PEŁNY ====== */
+function blobToBase64(blob){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res((r.result||"").toString().split(",")[1]||""); r.onerror=()=>rej(r.error); r.readAsDataURL(blob); }); }
+async function exportFull(){
+  const files = await dbAll();
+  const files64 = [];
+  for(const f of files){
+    files64.push({ id:f.id, name:f.name, type:f.type, size:f.size, at:f.at||Date.now(), category:f.category||"", clientId:f.clientId||"", clientName:f.clientName||"", origin:f.origin||"", b64: await blobToBase64(f.blob) });
+  }
+  const dump = {
+    version:2, exportedAt: new Date().toISOString(),
+    clients, leads, components: cmpState.data, messages,
+    files: files64
+  };
+  downloadText("arkon_full_export.json", JSON.stringify(dump,null,2));
+}
+async function importFull(file){
+  try{
+    const txt=await file.text(); const dump=JSON.parse(txt);
+    if(!dump || !dump.version) throw new Error("Struktura pliku niepoprawna.");
+    // pliki
+    await dbClear();
+    for(const f of (dump.files||[])){
+      const bin = Uint8Array.from(atob(f.b64||""), c=>c.charCodeAt(0));
+      await dbPut({ id:f.id, name:f.name, type:f.type, size:f.size, at:f.at, category:f.category, clientId:f.clientId, clientName:f.clientName, origin:f.origin, blob:new Blob([bin],{type:f.type||"application/octet-stream"}) });
+    }
+    // reszta
+    clients = dump.clients||[]; saveClients();
+    leads   = dump.leads||[];   saveLeads();
+    cmpState.data = dump.components||cmpState.data;
+    Object.keys(CMP_KEYS).forEach(k=>localStorage.setItem(CMP_KEYS[k], JSON.stringify(cmpState.data[k]||[])));
+    messages = dump.messages||[]; saveMsgs(messages); renderChat();
+    alert("Zaimportowano pełny stan.");
+    renderUploads(); renderCmp(); refreshDashboard();
+  }catch(e){ alert("Błąd importu: "+(e.message||e)); }
+}
+
+/* ====== DASHBOARD ====== */
+function refreshDashboard(){
+  $("#db-clients").textContent = (clients||[]).length;
+  $("#db-leads").textContent   = (leads||[]).length;
+  // prosta symulacja przychodu = suma cen z komponentów (dla podglądu)
+  const sum = ["pumps","boilers","pv","insul","garage"].flatMap(k=>cmpState.data[k]||[]).reduce((a,r)=>a+(Number(r.price||r.price_m2||0)||0),0);
+  $("#db-revenue").textContent = fmt(sum)+" zł";
+}
+
+/* ====== BOOT ====== */
+(async function boot(){
+  await dbOpen();
+  clients = loadClients(); seedClients(); // seed -> saveClients() już renderuje
+  leads   = loadLeads();
+  loadCmp();
+
+  bindClientsUI(); renderClients();
+  bindCmpUI();     renderCmp();
+  bindUploadUI();  fillUploadClientSelect(); renderUploads();
+  bindLeadsUI();   renderLeads();
+  renderChat();
+
+  // eksport/import UI
+  $("#ex-full").addEventListener("click", exportFull);
+  $("#im-full").addEventListener("change", e=>{ const f=e.target.files[0]; if(f) importFull(f); e.target.value=""; });
+  $("#ex-cli-csv").addEventListener("click", ()=>{
+    const cols=['id','created','name','status','email','phone','address','tags','notes'];
+    const rows=[cols.join(';')].concat(clients.map(c=>{
+      return [c.id, new Date(c.created||Date.now()).toISOString(), csvEsc(c.name), csvEsc(c.status), csvEsc(c.email), csvEsc(c.phone), csvEsc(c.address), csvEsc((c.tags||[]).join('|')), csvEsc(c.notes||'')].join(';');
+    }));
+    downloadText('arkon_klienci.csv', rows.join('\n'), 'text/csv;charset=utf-8');
+  });
+  $("#wipe-all").addEventListener("click", async ()=>{
+    if(!confirm("Na pewno wyczyścić wszystkie dane lokalne (klienci, leady, komponenty, czat, pliki)?")) return;
+    localStorage.clear(); await dbClear();
+    clients=[]; leads=[]; messages=[]; Object.keys(cmpState.data).forEach(k=>cmpState.data[k]=[]);
+    saveClients(); saveLeads(); saveMsgs(messages); Object.keys(CMP_KEYS).forEach(k=>localStorage.setItem(CMP_KEYS[k],"[]"));
+    renderCmp(); renderChat(); renderUploads(); renderClients(); renderLeads(); refreshDashboard();
+    alert("Wyczyszczono.");
+  });
+
+  // startowa zakładka
+  const fromHash=(location.hash||"").replace(/^#/,"");
+  const remembered=localStorage.getItem(LS_TAB)||"";
+  const initial = fromHash || remembered || "dashboard";
+  showTab(initial,{push:false});
+})();
+</script>
+</body>
+</html>
