@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARKON — Katalog stolarki i bram</title>
+<meta name="description" content="Katalog stolarki: okna, drzwi zewnętrzne, bramy garażowe. Edycja inline, wyliczenia m2 i BRUTTO, filtr, import/eksport, CSV, wydruk, wysyłka do kalkulatora.">
+<style>
+  :root{ --bg:#0b1020; --p1:#121a34; --p2:#172142; --ink:#e8edff; --muted:#aeb8da; --accent:#4cc9f0; --ok:#2b8a57; --bad:#ff6b6b; --grid:#243059; --line:#1c2750; }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#0a0f1e,#0c1230 60%,#0a0f1e);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
+  header{padding:16px;background:#11183a;border-bottom:1px solid var(--line)}
+  header h1{margin:0;font-size:22px}
+  nav{background:#172142;display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line)}
+  nav a{color:#cfe1ff;text-decoration:none;padding:8px 12px;border-radius:999px;border:1px solid #2a3a75}
+  nav a:hover{background:#223160}
+  .wrap{max-width:1400px;margin:auto;padding:16px}
+
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+  .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px dashed #3a4ca3}
+  .btn.ok{background:#194d34;border-color:var(--ok)}
+  .btn.bad{background:#3a1f2a;border-color:#7b3341}
+  .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
+  .muted{color:var(--muted);font-size:13px}
+  input,select{background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:8px 10px;color:var(--ink);font:inherit}
+  input::placeholder{color:#aeb8da99}
+  .card{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;padding:14px;margin:10px 0}
+
+  table{width:100%;border-collapse:separate;border-spacing:0}
+  th,td{padding:8px 10px;border-bottom:1px solid #203063;text-align:left;vertical-align:top}
+  th{font-size:12px;color:#aeb8da}
+  td.edit{background:#0d1530;border:1px solid #28356c;border-radius:6px}
+  td .cell{min-width:70px}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .right{display:flex;gap:8px;justify-content:flex-end}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .hint{font-size:12px;color:#aeb8da}
+  .sel{outline:2px solid #67a1ff55}
+
+  @media (max-width:1100px){ table{font-size:13px} td .cell{min-width:54px} }
+
+  /* Print */
+  @media print{
+    nav, .toolbar, .card .row .btn, .card .toolbar .btn, .no-print{display:none!important}
+    body{background:#fff;color:#000}
+    .wrap{max-width:none;padding:0}
+    table th, table td{border-bottom:1px solid #bbb}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Katalog komponentów • Stolarka & Bramy</h1>
+  <div class="muted">Okna, drzwi zewnętrzne i bramy garażowe. Wspólna baza: <code>arkon_components_v1</code>. Edycja „w miejscu”. CSV, wydruk oraz wysyłka zaznaczonych do kalkulatora.</div>
+</header>
+
+<nav class="no-print">
+  <a href="index.html">Pulpit</a>
+  <a href="komponenty.html">Komponenty</a>
+  <a href="komponenty-pompy.html">Pompy</a>
+  <a href="komponenty-piece.html">Piece</a>
+  <a href="komponenty-fotowoltaika.html">Fotowoltaika</a>
+  <a href="komponenty-ocieplenie.html">Ocieplenie</a>
+  <a href="komponenty-stolarka.html">Stolarka & Bramy</a>
+</nav>
+
+<div class="wrap">
+  <!-- FILTRY I AKCJE -->
+  <div class="card no-print">
+    <div class="toolbar">
+      <button id="btnAddOkno" class="btn ok">+ Dodaj okno</button>
+      <button id="btnAddDrzwi" class="btn ok">+ Dodaj drzwi</button>
+      <button id="btnAddBrama" class="btn ok">+ Dodaj bramę</button>
+      <button id="btnExport" class="btn ghost">Eksport JSON (widocznych)</button>
+      <label class="btn ghost">Import JSON<input id="fileImport" type="file" accept="application/json" hidden></label>
+      <button id="btnCSV" class="btn ghost">CSV (widoczne)</button>
+      <button id="btnPrint" class="btn ghost">Drukuj</button>
+      <button id="btnSend" class="btn">Wyślij do kalkulatora</button>
+      <span class="pill">Wszystkie: <b id="countAll">0</b></span>
+      <span class="pill">Widoczne: <b id="countVis">0</b></span>
+      <span class="pill">Zaznaczone: <b id="countSel">0</b></span>
+    </div>
+    <div class="row">
+      <input id="q" placeholder="🔎 Szukaj (nazwa, marka, model, kolor, notatki)">
+      <select id="fType">
+        <option value="">Typ: wszystkie</option>
+        <option>Okno</option><option>Drzwi</option><option>Brama</option>
+      </select>
+      <select id="fMat">
+        <option value="">Materiał: wszystkie</option>
+        <option>PCV</option><option>ALU</option><option>DREWNO</option><option>STAL</option>
+      </select>
+      <select id="fStatus">
+        <option value="">Status: wszystkie</option>
+        <option>OK</option><option>ORDER</option><option>OUT</option>
+      </select>
+      <select id="sort">
+        <option value="name.asc">Sort: Nazwa ↑</option>
+        <option value="name.desc">Sort: Nazwa ↓</option>
+        <option value="net.asc">Sort: Cena NETTO ↑</option>
+        <option value="net.desc">Sort: Cena NETTO ↓</option>
+        <option value="area.desc">Sort: Powierzchnia ↓</option>
+        <option value="area.asc">Sort: Powierzchnia ↑</option>
+        <option value="created.desc">Sort: Najnowsze</option>
+        <option value="created.asc">Sort: Najstarsze</option>
+      </select>
+      <button id="btnClear" class="btn ghost">Wyczyść filtry</button>
+      <span class="hint">Wymiary w mm → m² liczone automatycznie (szer × wys / 1 000 000).</span>
+    </div>
+  </div>
+
+  <!-- TABELA -->
+  <div style="overflow:auto">
+    <table id="tbl">
+      <thead>
+        <tr>
+          <th class="no-print"><input type="checkbox" id="checkAll" title="Zaznacz widoczne"></th>
+          <th>Akcje</th>
+          <th>Nazwa</th>
+          <th>Typ</th>
+          <th>Marka</th>
+          <th>Model</th>
+          <th>Materiał</th>
+          <th>Kolor</th>
+          <th>Uw [W/m²K]</th>
+          <th>Ug [W/m²K]</th>
+          <th>Poł. skrzydeł</th>
+          <th>Szer. [mm]</th>
+          <th>Wys. [mm]</th>
+          <th class="num">Pow. [m²]</th>
+          <th>Pakiet</th>
+          <th>Akcesoria</th>
+          <th>Klasa RC</th>
+          <th class="num">NETTO (szt.)</th>
+          <th class="num">NETTO / m²</th>
+          <th class="num">VAT %</th>
+          <th class="num">BRUTTO</th>
+          <th>Lead time</th>
+          <th>Gwarancja</th>
+          <th>Status</th>
+          <th>Notatki</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ======= helpers ======= */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
+const INT2 = new Intl.NumberFormat('pl-PL',{maximumFractionDigits:2});
+const INT0 = new Intl.NumberFormat('pl-PL',{maximumFractionDigits:0});
+const toNum = v => { if(typeof v!=='string') return Number(v)||0; const s=v.replace(/\s+/g,'').replace(',','.'); const n=parseFloat(s); return isFinite(n)?n:0; };
+const gross = (net, vat) => (Number(net)||0)*(1+(Number(vat)||0)/100);
+const areaFromMM = (w, h) => ((toNum(w)||0)*(toNum(h)||0))/1e6;
+const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;' }[c]));
+
+/* ======= storage ======= */
+const LS_KEY='arkon_components_v1';
+let items = loadItems();
+function loadItems(){ try{return JSON.parse(localStorage.getItem(LS_KEY)||'[]');}catch{return[];} }
+function saveItems(){ localStorage.setItem(LS_KEY, JSON.stringify(items)); render(); }
+
+/* ======= zaznaczenia ======= */
+let selected = new Set();
+function updateSelCount(){ $('#countSel').textContent = selected.size; }
+
+/* ======= seed (jeśli brak stolarki/bram) ======= */
+(function seed(){
+  const hasAny = items.some(r => ['Okno','Drzwi','Brama'].includes(r.kind));
+  if(hasAny) return;
+  const now = Date.now();
+  items = items.concat([
+    {id:uid(), created:now-3e5, kind:'Okno', name:'Okno 2-skrzydłowe 1460x1435', brand:'VEKA', model:'Softline 82', material:'PCV', color:'Biały', uw:0.9, ug:0.5, sashes:'2R+U', width:1460, height:1435, pkg:'3-szyb.', acc:'mikrowentylacja, klamka Secu', rc:'RC1', net:1250, net_m2:0, vat:8, lead:'21 dni', warranty:'5 lat', status:'OK', note:''},
+    {id:uid(), created:now-2e5, kind:'Drzwi', name:'Drzwi stalowe zewn. 1000x2100', brand:'KMT', model:'PLUS 75', material:'STAL', color:'Antracyt', uw:1.1, ug:'—', sashes:'1', width:1000, height:2100, pkg:'pełne + wizjer', acc:'zamek 3-pkt', rc:'RC2', net:2100, net_m2:0, vat:8, lead:'28 dni', warranty:'2 lata', status:'ORDER', note:'Montaż z progiem ciepłym'},
+    {id:uid(), created:now-1e5, kind:'Brama', name:'Brama segmentowa 5000x2250', brand:'WIŚNIOWSKI', model:'UniTherm', material:'STAL', color:'Złoty dąb', uw:'—', ug:'—', sashes:'—', width:5000, height:2250, pkg:'40 mm, automatyka', acc:'napęd, 2 piloty', rc:'—', net:6900, net_m2:0, vat:8, lead:'35 dni', warranty:'5 lat', status:'OK', note:''}
+  ]);
+  saveItems();
+})();
+
+/* ======= filtr / sort ======= */
+let filter={q:'',type:'',mat:'',status:'',sort:'name.asc'};
+$('#q').addEventListener('input',e=>{ filter.q=e.target.value.trim(); render(); });
+$('#fType').addEventListener('change',e=>{ filter.type=e.target.value; render(); });
+$('#fMat').addEventListener('change',e=>{ filter.mat=e.target.value; render(); });
+$('#fStatus').addEventListener('change',e=>{ filter.status=e.target.value; render(); });
+$('#sort').addEventListener('change',e=>{ filter.sort=e.target.value; render(); });
+$('#btnClear').addEventListener('click',()=>{ filter={q:'',type:'',mat:'',status:'',sort:'name.asc'};
+  $('#q').value=''; $('#fType').value=''; $('#fMat').value=''; $('#fStatus').value=''; $('#sort').value='name.asc'; render(); });
+
+/* ======= dodawanie ======= */
+$('#btnAddOkno').onclick=()=>addRow('Okno');
+$('#btnAddDrzwi').onclick=()=>addRow('Drzwi');
+$('#btnAddBrama').onclick=()=>addRow('Brama');
+
+function addRow(kind){
+  items.unshift({
+    id:uid(), created:Date.now(), kind,
+    name:${kind} — nowa pozycja, brand:'', model:'', material: kind==='Brama'?'STAL':'PCV',
+    color:'Biały', uw: kind==='Okno'?0.9:'—', ug: kind==='Okno'?0.5:'—',
+    sashes: kind==='Okno'?'1':'—', width:0, height:0,
+    pkg: kind==='Brama'?'segmentowa 40 mm':'2-szyb.',
+    acc:'', rc:'—', net:0, net_m2:0, vat:8, lead:'', warranty:'', status:'OK', note:''
+  });
+  saveItems();
+}
+
+/* ======= import / eksport ======= */
+$('#btnExport').onclick=()=>{
+  const rows=visibleRows();
+  const blob=new Blob([JSON.stringify(rows,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='stolarka_bramy.json'; a.click(); URL.revokeObjectURL(a.href);
+};
+$('#fileImport').addEventListener('change',async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  try{
+    const txt=await f.text(); const data=JSON.parse(txt);
+    if(!Array.isArray(data)) throw new Error('Niewłaściwy format (oczekuję tablicy).');
+    data.forEach(d=>{
+      items.push(Object.assign({
+        id:uid(), created:Date.now(), kind:d.kind||'Okno',
+        name:d.name||'Pozycja', brand:d.brand||'', model:d.model||'', material:d.material||'PCV', color:d.color||'',
+        uw:d.uw??'—', ug:d.ug??'—', sashes:d.sashes??'—',
+        width:d.width||0, height:d.height||0, pkg:d.pkg||'', acc:d.acc||'', rc:d.rc||'—',
+        net:d.net||0, net_m2:d.net_m2||0, vat:d.vat??8, lead:d.lead||'', warranty:d.warranty||'', status:d.status||'OK', note:d.note||''
+      }, d));
+    });
+    saveItems();
+  }catch(err){ alert('Błąd importu: '+err.message); }
+  e.target.value='';
+});
+
+/* ======= CSV (widoczne) ======= */
+$('#btnCSV').onclick=()=>{
+  const rows=visibleRows();
+  const cols = ['id','created','kind','name','brand','model','material','color','uw','ug','sashes','width','height','area_m2','pkg','acc','rc','net','net_m2','vat','gross','lead','warranty','status','note'];
+  const header = cols.join(';')+'\n';
+  const body = rows.map(r=>{
+    const A = areaFromMM(r.width,r.height);
+    const G = gross(toNum(r.net), toNum(r.vat));
+    const vals = [
+      r.id,new Date(r.created||Date.now()).toISOString(),r.kind||'',escCsv(r.name),escCsv(r.brand),escCsv(r.model),
+      r.material||'',escCsv(r.color),r.uw??'',r.ug??'',escCsv(r.sashes),r.width||0,r.height||0,
+      String(A).replace('.',','),escCsv(r.pkg),escCsv(r.acc),escCsv(r.rc),toNum(r.net)||0,toNum(r.net_m2)||0,
+      toNum(r.vat)||0, String(G).replace('.',','), escCsv(r.lead),escCsv(r.warranty),r.status||'', escCsv(r.note)
+    ];
+    return vals.join(';');
+  }).join('\n');
+  const blob=new Blob([header+body],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='stolarka_bramy.csv'; a.click(); URL.revokeObjectURL(a.href);
+};
+function escCsv(v){ let s=(v==null?'':String(v)); if(/[;\n"]/.test(s)) s='"'+s.replace(/"/g,'""')+'"'; return s; }
+
+/* ======= DRUK ======= */
+$('#btnPrint').onclick=()=>window.print();
+
+/* ======= WYŚLIJ DO KALKULATORA ======= */
+$('#btnSend').onclick=()=>{
+  const payload = Array.from(selected).map(id=>{
+    const r = items.find(x=>x.id===id); if(!r) return null;
+    const A = areaFromMM(r.width,r.height);
+    return {
+      id:r.id, kind:r.kind, name:r.name, brand:r.brand, model:r.model,
+      material:r.material, color:r.color, uw:r.uw, ug:r.ug, sashes:r.sashes,
+      width:r.width, height:r.height, area_m2:A,
+      pkg:r.pkg, acc:r.acc, rc:r.rc,
+      net:toNum(r.net), net_m2: A>0 ? (toNum(r.net)/(A||1)) : toNum(r.net_m2),
+      vat:toNum(r.vat), gross:gross(toNum(r.net), toNum(r.vat)),
+      lead:r.lead, warranty:r.warranty, status:r.status, note:r.note
+    };
+  }).filter(Boolean);
+  if(!payload.length){ alert('Zaznacz najpierw pozycje (lewa kolumna).'); return; }
+  localStorage.setItem('arkon_quote_export', JSON.stringify({source:'stolarka', at:Date.now(), items:payload}));
+  alert('Wysłano do kalkulatora. Dane są w localStorage["arkon_quote_export"].');
+};
+
+/* ======= render / widoczność ======= */
+function visibleRows(){
+  let rows = items.filter(r=>['Okno','Drzwi','Brama'].includes(r.kind));
+  if(filter.q){
+    const q=filter.q.toLowerCase();
+    rows = rows.filter(r =>
+      [r.name,r.brand,r.model,r.color,r.pkg,r.acc,r.note].some(x => (x||'').toString().toLowerCase().includes(q))
+    );
+  }
+  if(filter.type) rows = rows.filter(r=>r.kind===filter.type);
+  if(filter.mat)  rows = rows.filter(r=>(r.material||'')===filter.mat);
+  if(filter.status) rows = rows.filter(r=> (r.status||'')===filter.status);
+
+  rows.sort((a,b)=>{
+    switch(filter.sort){
+      case 'name.asc':  return (a.name||'').localeCompare(b.name||'', 'pl', {sensitivity:'base'});
+      case 'name.desc': return (b.name||'').localeCompare(a.name||'', 'pl', {sensitivity:'base'});
+      case 'net.asc':   return (toNum(a.net)||0)-(toNum(b.net)||0);
+      case 'net.desc':  return (toNum(b.net)||0)-(toNum(a.net)||0);
+      case 'area.desc': return areaFromMM(b.width,b.height)-areaFromMM(a.width,a.height);
+      case 'area.asc':  return areaFromMM(a.width,a.height)-areaFromMM(b.width,b.height);
+      case 'created.desc': return (b.created||0)-(a.created||0);
+      case 'created.asc':  return (a.created||0)-(b.created||0);
+      default: return 0;
+    }
+  });
+  return rows;
+}
+
+$('#checkAll').addEventListener('change',()=>{
+  const rows=visibleRows();
+  selected.clear();
+  if($('#checkAll').checked) rows.forEach(r=>selected.add(r.id));
+  updateSelCount(); render(); // aby odświeżyć checkboxy
+});
+
+function render(){
+  $('#countAll').textContent = items.filter(r=>['Okno','Drzwi','Brama'].includes(r.kind)).length;
+  const rows = visibleRows();
+  $('#countVis').textContent = rows.length;
+
+  const tb = $('#tbody'); tb.innerHTML='';
+
+  rows.forEach(r=>{
+    const A = areaFromMM(r.width, r.height);
+    const net_m2 = A>0 ? (toNum(r.net)/(A||1)) : (toNum(r.net_m2)||0);
+    const brutto = gross(toNum(r.net), toNum(r.vat));
+
+    const tr=document.createElement('tr');
+    if(selected.has(r.id)) tr.classList.add('sel');
+    tr.innerHTML=`
+      <td class="no-print"><input type="checkbox" class="pick" data-id="${r.id}" ${selected.has(r.id)?'checked':''}></td>
+      <td class="no-print">
+        <button class="btn ghost" data-dup="${r.id}">Duplikuj</button>
+        <button class="btn bad" data-del="${r.id}">Usuń</button>
+      </td>
+      <td class="edit"><div class="cell" contenteditable data-k="name">${esc(r.name)}</div></td>
+      <td>
+        <select data-k="kind">
+          ${['Okno','Drzwi','Brama'].map(k=><option ${r.kind===k?'selected':''}>${k}</option>).join('')}
+        </select>
+      </td>
+      <td class="edit"><div class="cell" contenteditable data-k="brand">${esc(r.brand||'')}</div></td>
+      <td class="edit"><div class="cell" contenteditable data-k="model">${esc(r.model||'')}</div></td>
+      <td>
+        <select data-k="material">
+          ${['PCV','ALU','DREWNO','STAL'].map(k=><option ${r.material===k?'selected':''}>${k}</option>).join('')}
+        </select>
+      </td>
+      <td class="edit"><div class="cell" contenteditable data-k="color">${esc(r.color||'')}</div></td>
+      <td class="edit num"><div class="cell" contenteditable data-k="uw">${esc(r.uw??'')}</div></td>
+      <td class="edit num"><div class="cell" contenteditable data-k="ug">${esc(r.ug??'')}</div></td>
+      <td class="edit"><div class="cell" contenteditable data-k="sashes">${esc(r.sashes||'')}</div></td>
+      <td class="edit num"><div class="cell" contenteditable data-k="width">${r.width||0}</div></td>
+      <td class="edit num"><div class="cell" contenteditable data-k="height">${r.height||0}</div></td>
+      <td class="num">${INT2.format(A)}</td>
+      <td class="edit"><div class="cell" contenteditable data-k="pkg">${esc(r.pkg||'')}</div></td>
+      <td class="edit"><div class="cell" contenteditable data-k="acc">${esc(r.acc||'')}</div></td>
+      <td class="edit"><div class="cell" contenteditable data-k="rc">${esc(r.rc||'')}</div></td>
+      <td class="edit num"><div class="cell" contenteditable data-k="net">${toNum(r.net)||0}</div></td>
+      <td class="edit num"><div class="cell" contenteditable data-k="net_m2">${net_m2?INT2.format(net_m2):0}</div></td>
+      <td>
+        <select data-k="vat">
+          ${[8,23].map(v=><option value="${v}" ${Number(r.vat)===v?'selected':''}>${v}</option>).join('')}
+        </select>
+      </td>
+      <td class="num">${INT0.format(brutto)}</td>
+      <td class="edit"><div class="cell" contenteditable data-k="lead">${esc(r.lead||'')}</div></td>
+      <td class="edit"><div class="cell" contenteditable data-k="warranty">${esc(r.warranty||'')}</div></td>
+      <td>
+        <select data-k="status">
+          ${['OK','ORDER','OUT'].map(s=><option ${r.status===s?'selected':''}>${s}</option>).join('')}
+        </select>
+      </td>
+      <td class="edit"><div class="cell" contenteditable data-k="note">${esc(r.note||'')}</div></td>
+    `;
+
+    // zaznaczanie
+    tr.querySelector('.pick').addEventListener('change', (e)=>{
+      if(e.target.checked) selected.add(r.id); else selected.delete(r.id);
+      updateSelCount();
+      tr.classList.toggle('sel', e.target.checked);
+    });
+
+    // editable text cells
+    tr.querySelectorAll('[contenteditable]').forEach(el=>{
+      el.onkeydown = e=>{ if(e.key==='Enter'){ e.preventDefault(); el.blur(); } };
+      el.onblur = ()=>{
+        const k = el.dataset.k;
+        let v = el.textContent.trim();
+        applyChange(r.id,k,v);
+      };
+    });
+    // selects
+    tr.querySelectorAll('select[data-k]').forEach(sel=>{
+      sel.onchange = ()=>applyChange(r.id, sel.dataset.k, sel.value);
+    });
+    // actions
+    tr.querySelector('[data-del]').onclick = ()=>{ items = items.filter(x=>x.id!==r.id); selected.delete(r.id); saveItems(); updateSelCount(); };
+    tr.querySelector('[data-dup]').onclick = ()=>{
+      const copy = JSON.parse(JSON.stringify(r));
+      copy.id = uid(); copy.created = Date.now(); copy.name = (r.name||'') + ' (kopia)';
+      items.unshift(copy); saveItems();
+    };
+
+    tb.appendChild(tr);
+  });
+}
+
+/* ======= apply change ======= */
+function applyChange(id,k,v){
+  const it = items.find(x=>x.id===id); if(!it) return;
+  if(['net','net_m2','uw','ug','width','height','vat'].includes(k)) v = toNum(v);
+  it[k] = v;
+
+  // przeliczenia
+  const A = areaFromMM(it.width, it.height);
+  if(k==='net' && A>0){ it.net_m2 = it.net/(A||1); }
+  if((k==='width'||k==='height') && A>0 && toNum(it.net)>0){ it.net_m2 = it.net/(A||1); }
+  if(k==='net_m2' && A>0){ it.net = it.net_m2 * A; }
+
+  saveItems();
+}
+
+/* ======= start ======= */
+render();
+updateSelCount();
+</script>
+</body>
+</html>
