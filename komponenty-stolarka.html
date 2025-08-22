@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARKON — Komponenty: Stolarka (okna, drzwi, bramy, rolety/żaluzje/moskitiery)</title>
+<meta name="description" content="Baza komponentów stolarki: okna, drzwi zewnętrzne i wewnętrzne, bramy garażowe, rolety/żaluzje/moskitiery. Filtrowanie, edycja, import/eksport CSV/JSON.">
+<style>
+  :root{
+    --bg:#0b1020;--ink:#e8edff;--muted:#aeb8da;--line:#263168;--card:#0f1636;--accent:#3a6df0;
+    --chip:#1a244d;--field:#0e1330;--ok:#2fbf71;--warn:#ffb84d;--bad:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#0a0f1e,#0c1332 60%,#0a0f1e);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
+  header{padding:16px;background:#11183a;border-bottom:1px solid var(--line)}
+  header h1{margin:0;font-size:22px}
+  nav{background:#172142;display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line)}
+  nav a{color:#cfe1ff;text-decoration:none;padding:8px 12px;border-radius:999px;border:1px solid #2a3a75}
+  nav a:hover{background:#223160}
+  .wrap{max-width:1400px;margin:auto;padding:16px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+  .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px dashed #3a4ca3}
+  .btn.bad{background:#3a1f2a;border-color:#7b3341}
+  .btn.ok{background:#194d34;border-color:var(--ok)}
+  input,select,textarea{background:var(--field);border:1px solid #28356c;border-radius:10px;padding:8px 10px;color:var(--ink);font:inherit}
+  .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
+  .small{font-size:12px;color:#aeb8da}
+  .grid{display:grid;gap:12px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+  .tab{padding:8px 12px;border-radius:999px;border:1px solid #2a3a75;cursor:pointer;color:#cfe1ff}
+  .tab[aria-selected="true"]{background:#1b2550;border-color:#67a1ff}
+  table{width:100%;border-collapse:separate;border-spacing:0}
+  th,td{padding:8px 6px;border-bottom:1px solid #223160;text-align:left;vertical-align:top}
+  th{font-size:13px;color:var(--muted);white-space:nowrap}
+  .right{display:flex;gap:8px;justify-content:flex-end}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .scroll{overflow:auto}
+  .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
+  @media print{ nav,.toolbar,.tabs,.right,.btn{display:none!important} }
+</style>
+</head>
+<body>
+<header>
+  <h1>Komponenty • Stolarka</h1>
+  <div class="small">Okna, drzwi (zewnętrzne/wewnętrzne), bramy garażowe, osłony (rolety/żaluzje/moskitiery). Filtrowanie, edycja w tabeli, import/eksport. Skróty: <span class="kbd">Alt+N</span> nowa pozycja • <span class="kbd">/</span> szukaj.</div>
+</header>
+
+<nav>
+  <a href="index.html">Pulpit</a>
+  <a href="klienci.html">Klienci</a>
+  <a href="kalkulator.html">Kalkulator</a>
+  <a href="komponenty.html">Komponenty</a>
+  <a href="komponenty-pompy.html">Pompy</a>
+  <a href="komponenty-piece.html">Piece</a>
+  <a href="komponenty-pv.html">Fotowoltaika</a>
+  <a href="komponenty-ocieplenie.html">Ocieplenie</a>
+  <a href="komponenty-stolarka.html">Stolarka</a>
+  <a href="komponenty-bramy.html">Bramy</a>
+</nav>
+
+<div class="wrap">
+  <!-- TABS -->
+  <div class="tabs" role="tablist" aria-label="Kategorie stolarki">
+    <button class="tab" data-k="okna" aria-selected="true">Okna</button>
+    <button class="tab" data-k="drzwi_zew">Drzwi zewn.</button>
+    <button class="tab" data-k="drzwi_wew">Drzwi wew.</button>
+    <button class="tab" data-k="bramy">Bramy garażowe</button>
+    <button class="tab" data-k="oslony">Rolety/Żaluzje/Moskitiery</button>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <input id="q" placeholder="🔎 szukaj: marka/model/typ/wariant/uwagi…" style="min-width:280px">
+    <select id="fTyp"></select>
+    <select id="fMater"></select>
+    <select id="fKolor"></select>
+    <select id="fSzklenie"></select>
+    <button id="btnAdd" class="btn ok">+ Dodaj</button>
+    <button id="btnCSV" class="btn ghost">CSV</button>
+    <button id="btnJSON" class="btn ghost">JSON</button>
+    <label class="btn ghost">Import JSON<input id="inJSON" type="file" accept="application/json" hidden></label>
+    <span class="pill">W kategorii: <b id="countVis">0</b> / <b id="countAll">0</b></span>
+    <span class="pill">Aktywna: <b id="activeName">Okna</b></span>
+  </div>
+
+  <!-- TABLES -->
+  <div id="box-okna" class="card">
+    <div class="scroll"><table><thead><tr>
+      <th>Akcje</th><th>Marka</th><th>Seria</th><th>Materiał</th><th>Profil [komory]</th><th>Gł. zab. [mm]</th><th>Szklenie</th><th>Ug [W/m²K]</th><th>Okucie</th><th>Kolor</th><th>Typ</th><th>Rozmiar [mm]</th><th>Uwagi</th><th>Cena [zł]</th>
+    </tr></thead><tbody id="tb-okna"></tbody></table></div>
+  </div>
+
+  <div id="box-drzwi_zew" class="card" hidden>
+    <div class="scroll"><table><thead><tr>
+      <th>Akcje</th><th>Marka</th><th>Model</th><th>Materiał</th><th>Grubość skrzydła [mm]</th><th>Wypełnienie</th><th>Ud [W/m²K]</th><th>Kolor</th><th>Wymiary [mm]</th><th>Klasa RC</th><th>Próg</th><th>Uwagi</th><th>Cena [zł]</th>
+    </tr></thead><tbody id="tb-drzwi_zew"></tbody></table></div>
+  </div>
+
+  <div id="box-drzwi_wew" class="card" hidden>
+    <div class="scroll"><table><thead><tr>
+      <th>Akcje</th><th>Marka</th><th>Kolekcja</th><th>Konstrukcja</th><th>Wypełnienie</th><th>Kolor/Okleina</th><th>Ościeżnica</th><th>Typ</th><th>Przeszklenie</th><th>Wymiary [mm]</th><th>Uwagi</th><th>Cena [zł]</th>
+    </tr></thead><tbody id="tb-drzwi_wew"></tbody></table></div>
+  </div>
+
+  <div id="box-bramy" class="card" hidden>
+    <div class="scroll"><table><thead><tr>
+      <th>Akcje</th><th>Marka</th><th>Seria</th><th>Rodzaj</th><th>Panel [mm]</th><th>Wsp. U [W/m²K]</th><th>Napęd</th><th>Pow. [m²]</th><th>Wymiary [mm]</th><th>Kolor</th><th>Uwagi</th><th>Cena [zł]</th>
+    </tr></thead><tbody id="tb-bramy"></tbody></table></div>
+  </div>
+
+  <div id="box-oslony" class="card" hidden>
+    <div class="scroll"><table><thead><tr>
+      <th>Akcje</th><th>Typ</th><th>Marka</th><th>Seria/Model</th><th>Mont.</th><th>Materiał lameli/tkaniny</th><th>Sterowanie</th><th>Kolor</th><th>Wymiary [mm]</th><th>Uwagi</th><th>Cena [zł]</th>
+    </tr></thead><tbody id="tb-oslony"></tbody></table></div>
+  </div>
+
+  <div class="card small">Uwaga: to katalog offline (LocalStorage). Możesz eksportować/importować JSON, a także CSV. Klikaj w komórki, aby edytować. Usuń wiersz przyciskiem „Usuń”.</div>
+</div>
+
+<script>
+'use strict';
+
+/* ===== helpers ===== */
+const $=s=>document.querySelector(s);
+const $$=s=>Array.from(document.querySelectorAll(s));
+const INT=new Intl.NumberFormat('pl-PL',{maximumFractionDigits:2});
+const esc=s=>(s??'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const uid=()=> 'ID_'+Math.random().toString(36).slice(2)+'_'+Date.now().toString(36);
+const csvEsc=v=>{let s=(v==null?'':String(v)); if(/[;\\n"]/.test(s)) s='"'+s.replace(/"/g,'""')+'"'; return s;};
+function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:type||'application/json'}));a.download=name;a.click();URL.revokeObjectURL(a.href);}
+
+/* ===== storage keys ===== */
+const LS_KEY='arkon_components_stolarka_v2';
+
+/* ===== state ===== */
+let state = load();
+let active = 'okna';
+let filter = {q:'', typ:'', mater:'', kolor:'', szklenie:''};
+
+/* ===== seed if empty (very comprehensive) ===== */
+function defaultData(){
+  const okna=[
+    // PVC
+    {id:uid(),brand:'Veka',series:'Softline 82',material:'PVC',profile:'7',depth:82,glazing:'3 szyby 48 mm',Ug:0.5,hardware:'Roto NX',color:'biały',type:'rozwierno-uchylne',size:'1460x1430',note:'ciepła ramka TGI',price:1450},
+    {id:uid(),brand:'Veka',series:'Softline 82',material:'PVC',profile:'7',depth:82,glazing:'3 szyby 48 mm',Ug:0.5,hardware:'Roto NX',color:'antracyt',type:'rozwierno-uchylne',size:'1165x1430',note:'nakładki alu',price:1650},
+    {id:uid(),brand:'Salamander',series:'BluEvolution 92',material:'PVC',profile:'6',depth:92,glazing:'3 szyby 52 mm',Ug:0.5,hardware:'Siegenia',color:'złoty dąb',type:'rozwierne',size:'1230x1480',note:'docieplane ramy',price:1780},
+    {id:uid(),brand:'Salamander',series:'Streamline 76',material:'PVC',profile:'5',depth:76,glazing:'2 szyby 24 mm',Ug:1.0,hardware:'Maco',color:'biały',type:'uchylne',size:'865x1135',note:'ekonomiczne',price:690},
+    {id:uid(),brand:'Aluplast',series:'Ideal 8000',material:'PVC',profile:'6',depth:85,glazing:'3 szyby 48 mm',Ug:0.5,hardware:'Winkhaus',color:'orzech',type:'rozwierno-uchylne',size:'1460x1430',note:'stabilizacja stalowa 2 mm',price:1590},
+    {id:uid(),brand:'Aluplast',series:'Ideal 4000',material:'PVC',profile:'5',depth:70,glazing:'2 szyby 24 mm',Ug:1.0,hardware:'Winkhaus',color:'biały',type:'rozwierne',size:'865x1135',note:'best seller',price:630},
+    {id:uid(),brand:'Rehau',series:'Synego',material:'PVC',profile:'7',depth:80,glazing:'3 szyby 44 mm',Ug:0.6,hardware:'Roto NX',color:'antracyt gładki',type:'stałe',size:'1500x1500',note:'energooszczędne',price:980},
+    {id:uid(),brand:'Rehau',series:'Geneo',material:'RAU-FIPRO',profile:'6',depth:86,glazing:'3 szyby 44 mm',Ug:0.6,hardware:'Roto NX',color:'biel',type:'rozwierno-uchylne',size:'1460x1430',note:'kompozytowe profile',price:2250},
+    // Alu
+    {id:uid(),brand:'Aluprof',series:'MB-86N',material:'Aluminium',profile:'3-komorowy',depth:77,glazing:'3 szyby 48 mm',Ug:0.5,hardware:'Sobín',color:'RAL 7016',type:'rozwierne',size:'1500x1500',note:'izol. aerożel',price:3100},
+    {id:uid(),brand:'Yawal',series:'TM 77HI',material:'Aluminium',profile:'3-komorowy',depth:77,glazing:'3 szyby 48 mm',Ug:0.5,hardware:'GU',color:'RAL 7024',type:'rozwierno-uchylne',size:'1300x1500',note:'HI izolacja',price:2950},
+    // Drewno
+    {id:uid(),brand:'Urzędowski',series:'Drewniane 92',material:'Drewno',profile:'warstwowe',depth:92,glazing:'3 szyby 48 mm',Ug:0.5,hardware:'Maco',color:'lakier dąb',type:'rozwierno-uchylne',size:'1460x1430',note:'okapniki alu',price:3400},
+    {id:uid(),brand:'Sokółka',series:'Thermo 92',material:'Drewno',profile:'warstwowe',depth:92,glazing:'3 szyby 48 mm',Ug:0.5,hardware:'Winkhaus',color:'RAL 9016',type:'rozwierne',size:'1200x1500',note:'cert. pasywne',price:3600},
+    // HS / PSK / dachowe
+    {id:uid(),brand:'Aluprof',series:'MB-77HS',material:'Aluminium',profile:'HS',depth:174,glazing:'3 szyby 52 mm',Ug:0.5,hardware:'GU HS',color:'RAL 7016',type:'HS przesuwne',size:'3600x2400',note:'próg zlicowany',price:14500},
+    {id:uid(),brand:'Veka',series:'Slide 82',material:'PVC',profile:'PSK',depth:82,glazing:'3 szyby 48 mm',Ug:0.5,hardware:'Roto PSK',color:'biały',type:'PSK przesuwne',size:'3000x2200',note:'mikrowentylacja',price:7600},
+    {id:uid(),brand:'Velux',series:'GLL 1061',material:'Drewno',profile:'dachowe',depth:92,glazing:'2 szyby',Ug:1.1,hardware:'Velux',color:'biały',type:'dachowe',size:'780x1180',note:'krokiew 78x118',price:1290},
+    {id:uid(),brand:'Fakro',series:'FTP-V U5',material:'Drewno',profile:'dachowe',depth:92,glazing:'3 szyby',Ug:0.5,hardware:'Fakro',color:'natural',type:'dachowe',size:'780x1180',note:'supertermo',price:1890},
+    // Nietypowe i dodatkowe warianty
+    {id:uid(),brand:'Rehau',series:'Innovent',material:'PVC',profile:'7',depth:80,glazing:'3 szyby 44 mm',Ug:0.6,hardware:'Roto NX',color:'czarny mat',type:'fix narożne',size:'1200x1200',note:'słup ukryty',price:2100},
+    {id:uid(),brand:'Schüco',series:'AWS 75.SI+',material:'Aluminium',profile:'3-komorowy',depth:75,glazing:'3 szyby 50 mm',Ug:0.5,hardware:'Schüco AvanTec',color:'DB703',type:'rozwierne',size:'1600x1600',note:'SI+ izolacja',price:4200},
+    {id:uid(),brand:'Schüco',series:'ASE 80.HI',material:'Aluminium',profile:'HS',depth:80,glazing:'3 szyby 52 mm',Ug:0.5,hardware:'Schüco HS',color:'RAL 9005',type:'HS przesuwne',size:'4500x2600',note:'duży format',price:26500},
+    {id:uid(),brand:'Drutex',series:'IGLO 5',material:'PVC',profile:'5',depth:70,glazing:'2 szyby 24 mm',Ug:1.0,hardware:'Maco',color:'biały',type:'rozwierne',size:'865x1135',note:'ekonomiczne',price:590},
+    {id:uid(),brand:'Drutex',series:'IGLO Energy',material:'PVC',profile:'7',depth:82,glazing:'3 szyby 48 mm',Ug:0.5,hardware:'Maco',color:'winchester',type:'RU',size:'1460x1430',note:'ciepła ramka swisspacer',price:1490},
+    {id:uid(),brand:'Internorm',series:'HF410',material:'Drewno-Alu',profile:'warstwowe',depth:85,glazing:'3 szyby 48 mm',Ug:0.5,hardware:'Winkhaus',color:'alu RAL7016',type:'RU',size:'1500x1500',note:'premium',price:6200}
+  ];
+
+  const drzwi_zew=[
+    {id:uid(),brand:'Gerda',model:'TT Plus',material:'stal',thick:75,core:'pianka PU',Ud:0.9,color:'antracyt',size:'1000x2090',rc:'RC3',threshold:'aluminiowy ciepły',note:'zamek 4-ryglowy',price:3800},
+    {id:uid(),brand:'Gerda',model:'S Premium 60',material:'stal',thick:60,core:'pianka PU',Ud:1.1,color:'złoty dąb',size:'90N',rc:'RC2',threshold:'aluminiowy',note:'wizjer, klamka',price:2600},
+    {id:uid(),brand:'DRE',model:'Termo Classic',material:'stal',thick:72,core:'poliuretan',Ud:0.9,color:'orzech',size:'100E',rc:'RC2',threshold:'ciepły',note:'ościeżnica 90',price:3100},
+    {id:uid(),brand:'KMT',model:'Plus 75',material:'stal',thick:75,core:'pianka',Ud:0.9,color:'biały',size:'100E',rc:'RC2',threshold:'ciepły',note:'szyld długi',price:2890},
+    {id:uid(),brand:'WIŚNIOWSKI',model:'CREO',material:'aluminium',thick:77,core:'pianka',Ud:0.8,color:'RAL 7021',size:'1000x2100',rc:'RC3',threshold:'ciepły',note:'panel zlicowany',price:9200},
+    {id:uid(),brand:'Aluprof',model:'AD 80',material:'aluminium',thick:80,core:'aerożel/PU',Ud:0.7,color:'RAL 7016',size:'1100x2300',rc:'RC3',threshold:'ciepły',note:'naświetla boczne',price:11500},
+    {id:uid(),brand:'Porta',model:'THERMO',material:'stal',thick:72,core:'PU',Ud:0.9,color:'winchester',size:'100E',rc:'RC2',threshold:'ciepły',note:'przeszklenie 3-szybowe',price:3600},
+    {id:uid(),brand:'YAWAL',model:'DA-77',material:'aluminiowe',thick:77,core:'PU',Ud:0.8,color:'RAL 9005',size:'1200x2400',rc:'RC3',threshold:'ciepły',note:'ukryte zawiasy',price:13200}
+  ];
+
+  const drzwi_wew=[
+    {id:uid(),brand:'Porta',col:'Vector Premium',build:'ramiak MDF',core:'plaster miodu',finish:'okleina Premium',jamb:'stała 80',type:'rozwierne',glass:'TAK (szyba satyna)',size:'80/90',note:'cichy domyk',price:1050},
+    {id:uid(),brand:'Porta',col:'Harmony',build:'ramiak MDF',core:'płyta wiórowa',finish:'fornir dąb',jamb:'regulowana 75-95',type:'rozwierne',glass:'TAK (przezroczysta)',size:'80',note:'magnes',price:1850},
+    {id:uid(),brand:'DRE',col:'Auri',build:'płycinowe',core:'płyta pełna',finish:'CPL 0,7',jamb:'regulowana',type:'przesuwne naścienne',glass:'TAK (HDF + szkło)',size:'80/90',note:'system tunel',price:1650},
+    {id:uid(),brand:'Erkado',col:'Fado',build:'ramiak drewniany',core:'płyta wiórowa otworowa',finish:'okleina 3D',jamb:'stała',type:'łamane',glass:'NIE',size:'80',note:'do małych pom.',price:990},
+    {id:uid(),brand:'Invado',col:'Norweż',build:'ramiak drewniany',core:'pełna',finish:'lakier biały',jamb:'regulowana 100-120',type:'rozwierne dwuskrzydłowe',glass:'TAK',size:'2x80',note:'styl skandynawski',price:2650}
+  ];
+
+  const bramy=[
+    {id:uid(),brand:'WIŚNIOWSKI',series:'UniTherm',kind:'segmentowa',panel:60,U:0.79,drive:'TAK (MetroSmart io)',area:11.5,size:'5000x2250',color:'RAL 7016',note:'uszcz. obwodowe',price:8200},
+    {id:uid(),brand:'WIŚNIOWSKI',series:'UniPro',kind:'segmentowa',panel:40,U:1.07,drive:'Opcjonalnie',area:9.0,size:'4500x2125',color:'złoty dąb',note:'najpopularniejsza',price:5900},
+    {id:uid(),brand:'Hörmann',series:'RollMatic',kind:'rolowana',panel:20,U:1.5,drive:'TAK',area:8.5,size:'2500x2125',color:'biały',note:'oszczędność miejsca',price:5400},
+    {id:uid(),brand:'Beditom',series:'Beditom S',kind:'segmentowa',panel:40,U:1.1,drive:'TAK',area:10.2,size:'5000x2250',color:'orzech',note:'prowadnice Z',price:6350},
+    {id:uid(),brand:'Novoferm',series:'N80',kind:'uchylna',panel:20,U:1.5,drive:'Opcjonalnie',area:7.5,size:'2500x2125',color:'biały',note:'ekonomiczna',price:3350}
+  ];
+
+  const oslony=[
+    {id:uid(),type:'roleta zewnętrzna',brand:'Aluprof',series:'SP-E',mount:'podtynkowy',mat:'pancerz aluminiowy',ctrl:'elektryczne (Somfy io)',color:'antracyt',size:'1800x1500',note:'moskitiera integra',price:1650},
+    {id:uid(),type:'roleta zewnętrzna',brand:'Portos',series:'PA-52',mount:'nadstawny',mat:'aluminium',ctrl:'manualne + sprężyna',color:'biały',size:'1500x1400',note:'okno PVC',price:980},
+    {id:uid(),type:'żaluzja fasadowa',brand:'Selt',series:'Z-90',mount:'elewacyjny',mat:'aluminium',ctrl:'elektryczne (Somfy RTS)',color:'antracyt',size:'2400x2500',note:'prowadnice',price:3650},
+    {id:uid(),type:'markiza tarasowa',brand:'Selt',series:'Australia',mount:'ścienny',mat:'tkanina akryl',ctrl:'elektryczne',color:'szarość',size:'5000x3000',note:'czujnik wiatru',price:6900},
+    {id:uid(),type:'moskitiera',brand:'no-name',series:'ramkowa',mount:'wewnętrzny',mat:'siatka z włókna',ctrl:'ręczne',color:'biały',size:'800x1200',note:'okno 80x120',price:140},
+    {id:uid(),type:'plisa',brand:'Anwis',series:'PL11',mount:'międzylistwowy',mat:'tkanina',ctrl:'ręczne',color:'krem',size:'800x1200',note:'okno PVC',price:220}
+  ];
+
+  // create more variations programmatically for richness
+  const colors=['biały','antracyt','złoty dąb','orzech','winchester','czarny mat','RAL 7016','RAL 9005'];
+  const sizes=['865x1135','1165x1430','1460x1430','1500x1500','1600x1600'];
+  const types=['rozwierne','rozwierno-uchylne','uchylne','stałe'];
+  for(let c of ['Veka','Aluplast','Drutex']){
+    for(let col of colors.slice(0,5)){
+      okna.push({id:uid(),brand:c,series:'Test 76',material:'PVC',profile:'5',depth:76,glazing:'2 szyby 24 mm',Ug:1.0,hardware:'Winkhaus',color:col,type:types[Math.floor(Math.random()*types.length)],size:sizes[Math.floor(Math.random()*sizes.length)],note:'wariant masowy',price:600+Math.floor(Math.random()*400)});
+    }
+  }
+
+  return {okna,drzwi_zew,drzwi_wew,bramy,oslony};
+}
+
+/* ===== load/save ===== */
+function load(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw) return defaultData();
+    const obj = JSON.parse(raw);
+    // migrate keys if needed
+    return Object.assign(defaultData(), obj);
+  }catch(e){
+    console.warn('load error',e);
+    return defaultData();
+  }
+}
+function save(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); render(); }
+
+/* ===== UI binds ===== */
+$$('.tab').forEach(b=>b.addEventListener('click',()=>{
+  $$('.tab').forEach(x=>x.setAttribute('aria-selected','false'));
+  b.setAttribute('aria-selected','true');
+  active = b.dataset.k;
+  $('#activeName').textContent = b.textContent;
+  showBoxes();
+  buildFilters();
+  render();
+}));
+$('#q').addEventListener('input',e=>{filter.q=e.target.value.trim(); render();});
+['#fTyp','#fMater','#fKolor','#fSzklenie'].forEach(id=> $(id).addEventListener('change',()=>{ 
+  filter.typ=$('#fTyp').value; filter.mater=$('#fMater').value; filter.kolor=$('#fKolor').value; filter.szklenie=$('#fSzklenie').value; render();
+}));
+$('#btnAdd').addEventListener('click', addRow);
+$('#btnCSV').addEventListener('click', exportCSV);
+$('#btnJSON').addEventListener('click', ()=>download('stolarka_'+active+'.json', JSON.stringify(state[active],null,2)));
+$('#inJSON').addEventListener('change', async (e)=>{
+  const f=e.target.files[0]; if(!f) return;
+  try{
+    const arr=JSON.parse(await f.text());
+    if(!Array.isArray(arr)) throw 0;
+    state[active]=arr; save();
+  }catch{ alert('Zły JSON'); }
+  e.target.value='';
+});
+window.addEventListener('keydown',e=>{ if(e.altKey && e.key.toLowerCase()==='n'){ e.preventDefault(); addRow(); } if(e.key==='/'){ e.preventDefault(); $('#q').focus(); }});
+
+/* ===== boxes toggle ===== */
+function showBoxes(){
+  ['okna','drzwi_zew','drzwi_wew','bramy','oslony'].forEach(k=>{
+    $('#box-'+k).hidden = (k!==active);
+  });
+}
+
+/* ===== filters ===== */
+function buildFilters(){
+  const data = state[active]||[];
+  const set = (key)=> [...new Set(data.map(r=>(r[key]??'').toString()).filter(Boolean))].sort();
+  function fill(sel, list, label){
+    const s=$(sel); s.innerHTML = '<option value="">'+(label||'— wszystkie —')+'</option>'+ list.map(x=>'<option>'+esc(x)+'</option>').join('');
+  }
+  if(active==='okna'){
+    fill('#fTyp',[...new Set(data.map(r=>r.type))],'Typ okna');
+    fill('#fMater',[...new Set(data.map(r=>r.material))],'Materiał');
+    fill('#fKolor',[...new Set(data.map(r=>r.color))],'Kolor');
+    fill('#fSzklenie',[...new Set(data.map(r=>r.glazing))],'Szklenie');
+  }else if(active==='drzwi_zew'){
+    fill('#fTyp',[...new Set(data.map(r=>r.model))],'Model');
+    fill('#fMater',[...new Set(data.map(r=>r.material))],'Materiał');
+    fill('#fKolor',[...new Set(data.map(r=>r.color))],'Kolor');
+    fill('#fSzklenie',[...new Set(data.map(r=>r.rc))],'Klasa RC');
+  }else if(active==='drzwi_wew'){
+    fill('#fTyp',[...new Set(data.map(r=>r.type))],'Typ');
+    fill('#fMater',[...new Set(data.map(r=>r.build))],'Konstrukcja');
+    fill('#fKolor',[...new Set(data.map(r=>r.finish))],'Wykończenie');
+    fill('#fSzklenie',[...new Set(data.map(r=>r.glass))],'Przeszklenie');
+  }else if(active==='bramy'){
+    fill('#fTyp',[...new Set(data.map(r=>r.kind))],'Rodzaj');
+    fill('#fMater',[...new Set(data.map(r=>r.series))],'Seria');
+    fill('#fKolor',[...new Set(data.map(r=>r.color))],'Kolor');
+    fill('#fSzklenie',[...new Set(data.map(r=>r.drive))],'Napęd');
+  }else if(active==='oslony'){
+    fill('#fTyp',[...new Set(data.map(r=>r.type))],'Typ osłony');
+    fill('#fMater',[...new Set(data.map(r=>r.mat))],'Materiał');
+    fill('#fKolor',[...new Set(data.map(r=>r.color))],'Kolor');
+    fill('#fSzklenie',[...new Set(data.map(r=>r.ctrl))],'Sterowanie');
+  }
+}
+
+/* ===== render ===== */
+function render(){
+  const data = (state[active]||[]).filter(r=>matchFilters(r));
+  $('#countAll').textContent = (state[active]||[]).length;
+  $('#countVis').textContent = data.length;
+
+  if(active==='okna') drawOkna('#tb-okna', data);
+  if(active==='drzwi_zew') drawDrzwiZew('#tb-drzwi_zew', data);
+  if(active==='drzwi_wew') drawDrzwiWew('#tb-drzwi_wew', data);
+  if(active==='bramy') drawBramy('#tb-bramy', data);
+  if(active==='oslony') drawOslony('#tb-oslony', data);
+}
+
+function matchFilters(r){
+  const q = (filter.q||'').toLowerCase();
+  const hay = JSON.stringify(r).toLowerCase();
+  if(q && !hay.includes(q)) return false;
+  function m(v,sel){ return !sel || (v??'').toString()===sel; }
+  if(active==='okna'){
+    return m(r.type,filter.typ)&&m(r.material,filter.mater)&&m(r.color,filter.kolor)&&m(r.glazing,filter.szklenie);
+  }else if(active==='drzwi_zew'){
+    return m(r.model,filter.typ)&&m(r.material,filter.mater)&&m(r.color,filter.kolor)&&m(r.rc,filter.szklenie);
+  }else if(active==='drzwi_wew'){
+    return m(r.type,filter.typ)&&m(r.build,filter.mater)&&m(r.finish,filter.kolor)&&m(r.glass,filter.szklenie);
+  }else if(active==='bramy'){
+    return m(r.kind,filter.typ)&&m(r.series,filter.mater)&&m(r.color,filter.kolor)&&m(r.drive,filter.szklenie);
+  }else if(active==='oslony'){
+    return m(r.type,filter.typ)&&m(r.mat,filter.mater)&&m(r.color,filter.kolor)&&m(r.ctrl,filter.szklenie);
+  }
+  return true;
+}
+
+/* ===== draw tables ===== */
+function drawOkna(sel,rows){
+  const tb=$(sel); tb.innerHTML='';
+  rows.forEach((r,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td class="row">
+        <button class="btn ghost" data-ed="${r.id}">Edytuj</button>
+        <button class="btn bad" data-del="${r.id}">Usuń</button>
+      </td>
+      <td contenteditable data-k="brand">${esc(r.brand)}</td>
+      <td contenteditable data-k="series">${esc(r.series)}</td>
+      <td contenteditable data-k="material">${esc(r.material)}</td>
+      <td contenteditable data-k="profile">${esc(r.profile)}</td>
+      <td contenteditable data-k="depth">${esc(r.depth)}</td>
+      <td contenteditable data-k="glazing">${esc(r.glazing)}</td>
+      <td contenteditable data-k="Ug">${esc(r.Ug)}</td>
+      <td contenteditable data-k="hardware">${esc(r.hardware)}</td>
+      <td contenteditable data-k="color">${esc(r.color)}</td>
+      <td contenteditable data-k="type">${esc(r.type)}</td>
+      <td contenteditable data-k="size">${esc(r.size)}</td>
+      <td contenteditable data-k="note">${esc(r.note||'')}</td>
+      <td contenteditable data-k="price">${esc(r.price)}</td>`;
+    bindRow(tr,r);
+    tb.appendChild(tr);
+  });
+}
+function drawDrzwiZew(sel,rows){
+  const tb=$(sel); tb.innerHTML='';
+  rows.forEach(r=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td class="row">
+        <button class="btn ghost" data-ed="${r.id}">Edytuj</button>
+        <button class="btn bad" data-del="${r.id}">Usuń</button>
+      </td>
+      <td contenteditable data-k="brand">${esc(r.brand)}</td>
+      <td contenteditable data-k="model">${esc(r.model)}</td>
+      <td contenteditable data-k="material">${esc(r.material)}</td>
+      <td contenteditable data-k="thick">${esc(r.thick)}</td>
+      <td contenteditable data-k="core">${esc(r.core)}</td>
+      <td contenteditable data-k="Ud">${esc(r.Ud)}</td>
+      <td contenteditable data-k="color">${esc(r.color)}</td>
+      <td contenteditable data-k="size">${esc(r.size)}</td>
+      <td contenteditable data-k="rc">${esc(r.rc||'')}</td>
+      <td contenteditable data-k="threshold">${esc(r.threshold||'')}</td>
+      <td contenteditable data-k="note">${esc(r.note||'')}</td>
+      <td contenteditable data-k="price">${esc(r.price)}</td>`;
+    bindRow(tr,r);
+    tb.appendChild(tr);
+  });
+}
+function drawDrzwiWew(sel,rows){
+  const tb=$(sel); tb.innerHTML='';
+  rows.forEach(r=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td class="row">
+        <button class="btn ghost" data-ed="${r.id}">Edytuj</button>
+        <button class="btn bad" data-del="${r.id}">Usuń</button>
+      </td>
+      <td contenteditable data-k="brand">${esc(r.brand)}</td>
+      <td contenteditable data-k="col">${esc(r.col)}</td>
+      <td contenteditable data-k="build">${esc(r.build)}</td>
+      <td contenteditable data-k="core">${esc(r.core)}</td>
+      <td contenteditable data-k="finish">${esc(r.finish)}</td>
+      <td contenteditable data-k="jamb">${esc(r.jamb)}</td>
+      <td contenteditable data-k="type">${esc(r.type)}</td>
+      <td contenteditable data-k="glass">${esc(r.glass)}</td>
+      <td contenteditable data-k="size">${esc(r.size)}</td>
+      <td contenteditable data-k="note">${esc(r.note||'')}</td>
+      <td contenteditable data-k="price">${esc(r.price)}</td>`;
+    bindRow(tr,r);
+    tb.appendChild(tr);
+  });
+}
+function drawBramy(sel,rows){
+  const tb=$(sel); tb.innerHTML='';
+  rows.forEach(r=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td class="row">
+        <button class="btn ghost" data-ed="${r.id}">Edytuj</button>
+        <button class="btn bad" data-del="${r.id}">Usuń</button>
+      </td>
+      <td contenteditable data-k="brand">${esc(r.brand)}</td>
+      <td contenteditable data-k="series">${esc(r.series)}</td>
+      <td contenteditable data-k="kind">${esc(r.kind)}</td>
+      <td contenteditable data-k="panel">${esc(r.panel)}</td>
+      <td contenteditable data-k="U">${esc(r.U)}</td>
+      <td contenteditable data-k="drive">${esc(r.drive)}</td>
+      <td contenteditable data-k="area">${esc(r.area)}</td>
+      <td contenteditable data-k="size">${esc(r.size)}</td>
+      <td contenteditable data-k="color">${esc(r.color)}</td>
+      <td contenteditable data-k="note">${esc(r.note||'')}</td>
+      <td contenteditable data-k="price">${esc(r.price)}</td>`;
+    bindRow(tr,r);
+    tb.appendChild(tr);
+  });
+}
+function drawOslony(sel,rows){
+  const tb=$(sel); tb.innerHTML='';
+  rows.forEach(r=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td class="row">
+        <button class="btn ghost" data-ed="${r.id}">Edytuj</button>
+        <button class="btn bad" data-del="${r.id}">Usuń</button>
+      </td>
+      <td contenteditable data-k="type">${esc(r.type)}</td>
+      <td contenteditable data-k="brand">${esc(r.brand)}</td>
+      <td contenteditable data-k="series">${esc(r.series)}</td>
+      <td contenteditable data-k="mount">${esc(r.mount)}</td>
+      <td contenteditable data-k="mat">${esc(r.mat)}</td>
+      <td contenteditable data-k="ctrl">${esc(r.ctrl)}</td>
+      <td contenteditable data-k="color">${esc(r.color)}</td>
+      <td contenteditable data-k="size">${esc(r.size)}</td>
+      <td contenteditable data-k="note">${esc(r.note||'')}</td>
+      <td contenteditable data-k="price">${esc(r.price)}</td>`;
+    bindRow(tr,r);
+    tb.appendChild(tr);
+  });
+}
+
+/* ===== row editing & delete ===== */
+function bindRow(tr,rec){
+  tr.querySelectorAll('[contenteditable][data-k]').forEach(td=>{
+    td.addEventListener('input',()=>{
+      const k=td.dataset.k;
+      let v=td.textContent.trim();
+      if(['price','Ug','Ud','U','depth','panel','area','thick'].includes(k)) v=Number(v)||0;
+      rec[k]=v;
+      save();
+    });
+  });
+  tr.querySelector('[data-del]').addEventListener('click',()=>{
+    if(!confirm('Usunąć pozycję?')) return;
+    const arr = state[active];
+    const i = arr.findIndex(x=>x.id===rec.id);
+    if(i>=0){ arr.splice(i,1); save(); }
+  });
+}
+
+/* ===== add row ===== */
+function addRow(){
+  const blank = active==='okna' ?
+    {id:uid(),brand:'',series:'',material:'PVC',profile:'5',depth:76,glazing:'2 szyby 24 mm',Ug:1.0,hardware:'',color:'biały',type:'rozwierno-uchylne',size:'',note:'',price:0} :
+  active==='drzwi_zew' ?
+    {id:uid(),brand:'',model:'',material:'stal',thick:72,core:'PU',Ud:0.9,color:'',size:'',rc:'',threshold:'',note:'',price:0} :
+  active==='drzwi_wew' ?
+    {id:uid(),brand:'',col:'',build:'ramiak MDF',core:'',finish:'',jamb:'',type:'rozwierne',glass:'',size:'',note:'',price:0} :
+  active==='bramy' ?
+    {id:uid(),brand:'',series:'',kind:'segmentowa',panel:40,U:1.1,drive:'Opcjonalnie',area:0,size:'',color:'',note:'',price:0} :
+    {id:uid(),type:'roleta zewnętrzna',brand:'',series:'',mount:'nadstawny',mat:'aluminium',ctrl:'ręczne',color:'',size:'',note:'',price:0};
+  state[active].unshift(blank); save();
+}
+
+/* ===== export CSV (per category) ===== */
+function exportCSV(){
+  const arr = state[active]||[];
+  if(active==='okna'){
+    const cols=['brand','series','material','profile','depth','glazing','Ug','hardware','color','type','size','note','price'];
+    const out=[cols.join(';')].concat(arr.map(r=>cols.map(k=>csvEsc(r[k])).join(';')));
+    download('okna.csv', out.join('\\n'), 'text/csv;charset=utf-8');
+  }else if(active==='drzwi_zew'){
+    const cols=['brand','model','material','thick','core','Ud','color','size','rc','threshold','note','price'];
+    const out=[cols.join(';')].concat(arr.map(r=>cols.map(k=>csvEsc(r[k])).join(';')));
+    download('drzwi_zew.csv', out.join('\\n'), 'text/csv;charset=utf-8');
+  }else if(active==='drzwi_wew'){
+    const cols=['brand','col','build','core','finish','jamb','type','glass','size','note','price'];
+    const out=[cols.join(';')].concat(arr.map(r=>cols.map(k=>csvEsc(r[k])).join(';')));
+    download('drzwi_wew.csv', out.join('\\n'), 'text/csv;charset=utf-8');
+  }else if(active==='bramy'){
+    const cols=['brand','series','kind','panel','U','drive','area','size','color','note','price'];
+    const out=[cols.join(';')].concat(arr.map(r=>cols.map(k=>csvEsc(r[k])).join(';')));
+    download('bramy.csv', out.join('\\n'), 'text/csv;charset=utf-8');
+  }else if(active==='oslony'){
+    const cols=['type','brand','series','mount','mat','ctrl','color','size','note','price'];
+    const out=[cols.join(';')].concat(arr.map(r=>cols.map(k=>csvEsc(r[k])).join(';')));
+    download('oslony.csv', out.join('\\n'), 'text/csv;charset=utf-8');
+  }
+}
+
+/* ===== init ===== */
+showBoxes();
+buildFilters();
+render();
+</script>
+</body>
+</html>
