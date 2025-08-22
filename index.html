@@ -3,27 +3,28 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>ARKON CRM — demo 1-plikowe</title>
-  <!-- Chart.js i jsPDF z CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <title>ARKON CRM — wersja rozszerzona (1-plikowa)</title>
   <style>
     :root{
       --bg:#0b1020;--card:#0f1636;--line:#263168;--accent:#3a6df0;
       --text:#e7ecff;--muted:#a3b3ff;--chip:#1a244d;--field:#0e1330;
+      --good:#2fbf71;--warn:#ffb84d;--bad:#ff6b6b;
     }
+    *{box-sizing:border-box}
     html,body{margin:0;height:100%}
     body{font:14px/1.45 system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
-    .container{max-width:1200px;margin:0 auto;padding:16px}
+    a{color:#cfe0ff;text-decoration:none}
+    .container{max-width:1280px;margin:0 auto;padding:16px}
     .nav{position:sticky;top:0;z-index:10;display:flex;gap:12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--bg)}
     .brand{font-weight:700;letter-spacing:.4px}
     .tab{padding:6px 10px;border-radius:8px;cursor:pointer}
     .tab.active{background:var(--chip)}
     .grid{display:grid;gap:16px}
     .cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
-    @media (max-width:900px){ .cols-3{grid-template-columns:1fr} }
+    .cols-2{grid-template-columns:1fr 1fr}
+    @media (max-width:1000px){ .cols-3,.cols-2{grid-template-columns:1fr} .side{position:static;max-height:none} }
     .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
-    .small{opacity:.8;color:var(--muted);font-size:13px}
+    .small{opacity:.85;color:var(--muted);font-size:13px}
     h1{margin:0 0 10px}
     h2{margin:0 0 10px;font-size:18px}
     .chip{display:inline-block;padding:4px 8px;border-radius:999px;background:var(--chip)}
@@ -32,9 +33,12 @@
     .row{display:flex;gap:8px;flex-wrap:wrap}
     .btn{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:10px 14px;cursor:pointer}
     .btn.ghost{background:transparent;border:1px solid var(--accent);color:#cfe0ff}
+    .btn.bad{background:transparent;border:1px solid var(--bad);color:#ffb4b4}
+    .btn.good{background:var(--good)}
     table{width:100%;border-collapse:collapse}
-    th{font-weight:600;text-align:left;border-bottom:1px solid var(--line);padding:8px 6px;color:var(--muted);font-size:13px}
-    td{border-bottom:1px solid #1a244d;padding:8px 6px}
+    th{font-weight:600;text-align:left;border-bottom:1px solid var(--line);padding:8px 6px;color:var(--muted);font-size:13px;cursor:default;white-space:nowrap}
+    th.sort{cursor:pointer}
+    td{border-bottom:1px solid #1a244d;padding:8px 6px;vertical-align:top}
     .scroll{overflow:auto}
     .right{display:flex;gap:8px;justify-content:flex-end}
     .spacer{height:6px}
@@ -43,7 +47,16 @@
     .msg strong{color:#9ec5ff}
     .list-reset{list-style:none;margin:0;padding:0}
     .danger{color:#ffb4b4}
-    canvas{background:transparent}
+    .status{padding:2px 8px;border-radius:999px}
+    .status.W\ toku{background:#24336b}
+    .status.Podpisana{background:#1d3d2f}
+    .status.Anulowana{background:#4a1d1d}
+    /* panel boczny (bez modali/okien) */
+    .layout{display:grid;grid-template-columns:1fr 340px;gap:16px}
+    .side{position:sticky;top:64px;max-height:calc(100vh - 96px);overflow:auto}
+    .cart-row{display:flex;align-items:center;gap:8px}
+    .cart-row input[type="number"]{width:80px}
+    .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
   </style>
 </head>
 <body>
@@ -68,83 +81,156 @@
         <div class="card"><div class="small">Aktywne umowy</div><h2 id="db-open">0</h2></div>
         <div class="card"><div class="small">Brakujące dokumenty</div><h2 id="db-missing">0</h2></div>
       </div>
-      <div class="grid cols-3">
-        <div class="card"><div class="small">Przychody miesięczne</div><canvas id="chartRevenue" height="160"></canvas></div>
-        <div class="card"><div class="small">Liczba umów</div><canvas id="chartContracts" height="160"></canvas></div>
-        <div class="card"><div class="small">Udział statusów</div><canvas id="chartPie" height="160"></canvas></div>
+      <div class="card small">
+        Porady: <span class="kbd">/</span> fokus wyszukiwania • <span class="kbd">Alt+N</span> nowy klient •
+        <span class="kbd">Alt+U</span> nowa umowa • zapisz/odtwórz dane w Ustawieniach.
       </div>
     </section>
 
     <!-- CLIENTS -->
     <section id="tab-clients" class="grid" hidden>
       <h1>Klienci</h1>
-      <div class="card">
-        <div class="row">
-          <input id="cli-q" class="field" placeholder="Szukaj (imię, email, tel, opiekun)..." />
-          <input id="cli-name" class="field" placeholder="Imię i nazwisko" />
-          <input id="cli-email" class="field" placeholder="E-mail" />
-          <input id="cli-phone" class="field" placeholder="Telefon" />
-          <input id="cli-manager" class="field" placeholder="Opiekun" />
-          <button id="cli-add" class="btn">Dodaj klienta</button>
+      <div class="layout">
+        <div class="grid">
+          <div class="card">
+            <div class="row">
+              <input id="cli-q" class="field" placeholder="Szukaj (imię, email, tel, opiekun)..." />
+              <select id="cli-sort" class="field" style="max-width:210px">
+                <option value="name">Sortuj: Nazwa A→Z</option>
+                <option value="created_desc">Sortuj: Najnowsze</option>
+                <option value="manager">Sortuj: Opiekun</option>
+              </select>
+            </div>
+            <div class="spacer"></div>
+            <div class="row">
+              <input id="cli-name" class="field" placeholder="Imię i nazwisko" />
+              <input id="cli-email" class="field" placeholder="E-mail" />
+              <input id="cli-phone" class="field" placeholder="Telefon" />
+              <input id="cli-manager" class="field" placeholder="Opiekun" />
+              <button id="cli-add" class="btn">Dodaj klienta</button>
+            </div>
+          </div>
+
+          <div class="card scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th class="sort" data-k="id">ID</th>
+                  <th class="sort" data-k="name">Nazwa</th>
+                  <th>E-mail</th><th>Telefon</th><th class="sort" data-k="manager">Opiekun</th>
+                </tr>
+              </thead>
+              <tbody id="cli-rows"></tbody>
+            </table>
+            <div id="cli-empty" class="muted" style="padding:8px;display:none">Brak wyników…</div>
+          </div>
         </div>
-      </div>
-      <div class="card scroll">
-        <table>
-          <thead><tr><th>ID</th><th>Nazwa</th><th>E-mail</th><th>Telefon</th><th>Opiekun</th></tr></thead>
-          <tbody id="cli-rows"></tbody>
-        </table>
-        <div id="cli-empty" class="muted" style="padding:8px;display:none">Brak wyników…</div>
+
+        <!-- PANEL BOCZNY: szczegóły klienta -->
+        <aside class="side">
+          <div class="card" id="cli-side">
+            <h2>Szczegóły klienta</h2>
+            <div id="cli-side-none" class="muted">Wybierz klienta z listy, by zobaczyć szczegóły.</div>
+            <div id="cli-side-body" hidden>
+              <div class="small">ID: <span id="cli-s-id"></span></div>
+              <div style="margin:8px 0 12px"><span class="chip" id="cli-s-manager"></span></div>
+              <div class="small">Kontakt</div>
+              <div id="cli-s-email"></div>
+              <div id="cli-s-phone"></div>
+              <div class="spacer"></div>
+              <div class="small">Notatki</div>
+              <textarea id="cli-s-notes" class="field" rows="5" placeholder="Własne notatki o kliencie…"></textarea>
+              <div class="right" style="margin-top:8px">
+                <button id="cli-s-save" class="btn good">Zapisz notatki</button>
+              </div>
+              <div class="spacer"></div>
+              <div class="small">Umowy klienta</div>
+              <ul id="cli-s-contracts" class="list-reset"></ul>
+            </div>
+          </div>
+        </aside>
       </div>
     </section>
 
     <!-- CONTRACTS -->
     <section id="tab-contracts" class="grid" hidden>
       <h1>Umowy</h1>
-      <div class="card">
-        <h2>Kalkulator umowy</h2>
-        <div class="small">Tryb:</div>
-        <div class="row">
-          <button class="btn ghost" id="mode-cash">Gotówka</button>
-          <button class="btn ghost" id="mode-pref">Prefinansowanie</button>
-          <span id="mode-badge" class="chip">Gotówka</span>
-          <button class="btn" id="btn-pdf" title="Wygeneruj prosty PDF z podsumowaniem">Eksport PDF</button>
-        </div>
-        <div class="spacer"></div>
-        <div class="row">
-          <input id="sum" class="field" type="number" value="20000" placeholder="Wartość brutto (zł)" />
-          <input id="discount" class="field" type="number" value="0" placeholder="Rabat (zł)" />
-          <input id="months" class="field" type="number" value="60" placeholder="Okres (mies.)" />
-          <input id="rate" class="field" type="number" step="0.1" value="7.2" placeholder="Oprocentowanie % (rok)" />
-          <input id="prov" class="field" type="number" step="0.1" value="4" placeholder="Prowizja %"/>
-        </div>
-        <div class="grid cols-3" style="margin-top:12px">
-          <div class="card"><div class="small">Podstawa</div><h2 id="out-base">0 zł</h2></div>
-          <div class="card"><div class="small">Rata / mies.</div><h2 id="out-inst">0 zł</h2></div>
-          <div class="card"><div class="small">Prowizja</div><h2 id="out-prov">0 zł</h2></div>
-        </div>
-        <div id="pref-note" class="small" style="margin-top:8px;display:none">
-          <span class="chip">Prefinansowanie</span> – pamiętaj o: opinii kominiarza, odbiorze, oświadczeniach i zaświadczeniach o dochodach.
-        </div>
-      </div>
+      <div class="layout">
+        <div class="grid">
+          <div class="card">
+            <h2>Nowa umowa</h2>
+            <div class="row">
+              <select id="ctr-client" class="field" style="min-width:220px"></select>
+              <select id="ctr-type" class="field" style="max-width:220px">
+                <option value="gotówka">Gotówka</option>
+                <option value="prefinansowanie">Prefinansowanie</option>
+              </select>
+              <input id="ctr-discount" class="field" type="number" value="0" placeholder="Rabat (zł)" />
+              <input id="ctr-prov" class="field" type="number" step="0.1" value="4" placeholder="Prowizja %"/>
+              <button id="ctr-create" class="btn">Utwórz z koszyka produktów</button>
+            </div>
+            <div class="small" style="margin-top:8px">Wybierz produkty w zakładce <b>Produkty</b> i dodaj je do koszyka po prawej. Tu zapiszesz z tego nową umowę.</div>
+          </div>
 
-      <div class="card scroll">
-        <h2>Lista umów (demo)</h2>
-        <table>
-          <thead><tr><th>ID</th><th>Klient</th><th>Kwota</th><th>Status</th></tr></thead>
-          <tbody id="ctr-rows"></tbody>
-        </table>
+          <div class="card scroll">
+            <h2>Lista umów</h2>
+            <table>
+              <thead><tr><th>ID</th><th>Klient</th><th>Kwota</th><th>Typ</th><th>Status</th><th>Akcje</th></tr></thead>
+              <tbody id="ctr-rows"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- panel boczny: detale umowy + checklista dokumentów -->
+        <aside class="side">
+          <div class="card" id="ctr-side">
+            <h2>Szczegóły umowy</h2>
+            <div id="ctr-side-none" class="muted">Wybierz umowę z listy po lewej.</div>
+            <div id="ctr-side-body" hidden>
+              <div class="small">ID: <span id="ctr-s-id"></span></div>
+              <div class="small">Klient: <span id="ctr-s-client"></span></div>
+              <div class="small">Wartość: <span id="ctr-s-total"></span></div>
+              <div class="small">Typ: <span id="ctr-s-type" class="chip"></span></div>
+              <div class="small">Status: <span id="ctr-s-status" class="chip"></span></div>
+              <div class="spacer"></div>
+              <div class="small">Dokumenty</div>
+              <ul id="ctr-docs" class="list-reset"></ul>
+              <div class="right" style="margin-top:8px">
+                <button id="ctr-docs-reset" class="btn ghost">Odznacz wszystko</button>
+                <button id="ctr-status-signed" class="btn good">Oznacz jako podpisaną</button>
+              </div>
+            </div>
+          </div>
+        </aside>
       </div>
     </section>
 
     <!-- PRODUCTS -->
     <section id="tab-products" class="grid" hidden>
       <h1>Produkty i komponenty</h1>
-      <div class="card"><div class="row" id="prod-filters"></div></div>
-      <div class="card scroll">
-        <table>
-          <thead><tr><th>SKU</th><th>Nazwa</th><th>Kategoria</th><th>Cena</th></tr></thead>
-          <tbody id="prod-rows"></tbody>
-        </table>
+      <div class="layout">
+        <div class="grid">
+          <div class="card"><div class="row" id="prod-filters"></div></div>
+          <div class="card scroll">
+            <table>
+              <thead><tr><th>SKU</th><th>Nazwa</th><th>Kategoria</th><th>Cena</th><th>Dodaj</th></tr></thead>
+              <tbody id="prod-rows"></tbody>
+            </table>
+          </div>
+        </div>
+        <aside class="side">
+          <div class="card">
+            <h2>Koszyk oferty</h2>
+            <div id="cart-empty" class="muted">Brak pozycji — dodaj z listy produktów.</div>
+            <div id="cart-list"></div>
+            <div class="spacer"></div>
+            <div class="row">
+              <div class="card" style="flex:1"><div class="small">Suma pozycji</div><h2 id="cart-sum">0 zł</h2></div>
+              <div class="card" style="flex:1"><div class="small">Po rabacie</div><h2 id="cart-sum-disc">0 zł</h2></div>
+            </div>
+            <div class="small muted">Rabat ustawisz przy tworzeniu umowy.</div>
+          </div>
+        </aside>
       </div>
     </section>
 
@@ -152,9 +238,12 @@
     <section id="tab-docs" class="grid" hidden>
       <h1>Dokumenty</h1>
       <div class="card">
-        <h2>Lista wymaganych dokumentów</h2>
+        <h2>Domyślna lista wymaganych dokumentów</h2>
         <ul id="doc-list" class="list-reset"></ul>
-        <div class="right" style="margin-top:10px"><button id="doc-reset" class="btn ghost">Odznacz wszystko</button></div>
+        <div class="right" style="margin-top:10px">
+          <button id="doc-add" class="btn ghost">Dodaj pozycję</button>
+          <button id="doc-reset" class="btn ghost">Odznacz wszystko</button>
+        </div>
       </div>
     </section>
 
@@ -162,25 +251,43 @@
     <section id="tab-chat" class="grid" hidden>
       <h1>Komunikator</h1>
       <div class="card">
-        <div id="chat-box" style="border:1px solid var(--line);border-radius:8px;padding:12px;min-height:120px;max-height:260px;overflow:auto;background:#0d1330"></div>
+        <div id="chat-box" style="border:1px solid var(--line);border-radius:8px;padding:12px;min-height:160px;max-height:300px;overflow:auto;background:#0d1330"></div>
         <div class="row" style="margin-top:8px">
           <input id="chat-text" class="field" placeholder="Napisz wiadomość…" />
           <button id="chat-send" class="btn">Wyślij</button>
         </div>
-        <div class="small muted" style="margin-top:8px">* Demo lokalne (bez backendu). Docelowo: realtime.</div>
+        <div class="small muted" style="margin-top:8px">To wersja lokalna (bez backendu). Realtime pojawi się po podłączeniu Supabase.</div>
       </div>
     </section>
 
     <!-- SETTINGS -->
     <section id="tab-settings" class="grid" hidden>
       <h1>Ustawienia</h1>
-      <div class="card">
-        <div class="row">
-          <button class="btn" onclick="window.print()">Drukuj / PDF przeglądarki</button>
-          <button id="wipe" class="btn ghost danger" title="Usuwa zapis lokalny">Wyczyść zapisane dane (localStorage)</button>
+      <div class="grid cols-2">
+        <div class="card">
+          <h2>Dane</h2>
+          <div class="row">
+            <button id="export" class="btn">Eksportuj JSON</button>
+            <label class="btn ghost">
+              Importuj JSON
+              <input id="import" type="file" accept="application/json" hidden>
+            </label>
+          </div>
+          <div class="small" style="margin-top:10px">
+            Zapis lokalny: <code>localStorage</code>. Przycisk poniżej kasuje lokalny stan.
+          </div>
+          <div class="row" style="margin-top:8px">
+            <button id="wipe" class="btn bad" title="Usuwa zapis lokalny">Wyczyść zapisane dane</button>
+          </div>
         </div>
-        <div class="small" style="margin-top:10px">
-          To wersja 1-plikowa (front). Backend (Supabase, OAuth, Storage, realtime) można łatwo dodać w pełnej aplikacji Next.js.
+        <div class="card">
+          <h2>Druk / PDF</h2>
+          <div class="row">
+            <button class="btn" onclick="window.print()">Drukuj / Zapisz jako PDF</button>
+          </div>
+          <div class="small" style="margin-top:10px">
+            W przyszłości: generowanie PDF umowy na serwerze (Next.js API) i wysyłka do podpisu (OpenSign/DocuSeal).
+          </div>
         </div>
       </div>
     </section>
@@ -189,14 +296,13 @@
   <script>
     // ====== DANE STARTOWE ======
     const seedClients = [
-      { id:"C-001", name:"Anna Kowalska", email:"anna@example.com", phone:"600-100-200", manager:"Paweł" },
-      { id:"C-002", name:"Jan Nowak",    email:"jan@example.com",  phone:"600-100-201", manager:"Paweł" },
-      { id:"C-003", name:"Piotr Kamiński", email:"piotr@example.com", phone:"600-100-202", manager:"Kasia" },
+      { id:"C-001", name:"Anna Kowalska", email:"anna@example.com", phone:"600-100-200", manager:"Paweł", notes:"" , created_at:Date.now()-86400000*4},
+      { id:"C-002", name:"Jan Nowak",    email:"jan@example.com",  phone:"600-100-201", manager:"Paweł", notes:"VIP" , created_at:Date.now()-86400000*2},
+      { id:"C-003", name:"Piotr Kamiński", email:"piotr@example.com", phone:"600-100-202", manager:"Kasia", notes:"" , created_at:Date.now()-86400000*1},
     ];
     const seedContracts = [
-      { id:"U-1001", customer:"Anna Kowalska", total:21500, status:"W toku", month:1 },
-      { id:"U-1002", customer:"Jan Nowak",     total:42000, status:"Zakończona", month:2 },
-      { id:"U-1003", customer:"Piotr Kamiński",total:15000, status:"W toku", month:2 },
+      { id:"U-1001", client_id:"C-001", customer:"Anna Kowalska", items:[{sku:"PV-410",qty:12,price:520},{sku:"PV-INV8",qty:1,price:4100}], total:21500, type:"gotówka", status:"W toku", docs:defaultDocList().map(n=>({name:n,done:false})) , created_at:Date.now()-86400000*2},
+      { id:"U-1002", client_id:"C-002", customer:"Jan Nowak",     items:[{sku:"HP-9KW",qty:1,price:15500}], total:42000, type:"prefinansowanie", status:"Zakończona", docs:defaultDocList().map(n=>({name:n,done:true})) , created_at:Date.now()-86400000*1},
     ];
     const seedProducts = [
       { sku:"PV-410",  name:"Panel 410W",               category:"fotowoltaika", price:520 },
@@ -207,8 +313,8 @@
       { sku:"HP-CIRC", name:"Pompa cyrkulacyjna",       category:"pompy",        price:540 },
       { sku:"PC-25",   name:"Kocioł kondensacyjny 25kW",category:"piece",        price:7800 },
       { sku:"PC-CHIM", name:"Wkład kominowy",           category:"piece",        price:1200 },
-      { sku:"HY-PEX16",name:"Rury PEX 16",              category:"hydraulika",   price:3.8 },
-      { sku:"HY-CU15", name:"Rury miedziane 15",        category:"hydraulika",   price:14.5 },
+      { sku:"HY-PEX16",name:"Rury PEX 16 (mb)",         category:"hydraulika",   price:3.8 },
+      { sku:"HY-CU15", name:"Rury miedziane 15 (mb)",   category:"hydraulika",   price:14.5 },
       { sku:"HY-RAD2", name:"Grzejnik dwukomorowy 120", category:"hydraulika",   price:740 },
       { sku:"HY-RAD3", name:"Grzejnik trójkomorowy 120",category:"hydraulika",   price:960 },
       { sku:"OC-STY15",name:"Styropian 15cm (m²)",      category:"ocieplenie",   price:42 },
@@ -218,37 +324,32 @@
       { sku:"OC-PARA", name:"Parapety (szt.)",          category:"ocieplenie",   price:95 },
       { sku:"OC-FLASH",name:"Obróbki blacharskie (mb)", category:"ocieplenie",   price:55 },
     ];
-    const defaultDocList = [
-      "Umowa gotówkowa",
-      "Umowa do funduszu (prefinansowanie)",
-      "Opinia kominiarza",
-      "Protokół odbioru instalacji",
-      "Oświadczenie o przekazaniu środków",
-      "Umowa z wykonawcą",
-      "Zaświadczenie o dochodach klienta",
-      "Inne załączniki",
-    ];
+    function defaultDocList(){
+      return [
+        "Umowa gotówkowa / do funduszu",
+        "Opinia kominiarza",
+        "Protokół odbioru instalacji",
+        "Oświadczenie o przekazaniu środków",
+        "Umowa z wykonawcą",
+        "Zaświadczenie o dochodach klienta",
+        "Inne załączniki",
+      ];
+    }
 
     // ====== STAN / PERSIST ======
-    const LSKEY = "arkonCRM";
+    const LSKEY = "arkonCRM_v2";
     function loadState(){
       try{
         const s = JSON.parse(localStorage.getItem(LSKEY) || "{}");
         return {
           clients: s.clients || seedClients.slice(),
           contracts: s.contracts || seedContracts.slice(),
-          docs: (s.docs || defaultDocList.map(n=>({name:n,done:false}))),
-          chat: s.chat || [{from:"System",text:"Witaj w czacie ARKON 👋"}],
-          mode: s.mode || "gotówka"
+          docsMaster: s.docsMaster || defaultDocList().map(n=>({name:n,done:false})),
+          chat: s.chat || [{from:"System",text:"Witaj w czacie ARKON 👋",at:Date.now()}],
+          cart: s.cart || [], // [{sku,qty,price}]
         };
       }catch{
-        return {
-          clients:seedClients.slice(),
-          contracts:seedContracts.slice(),
-          docs:defaultDocList.map(n=>({name:n,done:false})),
-          chat:[{from:"System",text:"Witaj w czacie ARKON 👋"}],
-          mode:"gotówka"
-        };
+        return { clients:seedClients.slice(), contracts:seedContracts.slice(), docsMaster:defaultDocList().map(n=>({name:n,done:false})), chat:[{from:"System",text:"Witaj w czacie ARKON 👋",at:Date.now()}], cart:[] };
       }
     }
     let state = loadState();
@@ -258,9 +359,9 @@
     }
 
     // ====== POMOCNICZE ======
-    const $  = sel => document.querySelector(sel);
+    const $ = sel => document.querySelector(sel);
     const $$ = sel => Array.from(document.querySelectorAll(sel));
-    const money = x => (x||0).toLocaleString("pl-PL")+" zł";
+    const money = x => (Math.round(x)||0).toLocaleString("pl-PL")+" zł";
     function annuity(P, months, annualPct){
       const r = (annualPct/100)/12;
       if (!P||!months) return 0;
@@ -268,12 +369,16 @@
       const a = r*Math.pow(1+r,months)/(Math.pow(1+r,months)-1);
       return Math.round(P*a);
     }
-    function nextClientId(){
-      const n = state.clients.length+1;
-      return C-${String(n).padStart(3,"0")};
+    function uid(prefix, list){
+      let n = list.length + 1;
+      let id;
+      do { id = ${prefix}-${n.toString().padStart(3,"0")}; n++; } while(list.some(x=>x.id===id));
+      return id;
     }
+    function byId(map,id){ return map.find(x=>x.id===id); }
+    function productBySku(sku){ return seedProducts.find(p=>p.sku===sku); }
 
-    // ====== NAV ======
+    // ====== NAWIGACJA ======
     $$(".tab").forEach(el=>{
       el.addEventListener("click", ()=>{
         $$(".tab").forEach(t=>t.classList.remove("active"));
@@ -281,7 +386,6 @@
         const key = el.dataset.tab;
         $$("section[id^='tab-']").forEach(s => s.hidden = true);
         $("#tab-"+key).hidden = false;
-        if(key==="dashboard") drawCharts();
       });
     });
 
@@ -289,156 +393,176 @@
     function renderDashboard(){
       const revenue = state.contracts.reduce((s,c)=>s+(c.total||0),0);
       const open = state.contracts.filter(c=>c.status==="W toku").length;
-      const missing = state.docs.filter(d=>!d.done).length;
+      const missing = state.contracts.reduce((s,c)=> s + (c.docs? c.docs.filter(d=>!d.done).length : 0), 0);
       $("#db-revenue").textContent = money(revenue);
       $("#db-open").textContent = open;
       $("#db-missing").textContent = missing;
-      // aktualizacja wykresów, jeśli są narysowane
-      if(window._chartsDrawn) drawCharts(true);
     }
 
-    let _revenueChart,_contractsChart,_pieChart;
-    function drawCharts(update=false){
-      const months = ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII"];
-      const revPerMonth = new Array(12).fill(0);
-      const cntPerMonth = new Array(12).fill(0);
-      state.contracts.forEach(c=>{
-        const m = (c.month||1)-1;
-        revPerMonth[m]+= (c.total||0);
-        cntPerMonth[m]+= 1;
-      });
-      const statusCounts = state.contracts.reduce((acc,c)=>{
-        acc[c.status]=(acc[c.status]||0)+1; return acc;
-      },{});
-
-      const rc = $("#chartRevenue"), cc=$("#chartContracts"), pc=$("#chartPie");
-      if(!_revenueChart){
-        _revenueChart = new Chart(rc, {
-          type:"line",
-          data:{ labels:months, datasets:[{ label:"Przychód (zł)", data:revPerMonth }]},
-          options:{ plugins:{legend:{labels:{color:"#e7ecff"}}}, scales:{x:{ticks:{color:"#a3b3ff"}}, y:{ticks:{color:"#a3b3ff"}}}}
-        });
-      }else{ _revenueChart.data.datasets[0].data=revPerMonth; _revenueChart.update(); }
-
-      if(!_contractsChart){
-        _contractsChart = new Chart(cc, {
-          type:"bar",
-          data:{ labels:months, datasets:[{ label:"Umowy (szt.)", data:cntPerMonth }]},
-          options:{ plugins:{legend:{labels:{color:"#e7ecff"}}}, scales:{x:{ticks:{color:"#a3b3ff"}}, y:{ticks:{color:"#a3b3ff"}}}}
-        });
-      }else{ _contractsChart.data.datasets[0].data=cntPerMonth; _contractsChart.update(); }
-
-      const pieLabels = Object.keys(statusCounts), pieData = Object.values(statusCounts);
-      if(!_pieChart){
-        _pieChart = new Chart(pc, {
-          type:"doughnut",
-          data:{ labels:pieLabels, datasets:[{ data:pieData }]},
-          options:{ plugins:{legend:{labels:{color:"#e7ecff"}}}}
-        });
-      }else{ _pieChart.data.labels = pieLabels; _pieChart.data.datasets[0].data=pieData; _pieChart.update(); }
-
-      window._chartsDrawn = true;
-    }
-
-    // ====== CLIENTS ======
+    // ====== KLIENCI ======
+    let selectedClientId = null;
     function renderClients(){
       const q = ($("#cli-q").value||"").toLowerCase();
+      const sort = $("#cli-sort").value;
       const rows = $("#cli-rows");
       rows.innerHTML = "";
-      const filtered = state.clients.filter(r =>
-        (r.name+r.email+r.phone+r.manager).toLowerCase().includes(q)
-      );
-      filtered.forEach(c=>{
+      let list = state.clients
+        .filter(r => (r.name+r.email+r.phone+r.manager).toLowerCase().includes(q));
+      if(sort==="name") list.sort((a,b)=>a.name.localeCompare(b.name,"pl"));
+      if(sort==="manager") list.sort((a,b)=>a.manager.localeCompare(b.manager,"pl"));
+      if(sort==="created_desc") list.sort((a,b)=>b.created_at-a.created_at);
+      list.forEach(c=>{
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${c.id}</td>
-          <td>${c.name}</td>
+          <td><a href="#" data-id="${c.id}" class="cli-link">${c.name}</a></td>
           <td>${c.email}</td>
           <td>${c.phone}</td>
           <td><span class="chip">${c.manager||"-"}</span></td>`;
         rows.appendChild(tr);
       });
-      $("#cli-empty").style.display = filtered.length? "none":"block";
+      $("#cli-empty").style.display = list.length? "none":"block";
+
+      // linki do panelu bocznego
+      rows.querySelectorAll(".cli-link").forEach(a=>{
+        a.addEventListener("click",(e)=>{
+          e.preventDefault();
+          openClientSide(a.dataset.id);
+        });
+      });
     }
     $("#cli-q").addEventListener("input", renderClients);
+    $("#cli-sort").addEventListener("change", renderClients);
     $("#cli-add").addEventListener("click", ()=>{
       const name=$("#cli-name").value.trim();
       if(!name) return;
       const next = {
-        id: nextClientId(),
+        id: uid("C", state.clients),
         name,
         email:$("#cli-email").value.trim(),
         phone:$("#cli-phone").value.trim(),
-        manager:$("#cli-manager").value.trim()
+        manager:$("#cli-manager").value.trim(),
+        notes:"",
+        created_at:Date.now()
       };
       state.clients=[next,...state.clients];
-      $("#cli-name").value=$("#cli-email").value=$("#cli-phone").value=$("#cli-manager").value="";
-      saveState(); renderClients();
+      ["cli-name","cli-email","cli-phone","cli-manager"].forEach(id=>$("#"+id).value="");
+      saveState(); renderClients(); openClientSide(next.id);
     });
 
-    // ====== CONTRACTS & CALC ======
-    function renderContracts(){
-      const tb = $("#ctr-rows"); tb.innerHTML="";
-      state.contracts.forEach(c=>{
-        const tr=document.createElement("tr");
-        tr.innerHTML = `
-          <td>${c.id}</td>
-          <td>${c.customer}</td>
-          <td>${money(c.total)}</td>
-          <td><span class="chip">${c.status}</span></td>`;
-        tb.appendChild(tr);
+    function openClientSide(id){
+      selectedClientId = id;
+      const c = byId(state.clients,id);
+      if(!c){ return; }
+      $("#cli-side-none").hidden = true;
+      $("#cli-side-body").hidden = false;
+      $("#cli-s-id").textContent = c.id;
+      $("#cli-s-manager").textContent = c.manager || "-";
+      $("#cli-s-email").textContent = "✉ " + (c.email||"—");
+      $("#cli-s-phone").textContent = "📞 " + (c.phone||"—");
+      $("#cli-s-notes").value = c.notes||"";
+      // umowy klienta
+      const ul = $("#cli-s-contracts"); ul.innerHTML="";
+      state.contracts.filter(u=>u.client_id===id).forEach(u=>{
+        const li=document.createElement("li");
+        li.innerHTML = <a href="#" data-id="${u.id}" class="ctr-link">${u.id}</a> – ${u.customer} • <span class="status ${u.status}">${u.status}</span> • ${money(u.total)};
+        ul.appendChild(li);
+      });
+      ul.querySelectorAll(".ctr-link").forEach(a=>{
+        a.addEventListener("click",(e)=>{ e.preventDefault(); openContractSide(a.dataset.id); });
       });
     }
-    function setMode(m){
-      state.mode=m; saveState();
-      const label = (m==="gotówka"?"Gotówka":"Prefinansowanie");
-      $("#mode-badge").textContent = label;
-      $("#pref-note").style.display = (m==="prefinansowanie")?"block":"none";
-      $("#mode-cash").classList.toggle("active", m==="gotówka");
-      $("#mode-pref").classList.toggle("active", m==="prefinansowanie");
-      calc();
-    }
-    $("#mode-cash").addEventListener("click",()=>setMode("gotówka"));
-    $("#mode-pref").addEventListener("click",()=>setMode("prefinansowanie"));
-
-    function calc(){
-      const sum=+$("#sum").value||0;
-      const disc=+$("#discount").value||0;
-      const months=+$("#months").value||0;
-      const rate=+$("#rate").value||0;
-      const prov=+$("#prov").value||0;
-      const base=Math.max(0,sum-disc);
-      const inst=state.mode==="prefinansowanie" ? annuity(base,months,rate) : 0;
-      const provVal=Math.round(base*(prov/100));
-      $("#out-base").textContent=money(base);
-      $("#out-inst").textContent=money(inst);
-      $("#out-prov").textContent=money(provVal);
-    }
-    ["sum","discount","months","rate","prov"].forEach(id=>$("#"+id).addEventListener("input",calc));
-
-    // PDF prostego podsumowania umowy
-    $("#btn-pdf").addEventListener("click", ()=>{
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      doc.setFontSize(16);
-      doc.text("ARKON CRM - Podsumowanie umowy", 14, 20);
-      doc.setFontSize(11);
-      const mode = state.mode==="prefinansowanie" ? "Prefinansowanie" : "Gotówka";
-      const base = $("#out-base").textContent;
-      const inst = $("#out-inst").textContent;
-      const prov = $("#out-prov").textContent;
-      const lines = [
-        Tryb: ${mode},
-        Podstawa: ${base},
-        Rata / mies.: ${inst},
-        Prowizja: ${prov},
-        Data: ${new Date().toLocaleString("pl-PL")}
-      ];
-      let y=36; lines.forEach(l=>{ doc.text(l,14,y); y+=8; });
-      doc.save("umowa-podsumowanie.pdf");
+    $("#cli-s-save").addEventListener("click",()=>{
+      if(!selectedClientId) return;
+      const c = byId(state.clients, selectedClientId);
+      c.notes = $("#cli-s-notes").value;
+      saveState();
     });
 
-    // ====== PRODUCTS ======
+    // ====== UMOWY ======
+    let selectedContractId = null;
+    function renderContracts(){
+      const tb = $("#ctr-rows"); tb.innerHTML="";
+      state.contracts.sort((a,b)=>b.created_at-a.created_at).forEach(c=>{
+        const tr=document.createElement("tr");
+        tr.innerHTML = `
+          <td><a href="#" class="ctr-link" data-id="${c.id}">${c.id}</a></td>
+          <td>${c.customer}</td>
+          <td>${money(c.total)}</td>
+          <td><span class="chip">${c.type}</span></td>
+          <td><span class="status ${c.status}">${c.status}</span></td>
+          <td>
+            <button class="btn ghost ctr-open" data-id="${c.id}">Szczegóły</button>
+          </td>`;
+        tb.appendChild(tr);
+      });
+      tb.querySelectorAll(".ctr-open,.ctr-link").forEach(b=>{
+        b.addEventListener("click",(e)=>{ e.preventDefault(); openContractSide(b.dataset.id); });
+      });
+      // lista klientów do nowej umowy
+      const sel=$("#ctr-client"); sel.innerHTML="";
+      state.clients.slice().sort((a,b)=>a.name.localeCompare(b.name,"pl")).forEach(c=>{
+        const o=document.createElement("option");
+        o.value=c.id; o.textContent=${c.name} (${c.id});
+        sel.appendChild(o);
+      });
+    }
+    function openContractSide(id){
+      selectedContractId = id;
+      const c = state.contracts.find(u=>u.id===id);
+      if(!c) return;
+      $("#ctr-side-none").hidden = true;
+      $("#ctr-side-body").hidden = false;
+      $("#ctr-s-id").textContent = c.id;
+      $("#ctr-s-client").textContent = ${c.customer} (${c.client_id});
+      $("#ctr-s-total").textContent = money(c.total);
+      $("#ctr-s-type").textContent = c.type;
+      $("#ctr-s-status").textContent = c.status;
+      // dokumenty
+      const ul=$("#ctr-docs"); ul.innerHTML="";
+      (c.docs||defaultDocList().map(n=>({name:n,done:false}))).forEach((d,i)=>{
+        const li=document.createElement("li");
+        li.innerHTML=`
+          <label style="display:flex;align-items:center;gap:10px;padding:6px 0">
+            <input type="checkbox" ${d.done?"checked":""} data-i="${i}"/>
+            <span ${d.done?'style="text-decoration:line-through;opacity:.7"':""}>${d.name}</span>
+          </label>`;
+        ul.appendChild(li);
+      });
+      ul.addEventListener("change",e=>{
+        const i=+e.target.dataset.i;
+        if(Number.isFinite(i)){
+          c.docs[i].done=!c.docs[i].done; saveState(); renderDashboard(); openContractSide(id);
+        }
+      },{once:true});
+      $("#ctr-docs-reset").onclick = ()=>{ c.docs.forEach(x=>x.done=false); saveState(); openContractSide(id); };
+      $("#ctr-status-signed").onclick = ()=>{ c.status="Podpisana"; saveState(); renderContracts(); openContractSide(id); };
+    }
+
+    // tworzenie nowej umowy z koszyka
+    $("#ctr-create").addEventListener("click", ()=>{
+      const items = state.cart.slice();
+      if(!items.length) { alert("Koszyk jest pusty."); return; }
+      const clientId = $("#ctr-client").value;
+      const client = byId(state.clients, clientId);
+      const discount = +$("#ctr-discount").value||0;
+      const prov = +$("#ctr-prov").value||0;
+      const base = items.reduce((s,i)=>s+i.price*i.qty,0);
+      const total = Math.max(0, base - discount);
+      const id = uid("U", state.contracts);
+      const ctr = {
+        id, client_id: client.id, customer: client.name, items, total,
+        type: $("#ctr-type").value, status:"W toku",
+        docs: defaultDocList().map(n=>({name:n,done:false})),
+        commission: Math.round(total*(prov/100)), created_at: Date.now()
+      };
+      state.contracts=[ctr, ...state.contracts];
+      state.cart=[]; saveState();
+      renderContracts(); renderCart(); openContractSide(id);
+      document.querySelector('.tab[data-tab="contracts"]').click();
+    });
+
+    // ====== PRODUKTY + KOSZYK ======
     const prodCats=["wszystko","fotowoltaika","pompy","piece","hydraulika","ocieplenie"];
     function renderProductFilters(){
       const box=$("#prod-filters"); box.innerHTML="";
@@ -458,30 +582,76 @@
           <td>${p.sku}</td>
           <td>${p.name}</td>
           <td><span class="chip">${p.category}</span></td>
-          <td>${money(p.price)}</td>`;
+          <td>${money(p.price)}</td>
+          <td><button class="btn ghost add-prod" data-sku="${p.sku}">Dodaj</button></td>`;
         rows.appendChild(tr);
       });
+      rows.querySelectorAll(".add-prod").forEach(btn=>{
+        btn.addEventListener("click",()=>{
+          const sku=btn.dataset.sku; const prod=productBySku(sku);
+          const row = state.cart.find(i=>i.sku===sku);
+          if(row) row.qty++; else state.cart.push({sku,qty:1,price:prod.price});
+          saveState(); renderCart();
+        });
+      });
+    }
+    function renderCart(){
+      const box=$("#cart-list"); const empty=$("#cart-empty");
+      box.innerHTML="";
+      if(!state.cart.length){ empty.style.display="block"; $("#cart-sum").textContent="0 zł"; $("#cart-sum-disc").textContent="0 zł"; return; }
+      empty.style.display="none";
+      state.cart.forEach((i,idx)=>{
+        const p=productBySku(i.sku);
+        const div=document.createElement("div");
+        div.className="cart-row"; 
+        div.innerHTML = `
+          <div style="flex:1">${p.name} <span class="small chip">${p.sku}</span></div>
+          <input type="number" min="1" value="${i.qty}" data-i="${idx}">
+          <div style="width:110px;text-align:right">${money(i.price*i.qty)}</div>
+          <button class="btn ghost" data-del="${idx}">Usuń</button>
+        `;
+        box.appendChild(div);
+      });
+      // zmiana ilości / kasowanie
+      box.querySelectorAll('input[type="number"]').forEach(inp=>{
+        inp.addEventListener("input",()=>{
+          const i=+inp.dataset.i; const v=Math.max(1, +inp.value||1);
+          state.cart[i].qty=v; saveState(); renderCart();
+        });
+      });
+      box.querySelectorAll('[data-del]').forEach(btn=>{
+        btn.addEventListener("click",()=>{ const i=+btn.dataset.del; state.cart.splice(i,1); saveState(); renderCart(); });
+      });
+      const sum = state.cart.reduce((s,i)=>s+i.price*i.qty,0);
+      $("#cart-sum").textContent = money(sum);
+      $("#cart-sum-disc").textContent = money(sum); // rabat ustawiany przy tworzeniu umowy
     }
 
-    // ====== DOCS ======
-    function renderDocs(){
+    // ====== DOKUMENTY (wzorzec) ======
+    function renderDocsMaster(){
       const ul=$("#doc-list"); ul.innerHTML="";
-      state.docs.forEach((d,i)=>{
+      state.docsMaster.forEach((d,i)=>{
         const li=document.createElement("li");
         li.innerHTML=`
           <label style="display:flex;align-items:center;gap:10px;padding:6px 0">
             <input type="checkbox" ${d.done?"checked":""} data-i="${i}"/>
-            <span ${d.done?'style="text-decoration:line-through;opacity:.7"':""}>${d.name}</span>
+            <input class="field" value="${d.name}" data-name="${i}" />
           </label>`;
         ul.appendChild(li);
       });
       ul.addEventListener("change",e=>{
         const i=+e.target.dataset.i;
-        if(Number.isFinite(i)){ state.docs[i].done=!state.docs[i].done; saveState(); renderDashboard(); }
+        if(Number.isFinite(i)){ state.docsMaster[i].done=!state.docsMaster[i].done; saveState(); }
       }, { once:true });
+      ul.querySelectorAll('input[data-name]').forEach(inp=>{
+        inp.addEventListener("input",()=>{ state.docsMaster[+inp.dataset.name].name = inp.value; saveState(); });
+      });
     }
     $("#doc-reset").addEventListener("click",()=>{
-      state.docs=state.docs.map(d=>({...d,done:false})); saveState(); renderDocs();
+      state.docsMaster=state.docsMaster.map(d=>({...d,done:false})); saveState(); renderDocsMaster();
+    });
+    $("#doc-add").addEventListener("click",()=>{
+      state.docsMaster.push({name:"Nowy dokument",done:false}); saveState(); renderDocsMaster();
     });
 
     // ====== CHAT ======
@@ -489,26 +659,58 @@
       const box=$("#chat-box"); box.innerHTML="";
       state.chat.forEach(m=>{
         const div=document.createElement("div");
+        const dt = new Date(m.at||Date.now());
+        const hh = dt.toLocaleTimeString("pl-PL",{hour:"2-digit",minute:"2-digit"});
         div.className="msg";
-        div.innerHTML = <strong>${m.from}:</strong> <span>${m.text}</span>;
+        div.innerHTML = <strong>[${hh}] ${m.from}:</strong> <span>${escapeHtml(m.text)}</span>;
         box.appendChild(div);
       });
       box.scrollTop=box.scrollHeight;
     }
+    function escapeHtml(s){ return (s||"").replace(/[&<>"]/g,c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c])); }
     $("#chat-send").addEventListener("click",()=>{
       const t=$("#chat-text").value.trim(); if(!t) return;
-      state.chat.push({from:"Ja",text:t}); $("#chat-text").value=""; saveState(); renderChat();
+      state.chat.push({from:"Ja",text:t,at:Date.now()}); $("#chat-text").value=""; saveState(); renderChat();
     });
 
-    // ====== SETTINGS ======
+    // ====== USTAWIENIA: eksport/import/wipe ======
+    $("#export").addEventListener("click",()=>{
+      const data = JSON.stringify(state,null,2);
+      const blob = new Blob([data],{type:"application/json"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = "arkon-crm-backup.json"; a.click();
+      URL.revokeObjectURL(url);
+    });
+    $("#import").addEventListener("change",(e)=>{
+      const file = e.target.files[0]; if(!file) return;
+      const r = new FileReader();
+      r.onload = () => {
+        try{
+          const obj = JSON.parse(r.result);
+          state = Object.assign(loadState(), obj); // bezpieczne nadpisanie
+          saveState(); boot();
+          alert("Import zakończony.");
+        }catch{ alert("Plik nieprawidłowy."); }
+      };
+      r.readAsText(file);
+    });
     $("#wipe").addEventListener("click",()=>{
       if(confirm("Usunąć zapisane dane lokalne?")){
         localStorage.removeItem(LSKEY); state=loadState(); boot();
       }
     });
 
+    // ====== SKRÓTY KLAWIATUROWE ======
+    window.addEventListener("keydown",(e)=>{
+      if(e.key==="/" && !["INPUT","TEXTAREA"].includes(document.activeElement.tagName)){ e.preventDefault(); $("#cli-q").focus(); document.querySelector('.tab[data-tab="clients"]').click(); }
+      if(e.altKey && (e.key==="n" || e.key==="N")){ e.preventDefault(); document.querySelector('.tab[data-tab="clients"]').click(); $("#cli-name").focus(); }
+      if(e.altKey && (e.key==="u" || e.key==="U")){ e.preventDefault(); document.querySelector('.tab[data-tab="contracts"]').click(); $("#ctr-create").focus(); }
+    });
+
     // ====== BOOT ======
     function boot(){
+      // start na Pulpit
       $$(".tab").forEach(t=>t.classList.remove("active"));
       document.querySelector('.tab[data-tab="dashboard"]').classList.add("active");
       $$("section[id^='tab-']").forEach(s=>s.hidden=true);
@@ -516,12 +718,10 @@
 
       renderDashboard();
       renderClients();
-      renderContracts(); setMode(state.mode);
-      renderProductFilters(); renderProducts();
-      renderDocs();
+      renderContracts();
+      renderProductFilters(); renderProducts(); renderCart();
+      renderDocsMaster();
       renderChat();
-      calc();
-      drawCharts();
     }
     boot();
   </script>
