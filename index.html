@@ -1,188 +1,54 @@
-
 <!doctype html>
 <html lang="pl">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>ARKON CRM — demo + komunikator</title>
+  <title>ARKON CRM — Strona główna</title>
   <style>
     :root{
       --bg:#0b1020;--card:#0f1636;--line:#263168;--accent:#3a6df0;
-      --text:#e7ecff;--muted:#a3b3ff;--chip:#1a244d;--field:#0e1330;
-      --good:#2fbf71;--warn:#ffb84d;--bad:#ff6b6b;
+      --text:#e7ecff;--muted:#a3b3ff;
     }
     *{box-sizing:border-box}
     html,body{margin:0;height:100%}
-    body{font:14px/1.45 system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    body{font:15px/1.5 system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
     a{color:#cfe0ff;text-decoration:none}
-    .container{max-width:1280px;margin:0 auto;padding:16px}
-    .nav{position:sticky;top:0;z-index:10;display:flex;gap:12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--bg)}
-    .brand{font-weight:700;letter-spacing:.4px}
-    .tab{padding:6px 10px;border-radius:8px;cursor:pointer}
-    .tab.active{background:var(--chip)}
-    .grid{display:grid;gap:16px}
-    .cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
-    .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
-    .small{opacity:.85;color:var(--muted);font-size:13px}
-    h1{margin:0 0 10px}
-    h2{margin:0 0 10px;font-size:18px}
-    .chip{display:inline-block;padding:4px 8px;border-radius:999px;background:var(--chip)}
-    input,button{font:inherit}
-    .field{background:var(--field);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:10px 12px;outline:0;width:100%}
-    .row{display:flex;gap:8px;flex-wrap:wrap}
-    .btn{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:10px 14px;cursor:pointer}
-    .scroll{overflow:auto}
-    .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
-    .msg{margin-bottom:6px}
-    .msg strong{color:#9ec5ff}
-    .muted{opacity:.7}
+    .container{max-width:960px;margin:0 auto;padding:16px}
+    nav{position:sticky;top:0;background:rgba(11,16,32,.85);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+    .nav-inner{display:flex;gap:12px;align-items:center;padding:12px 16px}
+    .brand{font-weight:700}
+    .chip{display:inline-block;padding:4px 8px;border-radius:999px;background:#1a244d}
+    .card{background:#0f1636;border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:16px}
+    .btn{display:inline-block;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:10px 14px}
   </style>
-  <!-- Supabase JS (CDN) -->
-  <script defer src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
 <body>
-  <!-- NAV -->
-  <div class="nav">
-    <div class="brand">ARKON CRM</div>
-    <div class="tab active" data-tab="dashboard" tabindex="0">Pulpit</div>
-    <div class="tab" data-tab="chat" tabindex="0">Komunikator</div>
-    <div class="tab" data-tab="settings" tabindex="0">Ustawienia</div>
-  </div>
+  <nav>
+    <div class="nav-inner">
+      <div class="brand">ARKON CRM</div>
+      <a href="index.html" class="chip">🏠 Strona główna</a>
+      <a href="notes.html" class="chip">📒 Notatki (SQL / RLS)</a>
+    </div>
+  </nav>
 
   <div class="container">
-    <!-- DASHBOARD -->
-    <section id="tab-dashboard" class="grid">
-      <h1>Pulpit</h1>
-      <div class="grid cols-3">
-        <div class="card"><div class="small">Przychód (demo)</div><h2 id="db-revenue">0 zł</h2></div>
-        <div class="card"><div class="small">Aktywne umowy</div><h2 id="db-open">0</h2></div>
-        <div class="card"><div class="small">Brakujące dokumenty</div><h2 id="db-missing">0</h2></div>
-      </div>
-      <div class="card small">
-        To wersja demo skupiona na czacie (Supabase). Pozostałe moduły można dołożyć później.
-      </div>
-    </section>
+    <h1>Witaj w ARKON CRM</h1>
+    <div class="card">
+      <p>To prosta nawigacja między stronami w tym samym repozytorium.</p>
+      <ul>
+        <li>Ta strona: <b>index.html</b></li>
+        <li>Notatki i skrypty: <b>notes.html</b></li>
+      </ul>
+      <p><a class="btn" href="notes.html">Przejdź do notatek</a></p>
+    </div>
 
-    <!-- CHAT -->
-    <section id="tab-chat" class="grid" hidden>
-      <h1>Komunikator (Supabase Realtime)</h1>
-      <div class="card">
-        <div id="chat-box" class="scroll" style="border:1px solid var(--line);border-radius:8px;padding:12px;min-height:220px;max-height:400px;background:#0d1330"></div>
-        <div class="row" style="margin-top:8px">
-          <input id="nick" class="field" style="max-width:220px" placeholder="Twój nick (np. Paweł)" />
-          <input id="chat-text" class="field" placeholder="Napisz wiadomość…" />
-          <button id="chat-send" class="btn">Wyślij</button>
-        </div>
-        <div class="small muted" style="margin-top:8px">
-          Widzą wszyscy — przechowywane w tabeli <code>public.messages</code>.
-        </div>
-      </div>
-    </section>
-
-    <!-- SETTINGS -->
-    <section id="tab-settings" class="grid" hidden>
-      <h1>Ustawienia</h1>
-      <div class="card">
-        <div class="small">Supabase URL: <code id="cfg-url"></code></div>
-        <div class="small" style="margin-top:6px">Status połączenia: <span id="cfg-status" class="chip">init…</span></div>
-      </div>
-    </section>
+    <div class="card">
+      <h2>Jak to działa na Netlify / GitHub Pages?</h2>
+      <ol>
+        <li>W repo powinny być oba pliki: <code>index.html</code> i <code>notes.html</code>.</li>
+        <li>Po wdrożeniu wejdź na adres strony i klikaj w linki w górnym pasku.</li>
+      </ol>
+    </div>
   </div>
-
-  <script>
-    // ========= NAV + TABS =========
-    function showTab(key){
-      document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active", t.dataset.tab===key));
-      document.querySelectorAll("section[id^='tab-']").forEach(s=>s.hidden=true);
-      const sec=document.getElementById("tab-"+key); if(sec) sec.hidden=false;
-      history.replaceState(null,"","#"+key);
-    }
-    document.querySelector(".nav").addEventListener("click",(e)=>{
-      const el=e.target.closest(".tab"); if(!el) return; e.preventDefault(); showTab(el.dataset.tab);
-    });
-    window.addEventListener("hashchange",()=>showTab((location.hash||"#dashboard").slice(1)));
-    showTab((location.hash||"#dashboard").slice(1));
-
-    // ========= DEMO KPI =========
-    document.getElementById("db-revenue").textContent = "63 500 zł";
-    document.getElementById("db-open").textContent = "2";
-    document.getElementById("db-missing").textContent = "5";
-
-    // ========= CONFIG — SUPABASE (PODMIEŃ) =========
-    const SUPABASE_URL  = "https://phxxjirqllktzcwnygaha.supabase.co"; // <-- PODMIEŃ jeśli masz inny
-    const SUPABASE_ANON = "WSTAW_TUTAJ_ANON_PUBLIC_KEY";               // <-- WSTAW swój anon public key
-
-    // ========= CHAT (Supabase) =========
-    let supa, messagesTable = "messages";
-    let chatBox, chatInput, nickInput, sendBtn;
-
-    document.addEventListener("DOMContentLoaded", async () => {
-      chatBox   = document.getElementById("chat-box");
-      chatInput = document.getElementById("chat-text");
-      nickInput = document.getElementById("nick");
-      sendBtn   = document.getElementById("chat-send");
-
-      document.getElementById("cfg-url").textContent = SUPABASE_URL;
-
-      // Inicjalizacja klienta
-      supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-      document.getElementById("cfg-status").textContent = "połączono";
-
-      // Wczytaj ostatnie 50 wiadomości
-      await loadMessages();
-
-      // Subskrypcja realtime INSERT
-      supa
-        .channel("room-global")
-        .on("postgres_changes",
-          { event: "INSERT", schema: "public", table: messagesTable },
-          (payload) => appendMessage(payload.new)
-        )
-        .subscribe((status) => {
-          // opcjonalny log
-          console.log("Realtime status:", status);
-        });
-
-      // Wyślij
-      sendBtn.addEventListener("click", sendMessage);
-      chatInput.addEventListener("keydown",(e)=>{ if(e.key==="Enter") sendMessage(); });
-    });
-
-    async function loadMessages(){
-      const { data, error } = await supa
-        .from(messagesTable)
-        .select("*")
-        .order("created_at",{ascending:true})
-        .limit(50);
-      if(error){ console.error(error); toast("Błąd wczytywania wiadomości"); return; }
-      chatBox.innerHTML = "";
-      (data||[]).forEach(appendMessage);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    function appendMessage(row){
-      const dt = new Date(row.created_at);
-      const hh = dt.toLocaleTimeString("pl-PL",{hour:"2-digit",minute:"2-digit"});
-      const div=document.createElement("div");
-      div.className="msg";
-      const who = row.user_name || "Anon";
-      div.innerHTML = <strong>[${hh}] ${escapeHtml(who)}:</strong> <span>${escapeHtml(row.text)}</span>;
-      chatBox.appendChild(div);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    async function sendMessage(){
-      const text = (chatInput.value||"").trim();
-      const user = (nickInput.value||"Anon").trim();
-      if(!text) return;
-      chatInput.value = "";
-      const { error } = await supa.from(messagesTable).insert({ text, user_name:user });
-      if(error){ console.error(error); toast("Nie udało się wysłać 🙈"); }
-    }
-
-    function escapeHtml(s){ return (s||"").replace(/[&<>"]/g,c=>({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c])); }
-    function toast(t){ console.log(t); }
-
-  </script>
 </body>
 </html>
