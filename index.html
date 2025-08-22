@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ARKON CRM — Pulpit</title>
+<meta name="description" content="ARKON CRM — Pulpit z podsumowaniem. Nawigacja do osobnych stron: Klienci, Komponenty, Dokumenty, Upload, Leady, Chat, Ustawienia, Eksport/Import, Kalkulator.">
+<style>
+  :root{
+    --bg:#0b1020;--card:#0f1636;--line:#263168;--accent:#3a6df0;
+    --text:#e7ecff;--muted:#a3b3ff;--chip:#1a244d;--field:#0e1330;
+    --good:#2fbf71;--warn:#ffb84d;--bad:#ff6b6b;--grid:#243059;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font:14px/1.45 system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text);opacity:1;transition:opacity .22s ease}
+  body.fade-out{opacity:.08}
+  a{color:#cfe0ff;text-decoration:none}
+  .container{max-width:1280px;margin:0 auto;padding:16px}
+  .nav{position:sticky;top:0;z-index:10;display:flex;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--bg)}
+  .brand{font-weight:700;letter-spacing:.4px;margin-right:6px}
+  .tab{padding:6px 10px;border-radius:8px;cursor:pointer;border:1px solid transparent;display:inline-block}
+  .tab.active{background:var(--chip);border-color:#324189}
+  .grid{display:grid;gap:16px}
+  .cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  @media (max-width:900px){ .cols-3{grid-template-columns:1fr} }
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .small{opacity:.85;color:var(--muted);font-size:13px}
+  h1{margin:0 0 10px}
+  h2{margin:0 0 10px;font-size:18px}
+  .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
+</style>
+</head>
+<body>
+  <!-- NAV -->
+  <div class="nav" role="navigation" aria-label="Główne">
+    <div class="brand">ARKON CRM</div>
+    <a class="tab active" href="index.html">Pulpit</a>
+    <a class="tab" href="klienci.html">Klienci</a>
+    <a class="tab" href="komponenty.html">Komponenty</a>
+    <a class="tab" href="dokumenty.html">Dokumenty</a>
+    <a class="tab" href="upload.html">Przesył plików</a>
+    <a class="tab" href="leady.html">Leady</a>
+    <a class="tab" href="chat.html">Komunikator</a>
+    <a class="tab" href="ustawienia.html">Ustawienia</a>
+    <a class="tab" href="eksport.html">Eksport/Import</a>
+    <a class="tab" href="kalkulator.html" target="_blank" rel="noopener">Kalkulator ↗️</a>
+  </div>
+
+  <div class="container">
+    <!-- DASHBOARD -->
+    <section class="grid">
+      <h1>Pulpit</h1>
+      <div class="grid cols-3">
+        <div class="card"><div class="small">Przychód (symulacja)</div><h2 id="db-revenue">0 zł</h2></div>
+        <div class="card"><div class="small">Klienci</div><h2 id="db-clients">0</h2></div>
+        <div class="card"><div class="small">Leady</div><h2 id="db-leads">0</h2></div>
+      </div>
+      <div class="card small">
+        Skróty (na stronach): <span class="kbd">/</span> szukaj • <span class="kbd">Alt+N</span> nowy klient •
+        <span class="kbd">Alt+U</span> nowa pozycja (komponenty) • pełny eksport/import w zakładce „Eksport/Import”.
+      </div>
+    </section>
+  </div>
+
+<script>
+/* ====== Fade-out przy przejściu między stronami ====== */
+document.querySelectorAll('.nav .tab[href]').forEach(a=>{
+  // nie wygaszamy dla linku kalkulatora, bo otwiera w nowej karcie
+  if(a.getAttribute('target') === '_blank') return;
+  a.addEventListener('click', (e)=>{
+    // jeśli link prowadzi do tej samej strony — nic nie rób
+    const url = a.getAttribute('href')||'';
+    if(url.replace(/[#?].*$/,'') === location.pathname.split('/').pop()) return;
+    e.preventDefault();
+    document.body.classList.add('fade-out');
+    setTimeout(()=>{ window.location.href = url; }, 180);
+  });
+});
+
+/* ====== Liczniki na pulpicie z lokalnego storage (zgodne z poprzednim monolitem) ====== */
+const INT0 = new Intl.NumberFormat('pl-PL',{maximumFractionDigits:0});
+const fmt = n => isFinite(n)? INT0.format(Math.round(n)) : '—';
+function loadJSON(key, def){ try{ return JSON.parse(localStorage.getItem(key)||JSON.stringify(def)); }catch{ return def; } }
+function refreshDashboard(){
+  const clients = loadJSON('arkon_clients_v2', []);
+  const leads   = loadJSON('arkon_leads_v1', []);
+  const cmp = {
+    pumps:  loadJSON('arkon_cmp_pumps_v1', []),
+    boilers:loadJSON('arkon_cmp_boilers_v1', []),
+    pv:     loadJSON('arkon_cmp_pv_v1', []),
+    insul:  loadJSON('arkon_cmp_insul_v1', []),
+    garage: loadJSON('arkon_cmp_garage_v1', []),
+  };
+  const sum = ['pumps','boilers','pv','insul','garage']
+    .flatMap(k=>cmp[k]||[])
+    .reduce((a,r)=> a + (Number(r.price||r.price_m2||0)||0), 0);
+  const $ = sel => document.querySelector(sel);
+  $('#db-clients').textContent = (clients||[]).length;
+  $('#db-leads').textContent   = (leads||[]).length;
+  $('#db-revenue').textContent = fmt(sum) + ' zł';
+}
+// odśwież po załadowaniu
+refreshDashboard();
+</script>
+</body>
+</html>
