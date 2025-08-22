@@ -1,108 +1,432 @@
+
 <!doctype html>
 <html lang="pl">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>ARKON CRM — Umowy / Komponenty / Dokumenty</title>
+<title>ARKON CRM — wersja rozszerzona 1-plikowa</title>
 <style>
   :root{
     --bg:#0b1020;--card:#0f1636;--line:#263168;--accent:#3a6df0;
-    --text:#e7ecff;--muted:#a3b3ff;--chip:#1a244d;
+    --text:#e7ecff;--muted:#a3b3ff;--chip:#1a244d;--field:#0e1330;
     --good:#2fbf71;--warn:#ffb84d;--bad:#ff6b6b;
   }
-  body{margin:0;font:14px/1.45 system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
-  .nav{display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--bg);position:sticky;top:0}
-  .brand{font-weight:700}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font:14px/1.45 system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+  a{color:#cfe0ff;text-decoration:none}
+  .container{max-width:1280px;margin:0 auto;padding:16px}
+
+  /* NAV */
+  .nav{position:sticky;top:0;z-index:10;display:flex;gap:12px;align-items:center;
+       padding:12px 16px;border-bottom:1px solid var(--line);background:var(--bg)}
+  .brand{font-weight:700;letter-spacing:.4px}
   .tab{padding:6px 10px;border-radius:8px;cursor:pointer}
   .tab.active{background:var(--chip)}
-  .container{max-width:1200px;margin:0 auto;padding:16px}
+  .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
+
+  /* LAYOUT & CARDS */
+  .grid{display:grid;gap:16px}
+  .cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .cols-2{grid-template-columns:1fr 1fr}
+  @media (max-width:1000px){ .cols-3,.cols-2{grid-template-columns:1fr} .side{position:static;max-height:none} }
   .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .small{opacity:.85;color:var(--muted);font-size:13px}
   h1{margin:0 0 10px}
+  h2{margin:0 0 10px;font-size:18px}
+  .chip{display:inline-block;padding:4px 8px;border-radius:999px;background:var(--chip)}
+  .row{display:flex;gap:8px;flex-wrap:wrap}
+  .field{background:var(--field);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:10px 12px;outline:0;width:100%}
+  .btn{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:10px 14px;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px solid var(--accent);color:#cfe0ff}
+  .btn.bad{background:transparent;border:1px solid var(--bad);color:#ffb4b4}
+  .btn.good{background:var(--good)}
+  .right{display:flex;gap:8px;justify-content:flex-end}
+
+  /* TABLES */
   table{width:100%;border-collapse:collapse}
-  th,td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left}
-  th{color:var(--muted);font-size:13px}
-  .status{padding:2px 8px;border-radius:999px;font-size:13px}
-  .status.w-toku{background:#24336b;color:#ffb84d}
-  .status.podpisana{background:#1d3d2f;color:#2fbf71}
-  .status.anulowana{background:#4a1d1d;color:#ff6b6b}
-  .list-reset{list-style:none;margin:0;padding:0}
-  .list-reset li{margin:6px 0}
-  a{color:#cfe0ff;text-decoration:none}
+  th{font-weight:600;text-align:left;border-bottom:1px solid var(--line);padding:8px 6px;color:var(--muted);font-size:13px;white-space:nowrap}
+  td{border-bottom:1px solid #1a244d;padding:8px 6px;vertical-align:top}
+  .scroll{overflow:auto}
+  .status{padding:2px 8px;border-radius:999px}
+  .status.w-toku{background:#24336b}
+  .status.podpisana{background:#1d3d2f}
+  .status.anulowana{background:#4a1d1d}
+
+  /* SIDE */
+  .layout{display:grid;grid-template-columns:1fr 340px;gap:16px}
+  .side{position:sticky;top:64px;max-height:calc(100vh - 96px);overflow:auto}
+
+  /* CHAT */
+  .chat-box{border:1px solid var(--line);border-radius:8px;padding:12px;min-height:220px;max-height:360px;overflow:auto;background:#0d1330}
+  .bubble{background:#142057;border:1px solid #2a3777;border-radius:10px;padding:8px 10px;margin:6px 0}
+  .bubble .meta{font-size:12px;color:#a8b3ff;opacity:.9;margin-bottom:4px}
+  .dropzone{border:2px dashed #2a3777;border-radius:10px;padding:10px;text-align:center;cursor:pointer}
+  .dropzone.drag{background:#111a3f}
+  .file-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid #2a3777;border-radius:999px;margin:4px 6px 0 0}
 </style>
 </head>
 <body>
-
   <!-- NAV -->
   <div class="nav">
     <div class="brand">ARKON CRM</div>
-    <div class="tab active" data-tab="contracts">Umowy</div>
-    <div class="tab" data-tab="components">Komponenty</div>
-    <div class="tab" data-tab="docs">Dokumenty</div>
+    <div class="tab" data-tab="dashboard" tabindex="0">Pulpit</div>
+    <div class="tab" data-tab="clients" tabindex="0">Klienci</div>
+    <div class="tab" data-tab="contracts" tabindex="0">Umowy</div>
+    <div class="tab" data-tab="components" tabindex="0">Komponenty</div>
+    <div class="tab" data-tab="docs" tabindex="0">Dokumenty</div>
+    <div class="tab" data-tab="chat" tabindex="0">Komunikator</div>
+    <div class="tab" data-tab="settings" tabindex="0">Ustawienia</div>
   </div>
 
   <div class="container">
+    <!-- DASHBOARD -->
+    <section id="tab-dashboard" class="grid">
+      <h1>Pulpit</h1>
+      <div class="grid cols-3">
+        <div class="card"><div class="small">Przychód (symulacja)</div><h2 id="db-revenue">0 zł</h2></div>
+        <div class="card"><div class="small">Aktywne umowy</div><h2 id="db-open">0</h2></div>
+        <div class="card"><div class="small">Brakujące dokumenty</div><h2 id="db-missing">0</h2></div>
+      </div>
+      <div class="card small">
+        Porady: <span class="kbd">/</span> fokus wyszukiwania • <span class="kbd">Alt+N</span> nowy klient •
+        <span class="kbd">Alt+U</span> nowa umowa • zapisz/odtwórz dane w Ustawieniach.
+      </div>
+    </section>
+
+    <!-- KLIENCI -->
+    <section id="tab-clients" class="grid" hidden>
+      <h1>Klienci</h1>
+      <div class="layout">
+        <div class="grid">
+          <div class="card">
+            <div class="row">
+              <input id="cli-q" class="field" placeholder="Szukaj (imię, email, tel, opiekun)…">
+              <button class="btn ghost" id="cli-add-demo">Dodaj przykładowego klienta</button>
+            </div>
+          </div>
+          <div class="card scroll">
+            <table>
+              <thead><tr><th>ID</th><th>Nazwa</th><th>E-mail</th><th>Telefon</th><th>Opiekun</th></tr></thead>
+              <tbody id="cli-rows"></tbody>
+            </table>
+            <div id="cli-empty" class="small" style="padding:8px;display:none">Brak wyników…</div>
+          </div>
+        </div>
+        <aside class="side">
+          <div class="card">
+            <h2>Szczegóły klienta</h2>
+            <div id="cli-side-none" class="small">Wybierz klienta z listy.</div>
+            <div id="cli-side-body" hidden>
+              <div class="small">ID: <span id="cli-s-id"></span></div>
+              <div style="margin:8px 0 12px"><span class="chip" id="cli-s-manager"></span></div>
+              <div class="small">Kontakt</div>
+              <div id="cli-s-email"></div>
+              <div id="cli-s-phone"></div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
     <!-- UMOWY -->
-    <section id="tab-contracts">
+    <section id="tab-contracts" class="grid" hidden>
       <h1>Umowy</h1>
-      <div class="card">
-        <table>
-          <thead>
-            <tr><th>Numer umowy</th><th>Klient</th><th>Wartość</th><th>Status</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>U-2025/01</td><td>Jan Kowalski</td><td>43 000 zł</td><td><span class="status podpisana">✔ Podpisana</span></td></tr>
-            <tr><td>U-2025/02</td><td>Teresa Siek</td><td>29 975 zł</td><td><span class="status w-toku">⏳ W realizacji</span></td></tr>
-            <tr><td>U-2025/03</td><td>Michalina Mozoła</td><td>13 237 zł</td><td><span class="status anulowana">❌ Anulowana</span></td></tr>
-          </tbody>
-        </table>
+      <div class="layout">
+        <div class="grid">
+          <div class="card scroll">
+            <table>
+              <thead><tr><th>ID</th><th>Klient</th><th>Kwota</th><th>Typ</th><th>Status</th></tr></thead>
+              <tbody id="ctr-rows"></tbody>
+            </table>
+          </div>
+        </div>
+        <aside class="side">
+          <div class="card">
+            <h2>Szczegóły umowy</h2>
+            <div id="ctr-side-none" class="small">Wybierz umowę.</div>
+            <div id="ctr-side-body" hidden>
+              <div class="small">ID: <span id="ctr-s-id"></span></div>
+              <div class="small">Klient: <span id="ctr-s-client"></span></div>
+              <div class="small">Wartość: <span id="ctr-s-total"></span></div>
+              <div class="small">Typ: <span id="ctr-s-type" class="chip"></span></div>
+              <div class="small">Status: <span id="ctr-s-status" class="chip"></span></div>
+            </div>
+          </div>
+        </aside>
       </div>
     </section>
 
     <!-- KOMPONENTY -->
-    <section id="tab-components" hidden>
+    <section id="tab-components" class="grid" hidden>
       <h1>Komponenty</h1>
-      <div class="card">
+      <div class="card scroll">
         <table>
-          <thead>
-            <tr><th>Nazwa</th><th>Kategoria</th><th>Status</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>Pompa ciepła Panasonic 12kW</td><td>Ogrzewanie</td><td><span class="status w-toku">⏳ Oczekuje</span></td></tr>
-            <tr><td>Zbiornik buforowy 200L</td><td>Ogrzewanie</td><td><span class="status podpisana">✔ Gotowe</span></td></tr>
-            <tr><td>Rury PEX fi 16</td><td>Hydraulika</td><td><span class="status anulowana">❌ Brak</span></td></tr>
-          </tbody>
+          <thead><tr><th>SKU</th><th>Nazwa</th><th>Kategoria</th><th>Cena</th></tr></thead>
+          <tbody id="comp-rows"></tbody>
         </table>
       </div>
     </section>
 
     <!-- DOKUMENTY -->
-    <section id="tab-docs" hidden>
+    <section id="tab-docs" class="grid" hidden>
       <h1>Dokumenty do pobrania</h1>
       <div class="card">
-        <ul class="list-reset">
-          <li><a href="OŚWIADCZENIE O DOKONANIU ZAPŁATY.docx" download>📄 Oświadczenie o dokonaniu zapłaty (DOCX)</a></li>
-          <li><a href="OŚWIADCZENIE WSPÓŁMAŁŻONKA.docx" download>📄 Oświadczenie współmałżonka (DOCX)</a></li>
-          <li><a href="OŚWIADCZENIE WSPÓŁWŁAŚCICIELA.docx" download>📄 Oświadczenie współwłaściciela (DOCX)</a></li>
-          <li><a href="Pełnomocnictwo.docx" download>📄 Pełnomocnictwo (DOCX)</a></li>
-          <li><a href="UMOWA Z WYKONAWCĄ  arkon.pdf" download>📄 Umowa z wykonawcą (PDF)</a></li>
-          <li><a href="zalacznik_do_instrukcji_wniosku_o_dofinansowanie_wzor_dyspozycji_wyplaty_zaliczki-14-06-2024.pdf" download>📄 Załącznik – wzór dyspozycji wypłaty (PDF)</a></li>
+        <ul class="list-reset" id="docs-list">
+          <!-- Wstawiamy linki w JS aby łatwo było podmienić nazwy -->
         </ul>
-        <div class="small muted">Kliknij dokument, aby pobrać.</div>
+        <div class="small muted" style="margin-top:10px">
+          Kliknij dokument, aby pobrać. Upewnij się, że nazwa pliku w repozytorium jest identyczna jak poniżej.
+        </div>
+      </div>
+    </section>
+
+    <!-- CHAT (lokalny, z załącznikami) -->
+    <section id="tab-chat" class="grid" hidden>
+      <h1>Komunikator (lokalny)</h1>
+      <div class="card">
+        <div id="chat-box" class="chat-box"></div>
+        <div class="dropzone" id="dz">
+          Upuść pliki tutaj lub kliknij, aby wybrać…
+          <input type="file" id="file-input" multiple hidden />
+        </div>
+        <div id="pending-files"></div>
+        <div class="row" style="margin-top:8px">
+          <input id="chat-name" class="field" style="max-width:220px" placeholder="Twoje imię (domyślnie: Anon)">
+          <input id="chat-text" class="field" placeholder="Napisz wiadomość…">
+          <button id="chat-send" class="btn">Wyślij</button>
+        </div>
+        <div class="small muted" style="margin-top:8px">
+          Wiadomości i pliki zapisują się lokalnie (IndexedDB). W „Ustawieniach” możesz wszystko wyeksportować do JSON.
+        </div>
+      </div>
+    </section>
+
+    <!-- USTAWIENIA -->
+    <section id="tab-settings" class="grid" hidden>
+      <h1>Ustawienia</h1>
+      <div class="grid cols-2">
+        <div class="card">
+          <h2>Eksport / Import stanu</h2>
+          <div class="row">
+            <button id="export" class="btn">Eksportuj stan (JSON)</button>
+            <label class="btn ghost">Importuj
+              <input id="import" type="file" accept="application/json" hidden>
+            </label>
+          </div>
+          <div class="small" style="margin-top:10px">
+            Zapis lokalny: <code>localStorage</code> (wiadomości) + <code>IndexedDB</code> (pliki).
+          </div>
+          <div class="row" style="margin-top:8px">
+            <button id="wipe" class="btn bad">Wyczyść wszystkie dane lokalne</button>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Druk / PDF</h2>
+          <button class="btn" onclick="window.print()">Drukuj / Zapisz jako PDF</button>
+        </div>
       </div>
     </section>
   </div>
 
 <script>
-/* ====== Nawigacja ====== */
-function showTab(key){
-  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.tab===key));
-  document.querySelectorAll("section[id^='tab-']").forEach(s=>s.hidden=true);
-  document.getElementById("tab-"+key).hidden=false;
+/* ====== UTIL ====== */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const esc = s => (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const money = x => (Math.round(x)||0).toLocaleString("pl-PL")+" zł";
+const bytes = n => n<1024? n+" B" : n<1048576? (n/1024).toFixed(1)+" KB" : (n/1048576).toFixed(1)+" MB";
+
+/* ====== HASH NAV + skróty ====== */
+const LS_TAB="arkon_last_tab";
+function showTab(key,{push=true}={}){
+  $$(".tab").forEach(t=>t.classList.toggle("active",t.dataset.tab===key));
+  $$("section[id^='tab-']").forEach(s=>s.hidden=true);
+  const sec=$("#tab-"+key); if(sec) sec.hidden=false;
+  if(push) location.hash = key;
+  localStorage.setItem(LS_TAB,key);
 }
 document.querySelector(".nav").addEventListener("click",(e)=>{
-  const el=e.target.closest(".tab"); if(!el) return;
-  e.preventDefault(); showTab(el.dataset.tab);
+  const el=e.target.closest(".tab"); if(!el) return; e.preventDefault(); showTab(el.dataset.tab);
 });
+window.addEventListener("hashchange",()=>{ const key=(location.hash||"").replace(/^#/,"")||"dashboard"; showTab(key,{push:false}); });
+$$(".tab").forEach(tab=>{
+  tab.addEventListener("keydown",(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); showTab(tab.dataset.tab); } });
+});
+window.addEventListener("keydown",(e)=>{
+  if(e.key==="/" && !["INPUT","TEXTAREA"].includes(document.activeElement.tagName)){ e.preventDefault(); showTab("clients"); $("#cli-q")?.focus(); }
+});
+
+/* ====== DANE DEMO ====== */
+let clients = [
+  {id:"C-001",name:"Anna Kowalska",email:"anna@example.com",phone:"600-100-200",manager:"Paweł"},
+  {id:"C-002",name:"Jan Nowak",email:"jan@example.com",phone:"600-100-201",manager:"Paweł"},
+  {id:"C-003",name:"Piotr Kamiński",email:"piotr@example.com",phone:"600-100-202",manager:"Kasia"},
+];
+let contracts = [
+  {id:"U-1001", customer:"Anna Kowalska", total:21500, type:"gotówka", status:"W toku"},
+  {id:"U-1002", customer:"Jan Nowak", total:42000, type:"prefinansowanie", status:"Podpisana"},
+  {id:"U-1003", customer:"Piotr Kamiński", total:15900, type:"gotówka", status:"Anulowana"},
+];
+let components = [
+  {sku:"HP-9KW",name:"Pompa ciepła 9kW",category:"pompy",price:15500},
+  {sku:"HY-PEX16",name:"Rury PEX 16 (mb)",category:"hydraulika",price:3.8},
+  {sku:"OC-STY15",name:"Styropian 15cm (m²)",category:"ocieplenie",price:42},
+  {sku:"PV-410",name:"Panel 410W",category:"fotowoltaika",price:520},
+];
+
+/* ====== RENDER: Dashboard / Klienci / Umowy / Komponenty ====== */
+function renderDashboard(){
+  const revenue = contracts.reduce((s,c)=>s+(c.total||0),0);
+  const open = contracts.filter(c=>c.status==="W toku").length;
+  const missing = 2; // demo
+  $("#db-revenue").textContent = money(revenue);
+  $("#db-open").textContent = open;
+  $("#db-missing").textContent = missing;
+}
+function renderClients(){
+  const q=($("#cli-q")?.value||"").toLowerCase();
+  const body=$("#cli-rows"); if(!body) return; body.innerHTML="";
+  const list = clients.filter(c => (c.name+c.email+c.phone+c.manager).toLowerCase().includes(q));
+  list.forEach(c=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${c.id}</td><td><a href="#" class="cli" data-id="${c.id}">${c.name}</a></td><td>${c.email}</td><td>${c.phone}</td><td><span class="chip">${c.manager}</span></td>`;
+    body.appendChild(tr);
+  });
+  $("#cli-empty").style.display = list.length? "none" : "block";
+  body.querySelectorAll(".cli").forEach(a=>a.addEventListener("click",(e)=>{
+    e.preventDefault();
+    const c = clients.find(x=>x.id===a.dataset.id);
+    if(!c) return;
+    $("#cli-side-none").hidden = true;
+    $("#cli-side-body").hidden = true; // nieużywane szczegóły – demo
+    $("#cli-s-id").textContent=c.id; $("#cli-s-manager").textContent=c.manager; $("#cli-s-email").textContent="✉ "+c.email; $("#cli-s-phone").textContent="📞 "+c.phone;
+  }));
+}
+$("#cli-q")?.addEventListener("input",renderClients);
+$("#cli-add-demo")?.addEventListener("click",()=>{
+  const n=clients.length+1;
+  clients=[{id:`C-${String(n).padStart(3,"0")}`,name:"Nowy Klient",email:"nowy@example.com",phone:"600-000-000",manager:"Nowy"},...clients];
+  renderClients();
+});
+
+function statusClass(s){ return (s||"").toLowerCase().replace(/\s+/g,'-'); }
+function renderContracts(){
+  const tb=$("#ctr-rows"); if(!tb) return; tb.innerHTML="";
+  contracts.forEach(c=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML = `<td><a href="#" class="ctr" data-id="${c.id}">${c.id}</a></td>
+      <td>${c.customer}</td><td>${money(c.total)}</td>
+      <td><span class="chip">${c.type}</span></td><td><span class="status ${statusClass(c.status)}">${c.status}</span></td>`;
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll(".ctr").forEach(a=>a.addEventListener("click",(e)=>{
+    e.preventDefault();
+    const c=contracts.find(x=>x.id===a.dataset.id);
+    if(!c) return;
+    $("#ctr-side-none").hidden=true; $("#ctr-side-body").hidden=false;
+    $("#ctr-s-id").textContent=c.id; $("#ctr-s-client").textContent=c.customer; $("#ctr-s-total").textContent=money(c.total);
+    $("#ctr-s-type").textContent=c.type; $("#ctr-s-status").textContent=c.status; $("#ctr-s-status").className="chip "+statusClass(c.status);
+  }));
+}
+
+function renderComponents(){
+  const tb=$("#comp-rows"); if(!tb) return; tb.innerHTML="";
+  components.forEach(p=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${p.sku}</td><td>${p.name}</td><td><span class="chip">${p.category}</span></td><td>${money(p.price)}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+/* ====== DOKUMENTY DO POBRANIA (Twoje pliki z repo) ====== */
+function renderDocs(){
+  const files = [
+    {name:"OŚWIADCZENIE O DOKONANIU ZAPŁATY.docx", label:"Oświadczenie o dokonaniu zapłaty (DOCX)"},
+    {name:"OŚWIADCZENIE WSPÓŁMAŁŻONKA.docx", label:"Oświadczenie współmałżonka (DOCX)"},
+    {name:"OŚWIADCZENIE WSPÓŁWŁAŚCICIELA.docx", label:"Oświadczenie współwłaściciela (DOCX)"},
+    {name:"PEŁNOMOCNICTWO.docx", label:"Pełnomocnictwo (DOCX)"},
+    {name:"UMOWA Z WYKONAWCĄ  arkon.pdf", label:"Umowa z wykonawcą (PDF)"},
+    {name:"zalacznik_do_instrukcji_wniosku_o_dofinansowanie_wzor_dyspozycji_wyplaty_zaliczki-14-06-2024.pdf", label:"Załącznik – wzór dyspozycji wypłaty (PDF)"},
+  ];
+  const ul=$("#docs-list"); if(!ul) return; ul.innerHTML="";
+  files.forEach(f=>{
+    const li=document.createElement("li");
+    li.innerHTML=`<a href="${encodeURI(f.name)}" download>📄 ${esc(f.label)}</a>`;
+    ul.appendChild(li);
+  });
+}
+
+/* ====== CHAT lokalny z załącznikami (IndexedDB) ====== */
+const LS_MSGS="arkon_msgs_v1";
+let db;
+function dbOpen(){ return new Promise((res,rej)=>{ const r=indexedDB.open("arkonCRM_local",1); r.onupgradeneeded=()=>{ const d=r.result; if(!d.objectStoreNames.contains("files")) d.createObjectStore("files",{keyPath:"id"}); }; r.onsuccess=()=>{db=r.result; res();}; r.onerror=()=>rej(r.error); }); }
+function dbPut(o){ return new Promise((res,rej)=>{ const tx=db.transaction("files","readwrite"); tx.objectStore("files").put(o); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
+function dbGet(id){ return new Promise((res,rej)=>{ const tx=db.transaction("files","readonly"); const q=tx.objectStore("files").get(id); q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); }); }
+function dbAll(){ return new Promise((res,rej)=>{ const tx=db.transaction("files","readonly"); const q=tx.objectStore("files").getAll(); q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); }); }
+function dbClear(){ return new Promise((res,rej)=>{ const tx=db.transaction("files","readwrite"); tx.objectStore("files").clear(); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
+
+function loadMsgs(){ try{return JSON.parse(localStorage.getItem(LS_MSGS)||"[]")}catch{return[]} }
+function saveMsgs(list){ localStorage.setItem(LS_MSGS, JSON.stringify(list)); }
+let messages = loadMsgs(), pendingFiles=[];
+
+const chatBox=$("#chat-box");
+function appendMsg(m,scroll=true){
+  const dt=new Date(m.at||Date.now());
+  const time=dt.toLocaleTimeString("pl-PL",{hour:"2-digit",minute:"2-digit"});
+  const div=document.createElement("div"); div.className="bubble";
+  let html=`<div class="meta"><strong>${esc(m.user||"Anon")}</strong> • ${time}</div><div>${esc(m.text||"")}</div>`;
+  if(m.files?.length){
+    html+=`<div style="margin-top:6px">`+m.files.map(f=>`<a class="file-pill" href="#" data-dlid="${f.id}" title="${esc(f.name)}">📎 ${esc(f.name)} <small>(${bytes(f.size)})</small></a>`).join("")+`</div>`;
+  }
+  div.innerHTML=html; chatBox.appendChild(div);
+  div.querySelectorAll("[data-dlid]").forEach(a=>a.addEventListener("click",async(e)=>{
+    e.preventDefault(); const rec=await dbGet(a.dataset.dlid); if(!rec){ alert("Plik niedostępny."); return; }
+    const url=URL.createObjectURL(rec.blob); const link=document.createElement("a"); link.href=url; link.download=rec.name; document.body.appendChild(link); link.click(); link.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500);
+  }));
+  if(scroll) chatBox.scrollTop=chatBox.scrollHeight;
+}
+function renderChat(){ if(!chatBox) return; chatBox.innerHTML=""; messages.forEach(m=>appendMsg(m,false)); chatBox.scrollTop=chatBox.scrollHeight; }
+
+const dz=$("#dz"), fi=$("#file-input"), pending=$("#pending-files");
+dz?.addEventListener("click",()=>fi.click());
+dz?.addEventListener("dragover",(e)=>{e.preventDefault(); dz.classList.add("drag");});
+dz?.addEventListener("dragleave",()=>dz.classList.remove("drag"));
+dz?.addEventListener("drop",(e)=>{e.preventDefault(); dz.classList.remove("drag"); handleFiles(e.dataTransfer.files);});
+fi?.addEventListener("change",()=>{ handleFiles(fi.files); fi.value=""; });
+
+function handleFiles(list){ Array.from(list||[]).forEach(f=>{ const id="F_"+Date.now()+"_"+Math.random().toString(36).slice(2); pendingFiles.push({id,name:f.name,type:f.type||"application/octet-stream",size:f.size,blob:f}); }); renderPending(); }
+function renderPending(){ if(!pending) return; pending.innerHTML = pendingFiles.map((f,i)=>`<span class="file-pill">📎 ${esc(f.name)} <small>(${bytes(f.size)})</small> <a href="#" data-rm="${i}" title="Usuń">&times;</a></span>`).join(""); pending.querySelectorAll("[data-rm]").forEach(a=>a.addEventListener("click",(e)=>{e.preventDefault(); pendingFiles.splice(+a.dataset.rm,1); renderPending();})); }
+
+async function sendMessage(){
+  const text=($("#chat-text")?.value||"").trim(); if(!text && pendingFiles.length===0) return;
+  const user=($("#chat-name")?.value||"").trim()||"Anon";
+  const fileRefs=pendingFiles.map(f=>({id:f.id,name:f.name,type:f.type,size:f.size}));
+  const msg={id:Date.now()+"_"+Math.random().toString(36).slice(2),user,text,at:Date.now(),files:fileRefs};
+  messages.push(msg); saveMsgs(messages); appendMsg(msg);
+  for(const f of pendingFiles){ await dbPut(f); } pendingFiles=[]; renderPending();
+  $("#chat-text").value=""; $("#chat-text").focus();
+}
+$("#chat-send")?.addEventListener("click",sendMessage);
+$("#chat-text")?.addEventListener("keydown",(e)=>{ if(e.key==="Enter"){ e.preventDefault(); sendMessage(); }});
+
+/* ====== Export / Import ====== */
+function blobToBase64(blob){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result.split(",")[1]); r.onerror=()=>rej(r.error); r.readAsDataURL(blob); }); }
+async function exportAll(){ const files=await dbAll(); const files64=[]; for(const f of files){ files64.push({id:f.id,name:f.name,type:f.type,size:f.size,b64:await blobToBase64(f.blob)}); } const dump={version:1,messages,files:files64}; const data=JSON.stringify(dump,null,2); const url=URL.createObjectURL(new Blob([data],{type:"application/json"})); const a=document.createElement("a"); a.href=url; a.download="arkon-crm-export.json"; a.click(); URL.revokeObjectURL(url); }
+async function importAll(file){ try{ const txt=await file.text(); const dump=JSON.parse(txt); await dbClear(); messages=[]; for(const f of dump.files||[]){ const bin=Uint8Array.from(atob(f.b64),c=>c.charCodeAt(0)); await dbPut({id:f.id,name:f.name,type:f.type,size:f.size,blob:new Blob([bin],{type:f.type})}); } messages=dump.messages||[]; saveMsgs(messages); renderChat(); alert("Import zakończony."); }catch(e){ alert("Błąd importu: "+e.message); } }
+$("#export")?.addEventListener("click",exportAll);
+$("#import")?.addEventListener("change",(e)=>{ const f=e.target.files[0]; if(f) importAll(f); e.target.value=""; });
+$("#wipe")?.addEventListener("click",async()=>{ if(confirm("Usunąć wszystkie dane lokalne?")){ localStorage.removeItem(LS_MSGS); await dbClear(); messages=[]; renderChat(); alert("Wyczyszczono."); }});
+
+/* ====== BOOT ====== */
+(async function boot(){
+  await dbOpen();
+  renderDashboard(); renderClients(); renderContracts(); renderComponents(); renderDocs(); renderChat();
+  const fromHash=(location.hash||"").replace(/^#/,"");
+  const remembered=localStorage.getItem(LS_TAB)||"";
+  const initial = fromHash || remembered || "dashboard";
+  showTab(initial,{push:false});
+})();
 </script>
 </body>
 </html>
