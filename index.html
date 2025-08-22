@@ -1,3 +1,5 @@
+
+
 <!doctype html>
 <html lang="pl">
 <head>
@@ -44,11 +46,7 @@
   .muted{opacity:.7}
   .list-reset{list-style:none;margin:0;padding:0}
   .status{padding:2px 8px;border-radius:999px}
-  .status.w-toku{background:#24336b}
-  .status.podpisana{background:#1d3d2f}
-  .status.anulowana{background:#4a1d1d}
   .layout{display:grid;grid-template-columns:1fr 340px;gap:16px}
-  .side{position:sticky;top:64px;max-height:calc(100vh - 96px);overflow:auto}
   .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
 
   /* Chat */
@@ -67,7 +65,7 @@
   <!-- NAV -->
   <div class="nav">
     <div class="brand">ARKON CRM</div>
-    <div class="tab active" data-tab="dashboard" tabindex="0">Pulpit</div>
+    <div class="tab" data-tab="dashboard" tabindex="0">Pulpit</div>
     <div class="tab" data-tab="clients" tabindex="0">Klienci</div>
     <div class="tab" data-tab="contracts" tabindex="0">Umowy</div>
     <div class="tab" data-tab="products" tabindex="0">Produkty</div>
@@ -79,7 +77,7 @@
 
   <div class="container">
     <!-- DASHBOARD -->
-    <section id="tab-dashboard" class="grid">
+    <section id="tab-dashboard" class="grid" hidden>
       <h1>Pulpit</h1>
       <div class="grid cols-3">
         <div class="card"><div class="small">Przychód (symulacja)</div><h2 id="db-revenue">0 zł</h2></div>
@@ -92,12 +90,29 @@
       </div>
     </section>
 
-    <!-- Placeholdery na Twoje moduły (zostawiłem, żeby nie gubić układu) -->
+    <!-- Klienci / Umowy (placeholdery, na przyszłość) -->
     <section id="tab-clients" class="grid" hidden><h1>Klienci</h1><div class="card">Tu wkleisz listę klientów.</div></section>
     <section id="tab-contracts" class="grid" hidden><h1>Umowy</h1><div class="card">Tu wkleisz listę umów.</div></section>
     <section id="tab-products" class="grid" hidden><h1>Produkty</h1><div class="card">Tu wkleisz produkty.</div></section>
     <section id="tab-components" class="grid" hidden><h1>Komponenty</h1><div class="card">Tu wkleisz komponenty.</div></section>
-    <section id="tab-docs" class="grid" hidden><h1>Dokumenty</h1><div class="card">Tu wkleisz dokumenty.</div></section>
+
+    <!-- DOCUMENTS -->
+    <section id="tab-docs" class="grid" hidden>
+      <h1>Dokumenty do pobrania</h1>
+      <div class="card">
+        <ul class="list-reset">
+          <li><a href="zalacznik_do_instrukcji_wniosku_o_dofinansowanie_wzor_dyspozycji_wyplaty_zaliczki-14-06-2024.pdf" download>📄 Wzór dyspozycji wypłaty zaliczki (PDF)</a></li>
+          <li><a href="UMOWA Z WYKONAWCĄ  arkon.pdf" download>📄 Umowa z wykonawcą (PDF)</a></li>
+          <li><a href="PEŁNOMOCNICTWO.docx" download>📄 Pełnomocnictwo (DOCX)</a></li>
+          <li><a href="OŚWIADCZENIE O DOKONANIU ZAPŁATY.docx" download>📄 Oświadczenie o dokonaniu zapłaty (DOCX)</a></li>
+          <li><a href="OŚWIADCZENIE WSPÓŁWŁAŚCICIELA.docx" download>📄 Oświadczenie współwłaściciela (DOCX)</a></li>
+          <li><a href="OŚWIADCZENIE WSPÓŁMAŁŻONKA.docx" download>📄 Oświadczenie współmałżonka (DOCX)</a></li>
+        </ul>
+        <div class="small muted" style="margin-top:10px">
+          Kliknij w wybrany dokument, aby go pobrać.
+        </div>
+      </div>
+    </section>
 
     <!-- CHAT (lokalny, z załącznikami) -->
     <section id="tab-chat" class="grid" hidden>
@@ -158,18 +173,39 @@ const $$ = sel => Array.from(document.querySelectorAll(sel));
 function esc(s){return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]))}
 function bytes(n){ if(n<1024) return n+" B"; if(n<1024*1024) return (n/1024).toFixed(1)+" KB"; if(n<1024*1024*1024) return (n/1024/1024).toFixed(1)+" MB"; return (n/1024/1024/1024).toFixed(1)+" GB"; }
 
-/* ====== ZAKŁADKI ====== */
-function showTab(key){ $$(".tab").forEach(t=>t.classList.toggle("active",t.dataset.tab===key)); $$("section[id^='tab-']").forEach(s=>s.hidden=true); const sec=$("#tab-"+key); if(sec) sec.hidden=false; history.replaceState(null,"","#"+key); }
-document.querySelector(".nav").addEventListener("click",(e)=>{ const el=e.target.closest(".tab"); if(!el) return; e.preventDefault(); showTab(el.dataset.tab); });
-$$(".tab").forEach(tab=>tab.addEventListener("keydown",(e)=>{ if(e.key==="Enter"||e.key===" "){e.preventDefault(); showTab(tab.dataset.tab)} }));
+/* ====== ZAKŁADKI (klik, klawiatura, hash, pamięć ostatniej) ====== */
+const LS_TAB = "arkon_last_tab";
+function showTab(key,{push=true}={}){
+  // układ
+  $$(".tab").forEach(t=>t.classList.toggle("active",t.dataset.tab===key));
+  $$("section[id^='tab-']").forEach(s=>s.hidden=true);
+  const sec=$("#tab-"+key); if(sec) sec.hidden=false;
+  // URL + pamięć
+  if(push) location.hash = key;
+  localStorage.setItem(LS_TAB,key);
+}
+document.querySelector(".nav").addEventListener("click",(e)=>{
+  const el=e.target.closest(".tab"); if(!el) return;
+  e.preventDefault(); showTab(el.dataset.tab);
+});
+$$(".tab").forEach(tab=>{
+  tab.addEventListener("keydown",(e)=>{
+    if(e.key==="Enter"||e.key===" "){ e.preventDefault(); showTab(tab.dataset.tab); }
+  });
+});
+window.addEventListener("hashchange",()=>{
+  const key=(location.hash||"").replace(/^#/,"")||"dashboard";
+  showTab(key,{push:false});
+});
 
 /* ====== DEMO PULPIT ====== */
-function renderDashboard(){ $("#db-revenue").textContent=(63500).toLocaleString("pl-PL")+" zł"; $("#db-open").textContent="1"; $("#db-missing").textContent="2"; }
+function renderDashboard(){
+  $("#db-revenue").textContent=(63500).toLocaleString("pl-PL")+" zł";
+  $("#db-open").textContent="1";
+  $("#db-missing").textContent="2";
+}
 
-/* ====== CHAT LOKALNY Z ZAŁĄCZNIKAMI ======
- * - Wiadomości: localStorage (lista z referencjami do plików)
- * - Pliki: IndexedDB (store: 'files'), klucz: id, wartość: {name,type,size,blob}
- */
+/* ====== CHAT LOKALNY Z ZAŁĄCZNIKAMI ====== */
 const LS_MSGS = "arkon_msgs_v1";
 
 /* IndexedDB proste API */
@@ -208,12 +244,12 @@ function appendMsg(m,scroll=true){
   let html = `<div class="meta"><strong>${esc(m.user||"Anon")}</strong> • ${time}</div>
   <div class="text">${esc(m.text||"")}</div>`;
   if(m.files && m.files.length){
-    html += `<div style="margin-top:6px">` + m.files.map(f=>`<a class="file-pill" href="#" data-dlid="${f.id}" title="${esc(f.name)}"><span>📎</span>${esc(f.name)} <small>(${bytes(f.size)})</small></a>`).join("") + `</div>`;
+    html += <div style="margin-top:6px"> + m.files.map(f=><a class="file-pill" href="#" data-dlid="${f.id}" title="${esc(f.name)}"><span>📎</span>${esc(f.name)} <small>(${bytes(f.size)})</small></a>).join("") + </div>;
   }
   div.innerHTML = html;
   chatBox.appendChild(div);
   if(scroll) chatBox.scrollTop=chatBox.scrollHeight;
-  // podpinamy linki do pobrania
+  // pobieranie plików
   div.querySelectorAll("[data-dlid]").forEach(a=>{
     a.addEventListener("click", async (e)=>{
       e.preventDefault();
@@ -232,22 +268,19 @@ async function sendMessage(){
   const text = ($("#chat-text").value||"").trim();
   if(!text && pendingFiles.length===0) return;
   const user = ($("#chat-name").value||"").trim() || "Anon";
-  // skopiuj metadane plików do wiadomości
   const fileRefs = pendingFiles.map(f=>({id:f.id,name:f.name,type:f.type,size:f.size}));
   const msg = { id: Date.now()+"_"+Math.random().toString(36).slice(2), user, text, at: Date.now(), files:fileRefs };
   messages.push(msg); saveMsgs(messages); appendMsg(msg);
-  // zapisz pliki do IndexedDB
   for(const f of pendingFiles){ await dbPut(f); }
   pendingFiles = []; renderPendingFiles();
-  $("#chat-text").value="";
-  $("#chat-text").focus();
+  $("#chat-text").value=""; $("#chat-text").focus();
 }
 
 /* Obsługa dodawania plików */
 const dz = $("#dz"), fi = $("#file-input"), pendingBox=$("#pending-files");
 dz.addEventListener("click",()=>fi.click());
 dz.addEventListener("dragover",(e)=>{ e.preventDefault(); dz.classList.add("drag"); });
-dz.addEventListener("dragleave",(e)=>{ dz.classList.remove("drag"); });
+dz.addEventListener("dragleave",()=>dz.classList.remove("drag"));
 dz.addEventListener("drop",(e)=>{ e.preventDefault(); dz.classList.remove("drag"); handleFiles(e.dataTransfer.files); });
 fi.addEventListener("change",()=>{ handleFiles(fi.files); fi.value=""; });
 
@@ -256,24 +289,19 @@ function renderPendingFiles(){
   pendingBox.innerHTML = pendingFiles.map((f,i)=><span class="file-pill">📎 ${esc(f.name)} <small>(${bytes(f.size)})</small> <a href="#" data-rm="${i}" title="Usuń">&times;</a></span>).join("");
   pendingBox.querySelectorAll("[data-rm]").forEach(a=>a.addEventListener("click",(e)=>{ e.preventDefault(); const idx=+a.getAttribute("data-rm"); pendingFiles.splice(idx,1); renderPendingFiles(); }));
 }
-
 function handleFiles(fileList){
   const maxPerFile = 50 * 1024 * 1024; // 50MB
   Array.from(fileList||[]).forEach(f=>{
-    if(f.size>maxPerFile){ alert(`Plik ${f.name} jest większy niż 50MB`); return; }
+    if(f.size>maxPerFile){ alert(Plik ${f.name} jest większy niż 50MB); return; }
     const id = "F_"+Date.now()+"_"+Math.random().toString(36).slice(2);
     pendingFiles.push({ id, name:f.name, type:f.type||"application/octet-stream", size:f.size, blob:f });
   });
   renderPendingFiles();
 }
-
 $("#chat-send").addEventListener("click", sendMessage);
 $("#chat-text").addEventListener("keydown",(e)=>{ if(e.key==="Enter"){ e.preventDefault(); sendMessage(); }});
 
-/* ====== EKSPORT / IMPORT ======
- * Eksport: JSON zawiera messages + wszystkie pliki (jako base64).
- * Import: czyści obecne dane, odtwarza pliki i wiadomości.
- */
+/* ====== EKSPORT / IMPORT ====== */
 function blobToBase64(blob){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result.split(",")[1]); r.onerror=()=>rej(r.error); r.readAsDataURL(blob); }); }
 async function exportAll(){
   const files = await dbAll();
@@ -291,20 +319,15 @@ async function importAll(file){
     const txt = await file.text();
     const dump = JSON.parse(txt);
     if(!dump || !dump.messages || !Array.isArray(dump.files)) throw new Error("Struktura pliku niepoprawna.");
-    // czyścimy
     await dbClear(); messages = []; saveMsgs(messages);
-    // pliki
     for(const f of dump.files){
       const bin = Uint8Array.from(atob(f.b64), c=>c.charCodeAt(0));
       await dbPut({ id:f.id, name:f.name, type:f.type, size:f.size, blob:new Blob([bin],{type:f.type}) });
     }
-    // wiadomości
     messages = dump.messages; saveMsgs(messages); renderChat();
     alert("Import zakończony.");
   }catch(e){ alert("Błąd importu: "+e.message); }
 }
-
-/* ====== Ustawienia: przyciski ====== */
 $("#export").addEventListener("click", exportAll);
 $("#import").addEventListener("change",(e)=>{ const f=e.target.files[0]; if(f) importAll(f); e.target.value=""; });
 $("#wipe").addEventListener("click", async ()=>{
@@ -321,7 +344,11 @@ $("#wipe").addEventListener("click", async ()=>{
   await dbOpen();
   renderDashboard();
   renderChat();
-  const initial=(location.hash||"").replace(/^#/,"")||"dashboard"; showTab(initial);
+  // startowa zakładka: #hash > pamięć > dashboard
+  const fromHash=(location.hash||"").replace(/^#/,"");
+  const remembered=localStorage.getItem(LS_TAB)||"";
+  const initial = fromHash || remembered || "dashboard";
+  showTab(initial,{push:false});
 })();
 </script>
 </body>
