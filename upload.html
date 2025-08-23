@@ -6,7 +6,7 @@
 <title>ARKON — Przesył dokumentów / Oferty / Ulotki</title>
 <meta name="description" content="Upload plików powiązanych z klientem, baza ofert i ulotek. Integracja z klientami i komponentami (pompy, piece, PV, ocieplenie, stolarka).">
 <style>
-https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2
+  @import url(https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2);
   :root{
     --bg:#0b1020;--p1:#0f1533;--p2:#121a38;--ink:#e7ecff;--muted:#aeb8da;--line:#223066;
     --accent:#4cc9f0;--ok:#2fbf71;--bad:#ff6b6b;--warn:#ffb84d;
@@ -221,11 +221,11 @@ https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2
 </div>
 
 <script>
-  <script>
-// ===== SUPABASE: konfiguracja uploadu umów =====
-const SUPA_URL = 'https://phxxjirqlktzcwnygaha.supabase.co';
-const SUPA_KEY = 'sb_publishable_iOXdu9fUGGko3MqPmltAag_ZbPUxp4r'; // PUBLISHABLE (anon) key
-const supa = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+  // ===== SUPABASE: konfiguracja uploadu umów =====
+  const {SUPA_URL = 'https://phxxjirqlktzcwnygaha.supabase.co', SUPA_KEY = 'sb_publishable_iOXdu9fUGGko3MqPmltAag_ZbPUxp4r'} = window;
+  const supa = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+
+</script>
 
 const BUCKET = 'umowy'; // utwórz w Storage
 // opcjonalny identyfikator „konta” (żeby rozdzielać pliki między arkon-crm / pawel itd.)
@@ -436,7 +436,7 @@ function safeName(name){
 function buildPath({clientId, file}){
   const who  = (clientId || 'bez-klienta').toLowerCase();
   const ts   = new Date().toISOString().replace(/[:.]/g,'-');
-  return upload/${who}/${ts}_${safeName(file.name)};
+  return `upload/${who}/${ts}_${safeName(file.name)}`;
 }
 
 // faktyczny upload do Supabase + wpis metadanych (opcjonalny)
