@@ -3,499 +3,81 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ARKON • Komunikator (Supabase)</title>
-<meta name="description" content="Komunikator zespołowy z Supabase: pokoje, wiadomości, potwierdzenia odczytu, emoji, typing, realtime.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%23102244'/%3E%3Ctext x='50' y='62' font-size='54' text-anchor='middle' fill='white' font-family='Arial,Helvetica,sans-serif'%3E💬%3C/text%3E%3C/svg%3E">
+<title>ARKON CRM – Komunikator</title>
+<meta name="description" content="Komunikator CRM z integracją Supabase.">
+<script src="https://unpkg.com/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
 <style>
-  :root{
-    --bg:#0b1020; --p1:#101736; --p2:#0f1a44; --ink:#e8edff; --muted:#aeb8da;
-    --line:#253166; --accent:#4cc9f0; --ok:#2fbf71; --bad:#ff6b6b; --warn:#ffb84d;
-    --chip:#162357; --me:#173a2d; --meb:#265a44; --them:#141f4a; --themb:#23326e;
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%;margin:0}
-  body{background:linear-gradient(180deg,#0a0f1e,#0c1230 60%,#0a0f1e);color:var(--ink);font:15px/1.45 system-ui,Segoe UI,Roboto,Arial}
-  a{color:#cfe1ff;text-decoration:none}
-  .app{display:grid;grid-template-columns:280px 1fr;height:100%}
-  @media(max-width:860px){ .app{grid-template-columns:1fr} #sidebar{position:sticky;top:0;z-index:9} }
-  /* Sidebar */
-  #sidebar{background:linear-gradient(180deg,var(--p1),var(--p2));border-right:1px solid var(--line);padding:10px 10px 12px;display:grid;grid-template-rows:auto auto 1fr auto;gap:10px}
-  .brand{display:flex;align-items:center;gap:10px}
-  .brand b{font-size:16px}
-  .muted{color:var(--muted)}
-  .panel{background:#0e163a;border:1px solid var(--line);border-radius:12px;padding:10px}
-  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  input,select,button,textarea{font:500 14px/1.2 system-ui,Segoe UI,Roboto,Arial;color:var(--ink)}
-  input,select,textarea{width:100%;background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:8px 10px;outline:none}
-  input:focus,select:focus,textarea:focus{border-color:#3b4fa0;box-shadow:0 0 0 3px #3b4fa033}
-  .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 10px;cursor:pointer}
-  .btn.ghost{background:transparent;border:1px dashed #3a4ca3}
-  .btn.ok{background:#194d34;border-color:#2d8a58}
-  .btn.bad{background:#4d2030;border-color:#7b3341}
-  .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:12px}
-  .list{list-style:none;margin:0;padding:0}
-  .item{display:flex;justify-content:space-between;gap:8px;padding:8px;border-radius:10px;cursor:pointer}
-  .item.sel{background:#16245a;border:1px solid #3a4ca3}
-  .badge{min-width:18px;height:18px;border-radius:999px;background:#233261;border:1px solid #3a4ca3;display:grid;place-items:center;font-size:11px}
-  /* Chat */
-  #chat{display:grid;grid-template-rows:auto 1fr auto; height:100%}
-  .topbar{position:sticky;top:0;z-index:5;background:linear-gradient(180deg,var(--p1),var(--p2));border-bottom:1px solid var(--line);padding:10px}
-  .log{font:12px;color:#aeb8da;max-height:52px;overflow:auto}
-  #list{padding:14px;overflow:auto}
-  .day{position:sticky;top:6px;z-index:1;text-align:center;margin:10px 0}
-  .day span{background:#0c1436;border:1px solid #253166;border-radius:999px;padding:4px 10px;font-size:12px;color:#aeb8da}
-  .msg{max-width:78%;margin:4px 0;padding:8px 10px;border-radius:12px;border:1px solid;position:relative}
-  .me{margin-left:auto;background:var(--me);border-color:var(--meb)}
-  .them{margin-right:auto;background:var(--them);border-color:var(--themb)}
-  .meta{display:flex;gap:8px;align-items:center;margin-top:4px;font-size:11px;color:#cfe1ffaa}
-  .ticks{font-family:ui-monospace,Menlo,Consolas,monospace}
-  .ticks.read{color:#8ae3b1}
-  .bubble-tools{position:absolute;right:6px;top:-8px;display:flex;gap:4px}
-  .bicon{background:#0f1b46;border:1px solid #2b3a77;border-radius:999px;padding:2px 6px;font-size:12px;cursor:pointer}
-  /* Composer */
-  #composer{padding:10px;border-top:1px solid var(--line);background:linear-gradient(180deg,var(--p1),var(--p2))}
-  #ta{width:100%;min-height:42px;max-height:180px;resize:vertical}
-  .footer{display:flex;gap:8px;align-items:center;margin-top:8px}
-  .emoji-panel{display:none;position:absolute;bottom:64px;left:10px;background:#0e1740;border:1px solid #2a3a75;border-radius:12px;padding:8px;max-width:420px;flex-wrap:wrap;gap:6px}
-  .emoji-panel .e{cursor:pointer;border-radius:8px;padding:4px 6px}
-  .emoji-panel .e:hover{background:#16245a}
-  .typing{font-size:12px;color:#aeb8da;margin-left:6px}
+  body{margin:0;font:15px/1.5 system-ui,Segoe UI,Roboto;background:#0b1020;color:#e8edff}
+  header{padding:14px;background:#11183a;border-bottom:1px solid #222}
+  h1{margin:0;font-size:20px}
+  #chat{padding:16px;height:70vh;overflow-y:auto;background:#10182e}
+  .msg{margin:6px 0;padding:8px 12px;border-radius:12px;max-width:70%}
+  .me{background:#233261;margin-left:auto}
+  .other{background:#16244a}
+  .meta{font-size:11px;color:#aaa;margin-top:4px}
+  #inputZone{display:flex;gap:8px;padding:12px;background:#0f1533;border-top:1px solid #222}
+  input,button{font:15px system-ui}
+  input{flex:1;padding:8px;border-radius:8px;border:1px solid #444;background:#0d1330;color:#fff}
+  button{padding:8px 14px;border:none;border-radius:8px;cursor:pointer;background:#4cc9f0;color:#000}
+  button:hover{background:#36b2d8}
 </style>
 </head>
 <body>
+<header><h1>💬 Komunikator – ARKON CRM</h1></header>
 
-<div class="app">
-  <!-- SIDEBAR -->
-  <aside id="sidebar">
-    <div class="brand">
-      <b>💬 ARKON Komunikator</b>
-    </div>
+<div id="chat"></div>
 
-    <div class="panel">
-      <div class="row">
-        <div style="flex:1">
-          <label class="muted">Konto (account_id)</label>
-          <select id="accountSel"></select>
-        </div>
-        <button id="btnRefreshMeta" class="btn ghost" title="Odśwież listy">↻</button>
-      </div>
-      <div class="row" style="margin-top:8px">
-        <div style="flex:1">
-          <label class="muted">Nazwa użytkownika</label>
-          <input id="userName" placeholder="np. Anna">
-        </div>
-        <button id="btnSaveIdent" class="btn ok" title="Zapisz tożsamość">Zapisz</button>
-      </div>
-      <div class="muted" style="margin-top:6px">Tożsamość jest lokalna (localStorage).</div>
-    </div>
-
-    <div class="panel">
-      <div class="row" style="justify-content:space-between">
-        <b>Pokoje</b>
-        <button id="btnNewRoom" class="btn ghost" title="Nowy pokój">+ Pokój</button>
-      </div>
-      <ul id="rooms" class="list" style="margin-top:8px"></ul>
-    </div>
-
-    <div class="panel">
-      <div><b>Ustawienia</b></div>
-      <div class="row" style="margin-top:6px">
-        <label class="pill"><input id="optSounds" type="checkbox"> Dźwięk przy nowej</label>
-        <label class="pill"><input id="optReceipts" type="checkbox" checked> Potwierdzaj odczyt</label>
-        <label class="pill"><input id="optTyping" type="checkbox" checked> Wysyłaj „piszę…”</label>
-      </div>
-      <div class="muted" style="margin-top:6px">Status: <span id="status">—</span></div>
-    </div>
-
-    <div class="panel">
-      <div class="muted">Skróty: <span class="pill">Ctrl+Enter wyślij</span> <span class="pill">/ – szukaj</span></div>
-    </div>
-  </aside>
-
-  <!-- CHAT -->
-  <section id="chat">
-    <div class="topbar">
-      <div class="row" style="justify-content:space-between">
-        <div>
-          <b id="roomTitle">—</b>
-          <span class="muted" id="roomStats"></span>
-        </div>
-        <div class="log" id="log"></div>
-      </div>
-    </div>
-
-    <div id="list" aria-live="polite"></div>
-
-    <div id="composer">
-      <div class="row">
-        <div style="position:relative;flex:1">
-          <textarea id="ta" placeholder="Napisz wiadomość… (Ctrl+Enter – wyślij)"></textarea>
-          <div id="emojiPanel" class="emoji-panel" aria-hidden="true"></div>
-        </div>
-        <div class="row" style="align-items:flex-end">
-          <button id="btnEmoji" class="btn ghost" title="Emoji">😊</button>
-          <button id="btnSend" class="btn ok">Wyślij ➤</button>
-        </div>
-      </div>
-      <div class="row" style="margin-top:6px">
-        <span id="typing" class="typing"></span>
-      </div>
-    </div>
-  </section>
+<div id="inputZone">
+  <input id="msgInput" placeholder="Napisz wiadomość...">
+  <button onclick="sendMsg()">Wyślij</button>
 </div>
 
-<!-- Supabase -->
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script>
-'use strict';
+  // KONFIGURACJA SUPABASE
+  const SUPABASE_URL = "https://phxgjrqiltkzcwnygaha.supabase.co";
+  const SUPABASE_ANON_KEY = "<<<TWÓJ_ANON_KEY_TUTAJ>>>"; // <- podmień na swój klucz publiczny
 
-/* ──────────────────────────────
-   🔧 KONFIG – UZUPEŁNIJ
-   ────────────────────────────── */
-const SUPABASE_URL  = localStorage.getItem('sb_url')  || 'https://YOUR-PROJECT.supabase.co';
-const SUPABASE_ANON = localStorage.getItem('sb_anon') || 'YOUR_ANON_KEY';
-// (Opcjonalnie: jednorazowo w dev konsoli możesz zrobić:
-// localStorage.setItem('sb_url','https://phxgjrqiltkzcwnygaha.supabase.co');
-// localStorage.setItem('sb_anon','…twój_anon_key…');
-// location.reload();
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
-  realtime: { params: { eventsPerSecond: 5 } }
-});
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-/* ──────────────────────────────
-   UTIL
-   ────────────────────────────── */
-const $=s=>document.querySelector(s);
-const $$=s=>Array.from(document.querySelectorAll(s));
-const INT=new Intl.DateTimeFormat('pl-PL',{hour:'2-digit',minute:'2-digit'});
-const DAY=new Intl.DateTimeFormat('pl-PL',{weekday:'long',day:'2-digit',month:'2-digit'});
-function log(s){ const el=$('#log'); el.textContent='• '+s; setTimeout(()=>{ if(el.textContent==='• '+s) el.textContent=''; },4000); }
-function uid(){ return Math.random().toString(36).slice(2) + Date.now().toString(36); }
-function scrollBottom(){ const c=$('#list'); c.scrollTop=c.scrollHeight; }
+  const chatBox = document.getElementById('chat');
+  const msgInput = document.getElementById('msgInput');
+  const user = "Użytkownik_" + Math.floor(Math.random()*1000); // identyfikator tymczasowy
 
-/* ──────────────────────────────
-   STAN
-   ────────────────────────────── */
-let state={
-  account: localStorage.getItem('chat_account') || 'arkon-crm',
-  user:    localStorage.getItem('chat_user')    || 'Gość',
-  room:    localStorage.getItem('chat_room')    || 'global',
-  rooms:   [],
-  lastTypingAt: 0,
-  typingTimer: null,
-  receiptsOn: localStorage.getItem('chat_receipts')!=='0',
-  soundsOn:   localStorage.getItem('chat_sounds')==='1',
-  typingOn:   localStorage.getItem('chat_typing')!=='0',
-  messages:   [] // {id, text, user_name, user_id, created_at, read_count, mine}
-};
-$('#userName').value = state.user;
-$('#optReceipts').checked = state.receiptsOn;
-$('#optSounds').checked   = state.soundsOn;
-$('#optTyping').checked   = state.typingOn;
-
-/* ──────────────────────────────
-   EMOJI
-   ────────────────────────────── */
-const EMOJI="😀😃😄😁😆🥳😉😊🙂🙃😍😘😋😜🤩🤔🤨🤯😴🤒🤕🤧😎👍👎👏🙏💪🔥✨🎯🛠📎📌💡❤🧡💛💚💙💜🖤🤍🤣😂😅🙈🙉🙊🚀⭐".split('');
-(function buildEmoji(){
-  const box=$('#emojiPanel');
-  EMOJI.forEach(e=>{
-    const b=document.createElement('span'); b.className='e'; b.textContent=e; b.title=e;
-    b.addEventListener('click',()=>{ const ta=$('#ta'); ta.value+=e; ta.focus(); box.style.display='none'; });
-    box.appendChild(b);
-  });
-})();
-$('#btnEmoji').addEventListener('click',()=>{
-  const p=$('#emojiPanel'); p.style.display = p.style.display==='flex'?'none':'flex';
-});
-
-/* ──────────────────────────────
-   IDENT + LISTY
-   ────────────────────────────── */
-$('#btnSaveIdent').addEventListener('click',()=>{
-  const n=$('#userName').value.trim()||'Użytkownik';
-  state.user=n;
-  localStorage.setItem('chat_user', n);
-  log('Zapisano nazwę: '+n);
-});
-$('#optReceipts').addEventListener('change',e=>{
-  state.receiptsOn=e.target.checked; localStorage.setItem('chat_receipts', state.receiptsOn?'1':'0');
-});
-$('#optSounds').addEventListener('change',e=>{
-  state.soundsOn=e.target.checked; localStorage.setItem('chat_sounds', state.soundsOn?'1':'0');
-});
-$('#optTyping').addEventListener('change',e=>{
-  state.typingOn=e.target.checked; localStorage.setItem('chat_typing', state.typingOn?'1':'0');
-});
-
-$('#btnRefreshMeta').addEventListener('click', ()=>{ loadMeta(); });
-
-async function loadMeta(){
-  $('#status').textContent='Łączenie…';
-  // konta
-  const { data:accs, error:aerr } = await supabase.from('accounts').select('id').order('id');
-  if(aerr){ $('#status').textContent='Błąd kont: '+aerr.message; return; }
-  const sel=$('#accountSel'); sel.innerHTML='';
-  accs.forEach(a=>{
-    const o=document.createElement('option'); o.value=a.id; o.textContent=a.id;
-    if(a.id===state.account) o.selected=true; sel.appendChild(o);
-  });
-  sel.addEventListener('change',()=>{ state.account=sel.value; localStorage.setItem('chat_account',state.account); subscribeRooms(); loadRoom(state.room,true); });
-
-  // pokoje
-  await subscribeRooms();
-  $('#status').textContent='Połączono';
-}
-
-async function subscribeRooms(){
-  const { data:rooms, error:rerr } = await supabase.from('rooms').select('*').order('label');
-  if(rerr){ log('Błąd rooms: '+rerr.message); return; }
-  state.rooms = rooms;
-  renderRooms();
-}
-
-/* Dodawanie pokoju */
-$('#btnNewRoom').addEventListener('click', async ()=>{
-  const label = prompt('Nazwa pokoju (np. Montaże, Biuro):');
-  if(!label) return;
-  const id = label.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || uid();
-  const { error } = await supabase.from('rooms').insert({ id, label });
-  if(error){ alert('Błąd: '+error.message); return; }
-  await subscribeRooms();
-  selectRoom(id);
-});
-
-function renderRooms(){
-  const ul=$('#rooms'); ul.innerHTML='';
-  state.rooms.forEach(r=>{
-    const li=document.createElement('li'); li.className='item'+(state.room===r.id?' sel':'');
-    li.innerHTML = <span>${r.label||r.id}</span><span class="badge" id="b_${r.id}">0</span>;
-    li.addEventListener('click',()=>selectRoom(r.id));
-    ul.appendChild(li);
-  });
-  // jeśli nie ma current, ustaw global
-  if(!state.rooms.some(r=>r.id===state.room) && state.rooms.length){
-    selectRoom(state.rooms[0].id);
+  // Funkcja: wyświetl wiadomość
+  function showMsg(msg, who, ts){
+    const div = document.createElement('div');
+    div.className = 'msg ' + (who === user ? 'me':'other');
+    div.innerHTML = <b>${who}</b><br>${msg}<div class="meta">${new Date(ts).toLocaleString()}</div>;
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
   }
-}
-function selectRoom(id){
-  state.room=id; localStorage.setItem('chat_room', id);
-  $$('.item').forEach(li=>li.classList.remove('sel'));
-  const badge=$('#b_'+id)?.parentElement; if(badge) badge.classList.add('sel');
-  loadRoom(id,true);
-}
 
-/* ──────────────────────────────
-   ŁADOWANIE / SUBSKRYPCJE
-   ────────────────────────────── */
-let subMsgs=null, subRcpts=null, subTyping=null;
-
-async function loadRoom(roomId, full){
-  $('#roomTitle').textContent = (state.rooms.find(r=>r.id===roomId)?.label || roomId);
-  $('#roomStats').textContent = • konto: ${state.account};
-  if(full){ $('#list').innerHTML=''; state.messages.length=0; }
-  // load messages + ich odczyty (agregacja)
-  const { data, error } = await supabase
-    .from('messages')
-    .select('id,text,user_id,user_name,created_at,account_id,room_id, receipts:receipts(message_id)')
-    .eq('account_id', state.account)
-    .eq('room_id', roomId)
-    .order('created_at', { ascending: true });
-  if(error){ log('Błąd wiadomości: '+error.message); return; }
-  // przemapuj
-  const arr = (data||[]).map(m=>({
-    id:m.id, text:m.text, user_id:m.user_id, user_name:m.user_name,
-    created_at:m.created_at, mine: m.user_name===state.user,
-    read_count: (m.receipts||[]).length
-  }));
-  state.messages = arr;
-  renderMessages();
-  scrollBottom();
-  if(state.receiptsOn) markAllVisibleAsRead();
-
-  // realtime (odśwież suby)
-  if(subMsgs) await supabase.removeChannel(subMsgs);
-  if(subRcpts) await supabase.removeChannel(subRcpts);
-  if(subTyping) await supabase.removeChannel(subTyping);
-
-  subMsgs = supabase
-    .channel('msgs_'+roomId+'_'+state.account)
-    .on('postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages',
-          filter: room_id=eq.${roomId},account_id=eq.${state.account} },
-        payload => { onNewMessage(payload.new); })
-    .subscribe();
-
-  subRcpts = supabase
-    .channel('rcpts_'+roomId+'_'+state.account)
-    .on('postgres_changes',
-        { event: 'INSERT', schema:'public', table:'receipts',
-          filter:room_id=eq.${roomId},account_id=eq.${state.account} },
-        payload => { onNewReceipt(payload.new); })
-    .subscribe();
-
-  // kanał typing (optional: tabela typing lub Broadcast)
-  subTyping = supabase.channel('typing_'+state.account+'_'+roomId, {config:{broadcast:{ack:false}}})
-    .on('broadcast', { event: 'typing' }, (p)=>{ showTyping(p.payload?.user_name); })
-    .subscribe();
-}
-
-/* Nowa wiadomość realtime */
-function onNewMessage(m){
-  const obj={ id:m.id, text:m.text, user_id:m.user_id, user_name:m.user_name, created_at:m.created_at, mine:m.user_name===state.user, read_count:0 };
-  state.messages.push(obj);
-  appendMessage(obj);
-  if(state.soundsOn && !obj.mine) try{ new Audio('data:audio/mp3;base64,//uQZAAAAAAAAAAAAAAAAAAAA...').play(); }catch{}
-  if(!obj.mine && state.receiptsOn) markAsRead([obj.id]);
-}
-
-/* Nowy odczyt realtime */
-function onNewReceipt(r){
-  const msg = state.messages.find(x=>x.id===r.message_id);
-  if(msg){ msg.read_count = (msg.read_count||0)+1; updateTicks(msg.id); }
-}
-
-/* ──────────────────────────────
-   RENDER WIADOMOŚCI
-   ────────────────────────────── */
-function renderMessages(){
-  const box=$('#list'); box.innerHTML='';
-  let lastDay='';
-  state.messages.forEach(m=> appendMessage(m,box,lastDay) );
-}
-function appendMessage(m,box,lastDayCache){
-  const boxEl = box || $('#list');
-  const d = new Date(m.created_at);
-  const day = DAY.format(d);
-  if(day !== appendMessage._lastDay){
-    const div=document.createElement('div'); div.className='day'; div.innerHTML=<span>${day}</span>;
-    boxEl.appendChild(div);
-    appendMessage._lastDay = day;
+  // Funkcja: wyślij wiadomość
+  async function sendMsg(){
+    const text = msgInput.value.trim();
+    if(!text) return;
+    msgInput.value = '';
+    const { data, error } = await supabase.from('messages').insert([{ user, text }]);
+    if(error) console.error("Błąd wysyłania:", error);
   }
-  const div=document.createElement('div');
-  div.className='msg ' + (m.mine?'me':'them');
-  div.id = 'm_'+m.id;
-  div.innerHTML = `
-    <div class="txt">${escapeHtml(m.text).replace(/\n/g,'<br>')}</div>
-    <div class="bubble-tools">
-      <span class="bicon react" title="👍">👍</span>
-      <span class="bicon react" title="❤">❤</span>
-      <span class="bicon react" title="😂">😂</span>
-    </div>
-    <div class="meta"><span>${escapeHtml(m.user_name)}</span> · <span>${INT.format(d)}</span> <span class="ticks" id="t_${m.id}">${m.mine?'✓':''}</span></div>
-  `;
-  boxEl.appendChild(div);
 
-  // reakcje: wysyłamy jako wiadomość specjalną (opcjonalnie)
-  div.querySelectorAll('.react').forEach(b=>{
-    b.addEventListener('click',()=> sendMessage(String(b.textContent)));
-  });
-
-  updateTicks(m.id);
-}
-
-/* Odśwież znaczniki ✓ / ✓✓ */
-function updateTicks(id){
-  const msg = state.messages.find(x=>x.id===id);
-  if(!msg) return;
-  const el=$('#t_'+id);
-  if(!el) return;
-  if(!msg.mine){ el.textContent=''; return; }
-  const reads = (msg.read_count||0);
-  el.textContent = reads>1 ? '✓✓' : '✓';
-  el.classList.toggle('read', reads>1);
-}
-
-/* Mark as read */
-async function markAsRead(ids){
-  if(!state.receiptsOn || !ids || !ids.length) return;
-  const payload = ids.map(mid=>({
-    id: uid(),
-    account_id: state.account,
-    room_id: state.room,
-    message_id: mid,
-    user_name: state.user,
-    read_at: new Date().toISOString()
-  }));
-  // upsert by (message_id, user_name, account_id)
-  const { error } = await supabase.from('receipts').upsert(payload, { ignoreDuplicates: true });
-  if(error){ console.warn('Receipts err', error.message); }
-}
-function markAllVisibleAsRead(){
-  const ids = state.messages.filter(m=>!m.mine).map(m=>m.id);
-  markAsRead(ids);
-}
-
-/* ──────────────────────────────
-   WYSYŁANIE + TYPING
-   ────────────────────────────── */
-$('#btnSend').addEventListener('click', sendHandler);
-$('#ta').addEventListener('keydown', (e)=>{
-  if(e.key==='Enter' && (e.ctrlKey||e.metaKey)){ e.preventDefault(); sendHandler(); return; }
-  if(state.typingOn){
-    const now=Date.now();
-    if(now - state.lastTypingAt > 1000){
-      supabase.channel('typing_'+state.account+'_'+state.room).send({ type:'broadcast', event:'typing', payload:{user_name:state.user}});
-      state.lastTypingAt = now;
+  // Odbieranie istniejących wiadomości
+  async function loadMsgs(){
+    const { data, error } = await supabase.from('messages').select('*').order('created_at',{ascending:true});
+    if(data){
+      data.forEach(m => showMsg(m.text, m.user, m.created_at));
     }
   }
-});
-async function sendHandler(){
-  const ta=$('#ta'); const text=ta.value.trim();
-  if(!text) return;
-  await sendMessage(text);
-  ta.value=''; ta.focus();
-}
-async function sendMessage(text){
-  const row = {
-    id: uid(),
-    account_id: state.account,
-    room_id: state.room,
-    user_id: state.user.toLowerCase().replace(/\s+/g,'_'),
-    user_name: state.user,
-    text: text,
-    created_at: new Date().toISOString()
-  };
-  // optimistic UI
-  state.messages.push({...row, mine:true, read_count:1});
-  appendMessage({...row, mine:true, read_count:1});
-  scrollBottom();
-  // insert
-  const { error } = await supabase.from('messages').insert(row);
-  if(error){ log('Błąd wysyłki: '+error.message); }
-  // własny odczyt
-  if(state.receiptsOn) markAsRead([row.id]);
-}
 
-/* Typing indicator */
-let typingHideTimer=null;
-function showTyping(name){
-  if(!name || name===state.user) return;
-  $('#typing').textContent = ✍ ${name} pisze…;
-  clearTimeout(typingHideTimer);
-  typingHideTimer = setTimeout(()=> $('#typing').textContent='', 1500);
-}
+  // Nasłuchiwanie na nowe wiadomości
+  supabase.channel('chat-room')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+      const m = payload.new;
+      showMsg(m.text, m.user, m.created_at);
+    })
+    .subscribe();
 
-/* ──────────────────────────────
-   POMOCNICZE
-   ────────────────────────────── */
-function escapeHtml(s){ return (s==null?'':String(s)).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-
-/* ──────────────────────────────
-   START
-   ────────────────────────────── */
-async function boot(){
-  try{
-    await loadMeta();
-    await loadRoom(state.room,true);
-    // service: co 20s uzupełnij ticki (gdyby realtime receipts był off)
-    setInterval(()=>{ state.messages.forEach(m=>updateTicks(m.id)); }, 20000);
-  }catch(e){
-    $('#status').textContent='Błąd inicjalizacji: '+e.message;
-    console.error(e);
-  }
-}
-boot();
+  loadMsgs();
 </script>
 </body>
 </html>
