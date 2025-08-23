@@ -752,5 +752,58 @@ $('#flyAdd')?.addEventListener('click', addFlyer);
   renderFiles();
 })();
 </script>
+  <!-- 1) Supabase z CDN (już masz na stronach) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- 2) Helper (ten plik) -->
+<script type="module" src="./arkon-uploader.js"></script>
+
+<!-- 3) Konfiguracja + podpięcie do istniejącego inputu -->
+<script type="module">
+  import { init, bindInput, listLocalFiles } from './arkon-uploader.js';
+
+  // KONFIG SUPABASE – użyj swoich wartości:
+  await init({
+    supaUrl: 'https://phxxjirqlktzcwnygaha.supabase.co',
+    supaKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBoeHhqaXJxbGt0emN3bnlnYWhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4NjAxODgsImV4cCI6MjA3MTQzNjE4OH0.tUjENk3OgBM1bHcnBm_QCFn17fwYn2N6uVp6Yf2PsJQ',
+    bucket: 'umowy',
+    accountId: (localStorage.getItem('arkon_account_id') || 'arkon-crm')
+  });
+
+  // Podpinamy istniejący input file (zmień selektor, jeśli u Ciebie inny):
+  bindInput('#inFiles', {
+    dropzone: '#drop', // opcjonalnie, jeżeli masz box drag&drop; usuń, jeśli nie używasz
+    getContext: () => ({
+      clientId:   document.querySelector('#selClient')?.value || '',
+      clientName: (()=>{ try{
+        const id = document.querySelector('#selClient')?.value || '';
+        const arr = JSON.parse(localStorage.getItem('arkon_clients_v1')||'[]')
+                  || JSON.parse(localStorage.getItem('arkon_clients_v2')||'[]') || [];
+        return (arr.find(c=>c.id===id)?.name)||'';
+      }catch{ return ''; }})(),
+      category:   document.querySelector('#selCat')?.value || 'Inne',
+      tags:       document.querySelector('#tags')?.value || '',
+      toCloud:    document.querySelector('#toCloud') ? document.querySelector('#toCloud').checked : true
+    }),
+    onDone: async (results) => {
+      // Po zapisie możesz odświeżyć swoją tabelę/siatkę:
+      // np. jeśli masz funkcję renderFiles() – wywołaj ją tutaj.
+      if (typeof renderFiles === 'function') renderFiles();
+      console.log('Zakończono:', results);
+    },
+    onError: (err) => {
+      console.error('Upload error', err);
+      alert('Błąd podczas zapisu/uploadu: ' + (err?.message || err));
+    }
+  });
+
+  // (opcjonalnie) nasłuch zdarzeń:
+  window.addEventListener('arkon:upload:done', e=>{
+    console.log('DONE', e.detail.results);
+  });
+  window.addEventListener('arkon:upload:error', e=>{
+    console.warn('ERROR', e.detail);
+  });
+</script>
 </body>
 </html>
