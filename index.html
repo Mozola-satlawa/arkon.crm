@@ -4,22 +4,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ARKON CRM — Pulpit (z logowaniem)</title>
-<meta name="description" content="ARKON CRM — pulpit z logowaniem (hasło: Szybkakasa), szybkie podglądy, kalendarz, lejek, wykres umów, ostatnie rekordy i skróty.">
-<!-- Favicon (zielony listek) -->
-<link rel="icon" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="%230b1020"/><path d="M52 12C36 12 25 22 22 36c-1 6 0 10 4 14 8 8 21 4 26-10 3-8 2-18 0-28z" fill="%2330d158"/><path d="M26 50c6-10 20-22 26-26" stroke="%234cc9f0" stroke-width="2" fill="none"/></svg>'>
+<title>ARKON CRM — Pulpit / Indeks</title>
+<meta name="description" content="Strona główna ARKON CRM: logowanie, szybkie podglądy, skróty, ostatnie rekordy, nawigacja do wszystkich modułów.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%230b8d3b'/%3E%3Ctext x='50' y='62' font-size='60' text-anchor='middle' fill='white' font-family='Arial,Helvetica,sans-serif'%3EA%3C/text%3E%3C/svg%3E">
 <style>
   :root{
     --bg:#0b1020; --grad1:#0a1028; --grad2:#0d1536;
     --ink:#e8edff; --muted:#aeb8da; --line:#22306a;
     --card:#0f1636; --chip:#16245a; --accent:#4cc9f0;
     --ok:#2fbf71; --warn:#ffb84d; --bad:#ff6b6b;
+    --focus:#82c4ff;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
   body{margin:0;font:15px/1.55 system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,var(--grad1),var(--grad2));color:var(--ink)}
   a{color:#cfe0ff;text-decoration:none}
-  header{padding:16px;border-bottom:1px solid var(--line);background:#0e1534;position:sticky;top:0;z-index:20}
+  header{padding:16px;border-bottom:1px solid var(--line);background:#0e1534;position:sticky;top:0;z-index:8}
   header h1{margin:0;font-size:22px}
   header .muted{color:var(--muted);font-size:13px}
   nav{display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line);background:#121a44}
@@ -43,6 +43,7 @@
   .right{display:flex;gap:8px;justify-content:flex-end}
   .kpi{display:flex;align-items:center;gap:12px}
   .kpi .n{font-weight:700;font-size:20px}
+  .ok{color:#7ee2ab} .warn{color:#ffd699} .bad{color:#ffb1b1}
   .list-reset{list-style:none;margin:0;padding:0}
   .status{padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid #2a3a75;background:#0f1a44}
   .status.lead{background:#19224e}
@@ -57,63 +58,48 @@
   .tag{display:inline-block;margin:2px 6px 0 0;padding:3px 8px;border:1px solid #3a4ca3;border-radius:999px;font-size:12px}
   .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   @media(max-width:720px){ .grid-2{grid-template-columns:1fr} }
-  .avatar{width:28px;height:28px;border-radius:50%;display:inline-grid;place-items:center;background:#1e2a62;border:1px solid #2a3a75;font-size:13px;color:#cfe0ff}
-  .userbar{display:flex;align-items:center;gap:10px}
-  .dot{width:8px;height:8px;border-radius:50%;background:#2fbf71;box-shadow:0 0 0 2px #0e1534}
-  /* Login overlay */
-  .login-wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#081024,#0a1434);z-index:50}
-  .login-card{width:420px;max-width:92vw;background:linear-gradient(180deg,#0f1638,#0f1a46);border:1px solid #2a3a75;border-radius:14px;padding:16px}
-  .login-card h2{margin:0 0 6px}
-  .login-card input{width:100%;background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:10px;color:#e8edff;margin:6px 0}
-  .login-card label{font-size:13px;color:#aeb8da}
-  .providers{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
-  .hint{font-size:12px;color:#aeb8da;margin-top:8px}
-  .lnk{background:transparent;border:1px dashed #3a4ca3;color:#cfe0ff;border-radius:10px;padding:8px 12px;cursor:pointer;width:100%}
-  @media print{ .login-wrap{display:none!important} nav,.btn,.kbd{display:none!important} }
-  /* canvas boxes */
-  .canvas-box{background:#0f1630;border:1px solid #2a3a75;border-radius:12px;padding:8px}
+  @media print{ #lock,nav,.btn,.kbd{display:none!important} }
+
+  /* ===== LOCK / LOGIN OVERLAY for DASHBOARD ===== */
+  #lock{position:fixed;inset:0;background:radial-gradient(1200px 600px at 60% -10%,#19307144,transparent),linear-gradient(180deg,#0a0f22 0%,#0a0f22 30%,#0b1130 100%);backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;z-index:9999}
+  #lock.open{display:flex}
+  .login-panel{width:460px;max-width:94vw;background:linear-gradient(180deg,#0f1636,#101a44);border:1px solid #2a3a75;border-radius:16px;padding:16px;box-shadow:0 20px 60px #0008}
+  .login-panel h2{margin:0 0 4px}
+  .login-panel .muted{margin-bottom:8px}
+  .field{width:100%;background:#0d1530;border:1px solid #28356c;color:#e8edff;border-radius:10px;padding:10px 12px;outline:0}
+  .field:focus{border-color:#3e61cc;box-shadow:0 0 0 3px #3e61cc33}
+  .row-sb{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .social{display:flex;gap:8px}
+  .btn.icon{display:inline-flex;align-items:center;gap:8px}
+  .g{background:#1f3b7a} .f{background:#2d3f75}
+  .err{color:#ffb1b1;font-size:13px;height:16px}
+  .shake{animation:shake .36s}
+  @keyframes shake{10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(2px)}30%,50%,70%{transform:translateX(-4px)}40%,60%{transform:translateX(4px)}}
+
+  /* user menu */
+  .userbar{position:fixed;right:10px;top:10px;display:flex;align-items:center;gap:8px;z-index:9}
+  .avatar{width:30px;height:30px;border-radius:50%;display:inline-grid;place-items:center;background:#133; border:1px solid #2a3a75;font-weight:700}
+  .online{width:8px;height:8px;border-radius:50%;background:#2fbf71;border:1px solid #0b1}
+  .link-like{background:transparent;border:0;color:#cfe0ff;text-decoration:underline;cursor:pointer}
 </style>
 </head>
 <body>
 
-<!-- ======= LOGIN OVERLAY (tylko dla pulpitu) ======= -->
-<div id="login" class="login-wrap" hidden>
-  <div class="login-card">
-    <h2>🔐 ARKON CRM — logowanie</h2>
-    <div class="small">Podaj dane lub zaloguj się przez dostawcę. Hasło lokalne: <b>Szybkakasa</b> (użytkownik: <b>Arkon2</b>).</div>
-    <input id="lg_user" placeholder="Użytkownik (np. Arkon2)" autocomplete="username">
-    <input id="lg_pass" placeholder="Hasło" type="password" autocomplete="current-password">
-    <label><input id="lg_rem" type="checkbox"> Zapamiętaj mnie (nie pytaj na tym komputerze)</label>
-    <div class="row" style="margin-top:10px">
-      <button id="btnLogin" class="btn ok" style="flex:1">Zaloguj</button>
-      <button id="btnForgot" class="btn ghost">Zapomniałeś hasła?</button>
-    </div>
-    <div class="providers">
-      <button id="btnGoogle" class="lnk">Zaloguj przez Google</button>
-      <button id="btnFacebook" class="lnk">Zaloguj przez Facebook</button>
-    </div>
-    <div class="hint">* Logowanie Google/Facebook jest symulowane lokalnie (bez serwera). Do prawdziwego OAuth potrzebny backend.</div>
-  </div>
+<!-- ===== USER BAR ===== -->
+<div class="userbar">
+  <span id="ubName" class="small">Gość</span>
+  <span class="online" title="online"></span>
+  <div id="ubAvatar" class="avatar">A</div>
+  <button id="btnLogout" class="btn ghost" title="Wyloguj">Wyloguj</button>
+  <button id="btnLock" class="btn ghost" title="Zablokuj ekran">Zablokuj</button>
 </div>
 
-<!-- ======= PULPIT ======= -->
-<header id="hdr" hidden>
-  <div class="row" style="justify-content:space-between">
-    <div>
-      <h1 style="margin:0">Pulpit • ARKON CRM</h1>
-      <div class="small">Wszystkie dane przechowywane lokalnie (LocalStorage/IndexedDB). Eksport/Backup dostępny z modułów.</div>
-    </div>
-    <div class="userbar">
-      <span id="dot" class="dot" title="Online"></span>
-      <span id="userName" class="small">—</span>
-      <span id="avatar" class="avatar">A</span>
-      <button id="btnLock" class="btn ghost">Zablokuj</button>
-      <button id="btnLogout" class="btn bad">Wyloguj</button>
-    </div>
-  </div>
+<header>
+  <h1>Pulpit • ARKON CRM</h1>
+  <div class="small">Szybki podgląd i skróty. Wszystkie dane przechowywane lokalnie (LocalStorage/IndexedDB). Eksport/Backup dostępny z modułów.</div>
 </header>
 
-<nav id="nav" aria-label="Nawigacja główna" hidden>
+<nav aria-label="Nawigacja główna">
   <a href="index.html" aria-current="page">🏠 Pulpit</a>
   <a href="klienci.html">👥 Klienci</a>
   <a href="lidy.html">🧲 Lidy</a>
@@ -121,12 +107,12 @@
   <a href="upload.html">📤 Przesył plików</a>
   <a href="dokumenty.html">📄 Dokumenty</a>
   <a href="chat.html">💬 Komunikator</a>
-  <a href="ustawienia.html">⚙️ Ustawienia</a>
-  <a href="kalkulator.html" target="_blank" rel="noopener">🧮 Kalkulator ↗️</a>
-  <a href="baza.html">🗃️ Baza (storage)</a>
+  <a href="ustawienia.html">⚙ Ustawienia</a>
+  <a href="kalkulator.html" target="_blank" rel="noopener">🧮 Kalkulator ↗</a>
+  <a href="baza.html">🗃 Baza (storage)</a>
 </nav>
 
-<div id="app" class="wrap grid cols-2" hidden>
+<div class="wrap grid cols-2" id="panel">
   <!-- LEWA KOLUMNA -->
   <section class="grid">
     <!-- KPI -->
@@ -142,7 +128,7 @@
       </div>
     </div>
 
-    <!-- Skróty / Quick actions -->
+    <!-- Skróty -->
     <div class="card">
       <div class="row" style="justify-content:space-between">
         <div><b>Skróty</b></div>
@@ -153,7 +139,7 @@
         <a class="btn" href="lidy.html">+ Nowy lead</a>
         <a class="btn ghost" href="komponenty.html">Dodaj komponent</a>
         <a class="btn ghost" href="upload.html">Wyślij pliki</a>
-        <a class="btn" href="kalkulator.html" target="_blank" rel="noopener">Kalkulator ↗️</a>
+        <a class="btn" href="kalkulator.html" target="_blank" rel="noopener">Kalkulator ↗</a>
       </div>
     </div>
 
@@ -163,8 +149,7 @@
       <div style="overflow:auto;margin-top:6px">
         <table id="tblClients">
           <thead><tr><th>Nazwa</th><th>Status</th><th>Kontakt</th><th>Tagi</th><th>Dodano</th></tr></thead>
-          <tbody></tbody>
-        </table>
+        <tbody></tbody></table>
       </div>
     </div>
 
@@ -174,27 +159,14 @@
       <div style="overflow:auto;margin-top:6px">
         <table id="tblLeads">
           <thead><tr><th>Tytuł</th><th>Źródło</th><th>Status</th><th>Data</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Lejek + Wykres umów -->
-    <div class="card">
-      <div class="row" style="justify-content:space-between">
-        <b>Lejek sprzedażowy & Wykres umów podpisanych</b>
-        <span class="small">Dane z localStorage</span>
-      </div>
-      <div class="grid-2" style="margin-top:8px">
-        <div class="canvas-box"><canvas id="cnvFunnel" width="560" height="300"></canvas></div>
-        <div class="canvas-box"><canvas id="cnvContracts" width="560" height="300"></canvas></div>
+        <tbody></tbody></table>
       </div>
     </div>
   </section>
 
   <!-- PRAWA KOLUMNA -->
   <aside class="grid">
-    <!-- Aplikacje / Moduły -->
+    <!-- Moduły -->
     <div class="card">
       <b>Moduły</b>
       <div class="apps" style="margin-top:8px">
@@ -202,125 +174,85 @@
         <a class="app" href="lidy.html"><b>Lidy</b><span class="small">Zbieranie i kwalifikacja leadów.</span></a>
         <a class="app" href="komponenty.html"><b>Komponenty</b><span class="small">Pompy, piece, PV, ocieplenie, bramy.</span></a>
         <a class="app" href="upload.html"><b>Przesył plików</b><span class="small">Pliki w IndexedDB, przypisania do klienta i kategorii.</span></a>
-        <a class="app" href="dokumenty.html"><b>Dokumenty</b><span class="small">Wzory umów, pełnomocnictwa, oświadczenia.</span></a>
-        <a class="app" href="chat.html"><b>Komunikator</b><span class="small">Lokalny czat + załączniki.</span></a>
+        <a class="app" href="dokumenty.html"><b>Dokumenty</b><span class="small">Wzory umów i szablony.</span></a>
+        <a class="app" href="chat.html"><b>Komunikator</b><span class="small">Zespołowy czat + załączniki.</span></a>
         <a class="app" href="ustawienia.html"><b>Ustawienia</b><span class="small">Preferencje, wydruk do PDF.</span></a>
-        <a class="app" href="baza.html"><b>Baza</b><span class="small">Podgląd i czyszczenie pamięci lokalnej.</span></a>
-        <a class="app" href="kalkulator.html" target="_blank" rel="noopener"><b>Kalkulator</b><span class="small">Symulacje i kosztorysy (otwiera nowe okno).</span></a>
+        <a class="app" href="baza.html"><b>Baza</b><span class="small">Podgląd pamięci lokalnej.</span></a>
+        <a class="app" href="kalkulator.html" target="_blank" rel="noopener"><b>Kalkulator</b><span class="small">Symulacje i kosztorysy.</span></a>
       </div>
     </div>
 
-    <!-- Kalendarz / nadchodzące -->
+    <!-- Statystyki komponentów -->
     <div class="card">
-      <b>Kalendarz (mini) i nadchodzące</b>
-      <div class="canvas-box"><canvas id="cnvCalendar" width="560" height="240"></canvas></div>
-      <ul id="upcoming" class="list-reset small" style="margin-top:6px"></ul>
+      <b>Komponenty — szybki podgląd</b>
+      <div class="grid-2 small" style="margin-top:6px">
+        <div>Pompy: <b id="cmp_pumps">0</b></div>
+        <div>Piece/Kotły: <b id="cmp_boilers">0</b></div>
+        <div>Fotowoltaika: <b id="cmp_pv">0</b></div>
+        <div>Ocieplenie: <b id="cmp_insul">0</b></div>
+        <div>Bramy: <b id="cmp_garage">0</b></div>
+      </div>
+      <div class="right" style="margin-top:8px">
+        <a class="btn ghost" href="komponenty.html">Otwórz komponenty</a>
+      </div>
     </div>
 
-    <!-- Notatki / log -->
+    <!-- Notatki -->
     <div class="card">
       <b>Szybka notatka</b>
       <textarea id="note" placeholder="Twoja notatka (zapisuje się lokalnie)" style="width:100%;min-height:100px;margin-top:8px"></textarea>
-      <div class="right" style="margin-top:8px">
-        <button id="btnClearNote" class="btn ghost">Wyczyść</button>
-      </div>
+      <div class="right" style="margin-top:8px"><button id="btnClearNote" class="btn ghost">Wyczyść</button></div>
       <div class="small" style="margin-top:6px">Przechowywane w <code>localStorage</code> (klucz: <code>arkon_note</code>).</div>
     </div>
   </aside>
 </div>
 
+<!-- ===== LOCK / LOGIN (tylko dla pulpitu) ===== -->
+<div id="lock" class="open" aria-modal="true" role="dialog">
+  <form id="loginForm" class="login-panel" autocomplete="off">
+    <h2>🔒 ARKON CRM — logowanie</h2>
+    <div class="muted">Zabezpieczony dostęp do pulpitu (pozostałe moduły bez hasła).</div>
+    <div class="row" style="gap:10px;align-items:center;margin:8px 0">
+      <div class="avatar" id="lpAvatar" aria-hidden="true">A</div>
+      <div class="small" id="lpWelcome">Witaj! Zaloguj się, aby przejść do panelu.</div>
+    </div>
+    <div style="display:grid;gap:8px;margin-top:6px">
+      <label class="small">Użytkownik</label>
+      <input id="loginUser" class="field" inputmode="email" placeholder="np. użytkownik" aria-label="Użytkownik" required>
+      <label class="small">Hasło</label>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:6px">
+        <input id="loginPass" class="field" type="password" placeholder="••••••••" aria-label="Hasło" required>
+        <button type="button" id="togglePass" class="btn ghost" aria-label="Pokaż/ukryj hasło">👁</button>
+      </div>
+      <div class="row-sb">
+        <label class="small" style="display:flex;align-items:center;gap:6px">
+          <input id="rememberMe" type="checkbox"> Pamiętaj mnie (7 dni)
+        </label>
+        <button type="button" id="forgot" class="link-like">Zapomniałeś hasła?</button>
+      </div>
+      <div id="err" class="err"></div>
+      <button class="btn ok" type="submit">Zaloguj</button>
+      <div class="small" style="text-align:center;opacity:.85">lub</div>
+      <div class="social">
+        <button type="button" id="loginGoogle" class="btn icon g">G Zaloguj przez Google</button>
+        <button type="button" id="loginFacebook" class="btn icon f">f Zaloguj przez Facebook</button>
+      </div>
+    </div>
+  </form>
+</div>
+
 <script>
 'use strict';
 
-/* ===== auth / login ===== */
-const AUTH_KEY = 'arkon_auth_token_v1';     // 'ok' or session token
-const AUTH_USER = 'arkon_auth_user_v1';     // {name, provider, remember}
-const LOCAL_USER = { name:'Arkon2', pass:'Szybkakasa' };
-
+/* ===== helpers ===== */
 const $  = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
-
-function showApp(show){
-  $('#login').hidden = show;
-  $('#hdr').hidden = !show;
-  $('#nav').hidden = !show;
-  $('#app').hidden = !show;
-}
-function setUserBadge(name){
-  $('#userName').textContent = name || '—';
-  const init = (name||'A').trim().slice(0,2).toUpperCase();
-  $('#avatar').textContent = init;
-}
-
-function authBoot(){
-  const tok = localStorage.getItem(AUTH_KEY) || sessionStorage.getItem(AUTH_KEY);
-  const usr = JSON.parse(localStorage.getItem(AUTH_USER) || sessionStorage.getItem(AUTH_USER) || 'null');
-  if(tok === 'ok' && usr){
-    setUserBadge(usr.name);
-    showApp(true);
-  }else{
-    // prefill user
-    $('#lg_user').value = LOCAL_USER.name;
-    showApp(false);
-  }
-}
-
-$('#btnLogin').addEventListener('click', ()=>{
-  const u = $('#lg_user').value.trim();
-  const p = $('#lg_pass').value;
-  const remember = $('#lg_rem').checked;
-  if(u === LOCAL_USER.name && p === LOCAL_USER.pass){
-    const store = remember ? localStorage : sessionStorage;
-    store.setItem(AUTH_KEY, 'ok');
-    store.setItem(AUTH_USER, JSON.stringify({name:u, provider:'local', remember}));
-    setUserBadge(u);
-    showApp(true);
-  }else{
-    alert('❌ Błędne dane. Użyj: Arkon2 / Szybkakasa');
-  }
-});
-
-$('#btnGoogle').addEventListener('click', ()=>{
-  const remember = $('#lg_rem').checked;
-  const store = remember ? localStorage : sessionStorage;
-  store.setItem(AUTH_KEY, 'ok');
-  store.setItem(AUTH_USER, JSON.stringify({name:'Użytkownik Google', provider:'google', remember}));
-  setUserBadge('Użytkownik Google');
-  showApp(true);
-});
-
-$('#btnFacebook').addEventListener('click', ()=>{
-  const remember = $('#lg_rem').checked;
-  const store = remember ? localStorage : sessionStorage;
-  store.setItem(AUTH_KEY, 'ok');
-  store.setItem(AUTH_USER, JSON.stringify({name:'Użytkownik Facebook', provider:'facebook', remember}));
-  setUserBadge('Użytkownik Facebook');
-  showApp(true);
-});
-
-$('#btnForgot').addEventListener('click', ()=>{
-  alert('Reset hasła jest lokalny — ustawione hasło to: "Szybkakasa". W wersji produkcyjnej wymagany backend dla resetu e-mail.');
-});
-
-$('#btnLogout').addEventListener('click', ()=>{
-  localStorage.removeItem(AUTH_KEY);
-  localStorage.removeItem(AUTH_USER);
-  sessionStorage.removeItem(AUTH_KEY);
-  sessionStorage.removeItem(AUTH_USER);
-  location.reload();
-});
-$('#btnLock').addEventListener('click', ()=>{
-  // blokada bieżącej sesji (bez kasowania "remember me")
-  sessionStorage.removeItem(AUTH_KEY);
-  sessionStorage.removeItem(AUTH_USER);
-  showApp(false);
-});
-
-/* ===== helpers ===== */
 const INT = new Intl.NumberFormat('pl-PL',{maximumFractionDigits:0});
 const fmt = n => INT.format(Math.round(Number(n)||0));
 const fmtDate = ts => new Date(ts||Date.now()).toLocaleString('pl-PL');
+function escapeHtml(s){ return (s==null?'':String(s)).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
+/* ===== storage keys (zgodne z innymi stronami) ===== */
 const LS = {
   clients: 'arkon_clients_v1',
   leads:   'arkon_leads_v1',
@@ -331,25 +263,148 @@ const LS = {
     insul:  'arkon_cmp_insul_v1',
     garage: 'arkon_cmp_garage_v1'
   },
-  note: 'arkon_note'
+  note: 'arkon_note',
+  authToken: 'arkon_auth_token_v1',     // localStorage (remember me)
+  authSession: 'arkon_auth_session_v1'  // sessionStorage (bez remember)
 };
 
-function load(key, fallback){
-  try{ return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }catch{ return fallback; }
+/* ======== AUTH (local-only, hashed) ========
+   Do logowania używamy porównania SHA-256 (SubtleCrypto).
+   Domyślne dane (nie ujawniamy wprost): użytkownik "Arkon2", hasło "Szybkakasa".
+   Poniżej zapisane są wyłącznie hashe SHA-256 tych wartości.
+*/
+const USER_HASH = 'cc6c7f1d16552c14bc8aaa46f3f869743c08c26d7e3c66fd58ee6c304cf5d5ac'; // sha256("Arkon2")
+const PASS_HASH = '2fdc3bfddb6c06d9572b7a69c5012742b63d83a1f01c5254dc1fd0fa33352a93'; // sha256("Szybkakasa")
+
+async function sha256Hex(str){
+  const enc = new TextEncoder().encode(str);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  const arr = Array.from(new Uint8Array(buf));
+  return arr.map(b=>b.toString(16).padStart(2,'0')).join('');
 }
-function escapeHtml(s){ return (s==null?'':String(s)).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-function statusClass(s){
-  switch((s||'').toUpperCase()){
-    case 'LEAD': return 'lead';
-    case 'ZAPYTANIE': return 'q';
-    case 'W TOKU': return 'w';
-    case 'KLIENT': return 'c';
-    case 'UTRACONY': return 'l';
-    default: return '';
-  }
+function isTokenValid(obj){
+  if(!obj) return false;
+  const now = Date.now();
+  return typeof obj==='object' && obj.exp && obj.exp>now && obj.user && obj.sig;
+}
+function genSig(userHash, passHash){ // prosta sygnatura lokalna
+  return btoa(userHash.slice(0,16) + ':' + passHash.slice(-16) + ':' + Date.now());
+}
+function setAvatarFromName(name, el){
+  const letter = (name||'A').trim().charAt(0).toUpperCase() || 'A';
+  el.textContent = letter;
 }
 
+/* ====== LOCK / LOGIN HANDLERS ====== */
+const lock = $('#lock');
+const loginForm = $('#loginForm');
+const loginUser = $('#loginUser');
+const loginPass = $('#loginPass');
+const rememberMe = $('#rememberMe');
+const errBox = $('#err');
+
+$('#togglePass').addEventListener('click', ()=>{
+  loginPass.type = loginPass.type==='password' ? 'text' : 'password';
+});
+
+$('#forgot').addEventListener('click', ()=>{
+  const u = prompt('Podaj swój identyfikator użytkownika (np. e-mail lub login). Wyślemy lokalny reset (symulacja):');
+  if(!u) return;
+  alert('Instrukcje resetu hasła zostały wysłane (symulacja offline).'); // w produkcji: backend
+});
+
+$('#loginGoogle').addEventListener('click', ()=>{
+  // symulacja: ustawiamy użytkownika i token (ważny 7 dni)
+  const name='Google User';
+  const token = { user: name, exp: Date.now()+7*24*3600*1000, sig: genSig(USER_HASH,PASS_HASH), idp:'google' };
+  localStorage.setItem(LS.authToken, JSON.stringify(token));
+  afterLogin(name, true);
+});
+$('#loginFacebook').addEventListener('click', ()=>{
+  const name='Facebook User';
+  const token = { user: name, exp: Date.now()+7*24*3600*1000, sig: genSig(USER_HASH,PASS_HASH), idp:'facebook' };
+  localStorage.setItem(LS.authToken, JSON.stringify(token));
+  afterLogin(name, true);
+});
+
+loginForm.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  errBox.textContent='';
+  const uh = await sha256Hex(loginUser.value || '');
+  const ph = await sha256Hex(loginPass.value || '');
+  if(uh===USER_HASH && ph===PASS_HASH){
+    const name = loginUser.value || 'Użytkownik';
+    const token = { user: name, exp: Date.now() + (rememberMe.checked? 7*24*3600*1000 : 2*3600*1000), sig: genSig(uh,ph) };
+    if(rememberMe.checked){
+      localStorage.setItem(LS.authToken, JSON.stringify(token));
+      sessionStorage.removeItem(LS.authSession);
+    }else{
+      sessionStorage.setItem(LS.authSession, JSON.stringify(token));
+      // czyść ewentualny stary long token
+      localStorage.removeItem(LS.authToken);
+    }
+    afterLogin(name, rememberMe.checked);
+  }else{
+    errBox.textContent = 'Nieprawidłowe dane logowania.';
+    loginForm.classList.remove('shake'); void loginForm.offsetWidth; loginForm.classList.add('shake');
+    loginPass.value='';
+    loginPass.focus();
+  }
+});
+
+function afterLogin(name, persisted){
+  lock.classList.remove('open');
+  document.body.style.overflow = '';
+  // ustaw userbar
+  $('#ubName').textContent = name;
+  setAvatarFromName(name, $('#ubAvatar'));
+  // opcjonalnie: przekierowanie wewnątrz (jesteśmy na panelu)
+  // można też dodać #panel; tu tylko fokus.
+  $('#panel').setAttribute('tabindex','-1');
+  $('#panel').focus({preventScroll:true});
+}
+
+/* autologin */
+(function autoLogin(){
+  try{
+    const rawL = localStorage.getItem(LS.authToken);
+    const rawS = sessionStorage.getItem(LS.authSession);
+    const obj = rawL ? JSON.parse(rawL) : rawS ? JSON.parse(rawS) : null;
+    if(isTokenValid(obj)){
+      $('#ubName').textContent = obj.user || 'Użytkownik';
+      setAvatarFromName(obj.user, $('#ubAvatar'));
+      lock.classList.remove('open');
+      document.body.style.overflow = '';
+    }else{
+      lock.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+  }catch{
+    lock.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+})();
+
+/* Blokuj/wyloguj */
+$('#btnLock').addEventListener('click', ()=>{
+  lock.classList.add('open');
+  document.body.style.overflow = 'hidden';
+});
+$('#btnLogout').addEventListener('click', ()=>{
+  if(confirm('Wylogować z pulpitu?')){
+    localStorage.removeItem(LS.authToken);
+    sessionStorage.removeItem(LS.authSession);
+    lock.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    loginUser.value=''; loginPass.value=''; rememberMe.checked=false;
+    $('#ubName').textContent = 'Gość';
+    setAvatarFromName('A', $('#ubAvatar'));
+  }
+});
+
 /* ===== KPI ===== */
+function load(key, fallback){ try{ return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }catch{ return fallback; } }
+
 function refreshKPI(){
   const clients = load(LS.clients, []);
   const leads   = load(LS.leads,   []);
@@ -361,15 +416,12 @@ function refreshKPI(){
   $('#kpiLeads').textContent   = leads.length;
   $('#kpiComp').textContent    = cmpSum;
 
-  // listy
-  renderRecentClients();
-  renderRecentLeads();
-
-  // wizualizacje
-  drawFunnel(leads);
-  drawContractsByMonth(clients);
-  drawMiniCalendar();
-  listUpcoming(clients, leads);
+  // komponenty by cat
+  $('#cmp_pumps').textContent  = load(LS.cmp.pumps, []).length;
+  $('#cmp_boilers').textContent= load(LS.cmp.boilers, []).length;
+  $('#cmp_pv').textContent     = load(LS.cmp.pv, []).length;
+  $('#cmp_insul').textContent  = load(LS.cmp.insul, []).length;
+  $('#cmp_garage').textContent = load(LS.cmp.garage, []).length;
 }
 
 /* ===== Recent Clients ===== */
@@ -424,9 +476,20 @@ function initNote(){
   });
 }
 
+/* ===== utils ===== */
+function statusClass(s){
+  switch((s||'').toUpperCase()){
+    case 'LEAD': return 'lead';
+    case 'ZAPYTANIE': return 'q';
+    case 'W TOKU': return 'w';
+    case 'KLIENT': return 'c';
+    case 'UTRACONY': return 'l';
+    default: return '';
+  }
+}
+
 /* ===== keyboard shortcuts ===== */
 window.addEventListener('keydown', (e)=>{
-  if($('#login') && !$('#login').hidden){ return; } // w trybie logowania ignoruj skróty pulpitu
   // / -> przejście do Klienci
   if(e.key === '/'){
     e.preventDefault();
@@ -439,138 +502,14 @@ window.addEventListener('keydown', (e)=>{
   }
 });
 
-/* ===== Wizualizacje (bez bibliotek) ===== */
-function drawFunnel(leads){
-  const ctx = $('#cnvFunnel').getContext('2d');
-  // policz wg statusów
-  const order = ['NOWY','KONTAKT','QUALIFIED','OFERTA','WYGRANY','PRZEGRANY'];
-  const counts = Object.fromEntries(order.map(s=>[s,0]));
-  (leads||[]).forEach(l=>{ const s=(l.status||'').toUpperCase(); if(counts[s]!=null) counts[s]++; });
-  // rysuj trapezy
-  const W=ctx.canvas.width, H=ctx.canvas.height; ctx.clearRect(0,0,W,H);
-  const max = Math.max(1, ...Object.values(counts));
-  const levels = order.map((s,i)=>({label:s, val:counts[s], w: (W*0.9) * (0.3 + 0.7*(counts[s]/max)), color:['#3751ff','#2bb673','#ffa900','#00bcd4','#8bc34a','#ff6b6b'][i]}));
-  let y=20, h=(H-40)/levels.length - 6;
-  ctx.textBaseline='middle'; ctx.font='13px system-ui';
-  levels.forEach(l=>{
-    const x=(W-l.w)/2;
-    ctx.fillStyle=l.color; roundedRect(ctx, x,y,l.w,h,10); ctx.fill();
-    ctx.fillStyle='#e8edff'; ctx.fillText(l.label+': '+l.val, 16, y+h/2);
-    y+=h+6;
-  });
-  // legenda mini
-  ctx.fillStyle='#aeb8da'; ctx.fillText('Lejek leadów', W-140, 14);
-}
-function roundedRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+/* ===== boot ===== */
+refreshKPI();
+renderRecentClients();
+renderRecentLeads();
+initNote();
 
-function drawContractsByMonth(clients){
-  const ctx = $('#cnvContracts').getContext('2d');
-  const W=ctx.canvas.width, H=ctx.canvas.height; ctx.clearRect(0,0,W,H);
-  // zbierz kontrakty "podpisana" z klientów.projects[].contracts[]
-  const now = new Date();
-  const buckets = Array.from({length:12}, (_,i)=>{
-    const d = new Date(now.getFullYear(), now.getMonth()-11+i, 1);
-    return { key: d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'), label: d.toLocaleString('pl-PL',{month:'short'}), val:0 };
-  });
-  const map = Object.fromEntries(buckets.map(b=>[b.key,b]));
-  (clients||[]).forEach(c=>{
-    (c.projects||[]).forEach(p=>{
-      (p.contracts||[]).forEach(u=>{
-        if((u.status||'').toLowerCase()==='podpisana'){
-          // jeśli brak daty w umowie, użyj created klienta
-          const dt = new Date(u.date || c.created || Date.now());
-          const key = dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
-          if(map[key]) map[key].val++;
-        }
-      });
-    });
-  });
-  const vals = buckets.map(b=>b.val);
-  const max = Math.max(1, ...vals);
-  const padL=34, padB=28, padT=16, padR=8;
-  const plotW = W - padL - padR, plotH = H - padT - padB;
-  // osie
-  ctx.strokeStyle='#2a3a75'; ctx.lineWidth=1; ctx.beginPath();
-  ctx.moveTo(padL, padT); ctx.lineTo(padL, padT+plotH); ctx.lineTo(padL+plotW, padT+plotH); ctx.stroke();
-  // słupki
-  const barW = plotW / buckets.length * 0.7;
-  buckets.forEach((b,i)=>{
-    const x = padL + i*(plotW/buckets.length) + (plotW/buckets.length - barW)/2;
-    const h = (b.val/max) * (plotH-6);
-    const y = padT + plotH - h;
-    ctx.fillStyle='#4cc9f0'; ctx.fillRect(x,y,barW,h);
-    // etykiety X
-    ctx.fillStyle='#aeb8da'; ctx.font='11px system-ui'; ctx.textAlign='center';
-    ctx.fillText(b.label, x+barW/2, padT+plotH+14);
-  });
-  // etykieta Y (maks)
-  ctx.fillStyle='#aeb8da'; ctx.textAlign='right'; ctx.fillText(String(max), padL-6, padT+6);
-  ctx.textAlign='left'; ctx.fillText('Podpisane umowy (12 m-cy)', padL, 12);
-}
-
-/* ===== Kalendarz (mini) ===== */
-function drawMiniCalendar(){
-  const ctx = $('#cnvCalendar').getContext('2d');
-  const W=ctx.canvas.width, H=ctx.canvas.height; ctx.clearRect(0,0,W,H);
-  const d = new Date();
-  const ym = new Date(d.getFullYear(), d.getMonth(), 1);
-  const startDay = (ym.getDay()+6)%7; // pon=0
-  const daysInMonth = new Date(d.getFullYear(), d.getMonth()+1,0).getDate();
-  const cols=7, rows=6, cw=W/cols, ch=H/rows;
-
-  ctx.fillStyle='#aeb8da'; ctx.font='12px system-ui';
-  ['Pn','Wt','Śr','Cz','Pt','So','Nd'].forEach((w,i)=>{
-    ctx.fillText(w, i*cw+6, 14);
-  });
-
-  let day=1;
-  for(let r=0;r<rows;r++){
-    for(let c=0;c<cols;c++){
-      const x=c*cw, y=r*ch+18;
-      ctx.strokeStyle='#2a3a75'; ctx.strokeRect(x+0.5,y+0.5,cw-1,ch-1);
-      const idx=r*cols+c;
-      if(idx>=startDay && day<=daysInMonth){
-        ctx.fillStyle='#e8edff'; ctx.fillText(String(day), x+6, y+16);
-        // zaznacz dziś
-        if(day===d.getDate()){
-          ctx.strokeStyle='#4cc9f0'; ctx.lineWidth=2;
-          ctx.strokeRect(x+2,y+2,cw-4,ch-4);
-          ctx.lineWidth=1;
-        }
-        day++;
-      }
-    }
-  }
-}
-
-/* ===== Nadchodzące (z klientów i leadów) ===== */
-function listUpcoming(clients, leads){
-  const box = $('#upcoming'); box.innerHTML='';
-  const items = [];
-  (clients||[]).forEach(c=>{
-    (c.projects||[]).forEach(p=>{
-      if(p.deadline){ items.push({ t: new Date(p.deadline).getTime(), txt: `Projekt: ${p.name} • ${c.name}` }); }
-      (p.contracts||[]).forEach(u=>{
-        if(u.signBy){ items.push({ t: new Date(u.signBy).getTime(), txt: `Termin podpisania umowy ${u.no||''} • ${c.name}` }); }
-      });
-    });
-  });
-  (leads||[]).forEach(l=>{
-    if(l.followUp){ items.push({ t: new Date(l.followUp).getTime(), txt: `Follow-up: ${l.title}` }); }
-  });
-  items.sort((a,b)=>a.t-b.t);
-  if(!items.length){ box.innerHTML='<li class="small">Brak nadchodzących terminów.</li>'; return; }
-  items.slice(0,8).forEach(it=>{
-    const li=document.createElement('li'); li.textContent = new Date(it.t).toLocaleString('pl-PL')+' — '+it.txt; box.appendChild(li);
-  });
-}
-
-/* ===== init ===== */
-authBoot();
-if(!$('#login').hidden){ /* login visible */ } else {
-  refreshKPI();
-  initNote();
-}
+/* dostępność: focus, Enter w loginie */
+loginUser.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); loginPass.focus(); }});
 </script>
 </body>
 </html>
