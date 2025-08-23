@@ -1,739 +1,133 @@
-
 <!doctype html>
 <html lang="pl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ARKON — Przesył dokumentów / Oferty / Ulotki</title>
-<meta name="description" content="Upload plików powiązanych z klientem, baza ofert i ulotek. Integracja z klientami i komponentami (pompy, piece, PV, ocieplenie, stolarka).">
+<title>ARKON CRM — Oferty</title>
+
+<!-- jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- DOCX -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.3.2/docx.umd.min.js"></script>
+
 <style>
-  @import url(https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2);
-  :root{
-    --bg:#0b1020;--p1:#0f1533;--p2:#121a38;--ink:#e7ecff;--muted:#aeb8da;--line:#223066;
-    --accent:#4cc9f0;--ok:#2fbf71;--bad:#ff6b6b;--warn:#ffb84d;
-    --chip:#0d1530;--chip2:#152056;--field:#0e1330;
-  }
-  *{box-sizing:border-box}
-  html,body{margin:0;height:100%}
-  body{background:linear-gradient(180deg,#0a0f1e,#0c1230 60%,#0a0f1e);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
-  a{color:#cfe1ff;text-decoration:none}
-  header{padding:16px;background:#11183a;border-bottom:1px solid var(--line)}
-  header h1{margin:0;font-size:22px}
-  nav{background:#172142;display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line)}
-  nav a{color:#cfe1ff;text-decoration:none;padding:8px 12px;border-radius:999px;border:1px solid #2a3a75}
-  nav a:hover{background:#223160}
+  :root{--bg:#0b1020;--p1:#0f1533;--p2:#121a38;--ink:#e7ecff;--line:#223066;--accent:#4cc9f0;--ok:#2fbf71;}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui;overflow-x:hidden}
+  header{padding:16px;background:var(--p1);border-bottom:1px solid var(--line)}
+  nav{display:flex;gap:8px;padding:10px;background:var(--p2);border-bottom:1px solid var(--line)}
+  nav a{padding:8px 12px;border-radius:8px;color:var(--accent);cursor:pointer;text-decoration:none}
+  nav a.active{background:var(--accent);color:#fff}
+  .page{display:none;opacity:0;transition:opacity .5s}
+  .page.active{display:block;opacity:1}
   .wrap{max-width:1280px;margin:auto;padding:16px}
-  .grid{display:grid;gap:12px}
-  @media(min-width:1100px){ .cols-2{grid-template-columns:1.3fr 1fr} .cols-3{grid-template-columns:1fr 1fr 1fr} }
-  .card{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;padding:14px}
+  .card{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-  .right{display:flex;gap:8px;justify-content:flex-end}
-  .small{font-size:12px;color:var(--muted)}
-  .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
-  .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
-  .btn.ghost{background:transparent;border:1px dashed #3a4ca3}
-  .btn.ok{background:#194d34;border-color:#2e925e}
-  .btn.bad{background:#3a1f2a;border-color:#7b3341}
-  .btn.warn{background:#4a361e;border-color:#8a6b30}
-  input,select,textarea{background:var(--field);border:1px solid #28356c;border-radius:10px;padding:8px 10px;color:var(--ink);font:inherit}
-  input::placeholder{color:#aeb8da99}
-  textarea{min-height:80px;resize:vertical}
-  .table{width:100%;border-collapse:separate;border-spacing:0}
-  .table th,.table td{padding:9px;border-bottom:1px solid #22325f;text-align:left;vertical-align:top}
-  .scroll{overflow:auto}
-  .status{padding:2px 8px;border-radius:999px;background:#0f1a44;border:1px solid #2a3a75;font-size:12px}
-  .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
-  .drop{border:2px dashed #2a3777;border-radius:10px;padding:14px;text-align:center;cursor:pointer;background:#0c1230}
-  .drop.drag{background:#10183b}
-  .file-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid #2a3777;border-radius:999px;margin:4px 6px 0 0}
-  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px}
-  .tabs .tab{padding:6px 10px;border-radius:999px;border:1px solid #2a3a75;cursor:pointer}
-  .tabs .tab[aria-selected="true"]{background:#1b2550;border-color:#67a1ff}
-  .hl{outline:2px solid #67a1ff33}
-  .tag{display:inline-block;margin:2px 6px 0 0;padding:3px 8px;border:1px solid #3a4ca3;border-radius:999px;font-size:12px}
-  .empty{opacity:.8;border:1px dashed #2b3a77;border-radius:10px;padding:10px;text-align:center}
-  @media print{ nav,.btn,.drop,.tabs,.right{display:none!important} .wrap{padding:0} }
+  .btn{background:var(--accent);border:none;color:#fff;border-radius:10px;padding:8px 14px;cursor:pointer}
+  .btn.ok{background:var(--ok)}.btn.bad{background:#e33}.btn.ghost{background:transparent;border:1px dashed var(--accent);color:var(--accent)}
+  table{width:100%;border-collapse:collapse}td,th{padding:6px;border:1px solid var(--line)}
+  th{background:#223066;color:#fff}
+  .scroll{overflow:auto;max-height:260px}
+  canvas{border:2px solid var(--line);border-radius:8px;background:#fff}
 </style>
 </head>
 <body>
-<header>
-  <h1>Przesył dokumentów • ARKON CRM</h1>
-  <div class="small">Powiąż pliki z klientami, buduj <b>oferty</b>, prowadź bazę <b>ulotek</b>. Integracja z komponentami (Pompy, Piece, PV, Ocieplenie, Stolarka).</div>
-</header>
-<label class="btn">Dodaj pliki… <input id="inFiles" type="file" multiple hidden></label>
-
-<!-- DOPISZ TE 2 ELEMENTY TUŻ ZA powyższą linią -->
-<label class="pill" style="cursor:pointer">
-  <input id="toCloud" type="checkbox" checked>
-  Wyślij do chmury (Supabase)
-</label>
-<span id="cloudState" class="pill">Chmura: niepołączono</span>
+<header><h1>ARKON CRM — Oferty Premium</h1></header>
 <nav>
-  <a href="index.html">Pulpit</a>
-  <a href="klienci.html">Klienci</a>
-  <a href="komponenty-pompy.html">Pompy</a>
-  <a href="komponenty-piece.html">Piece</a>
-  <a href="komponenty-fotowoltaika.html">Fotowoltaika</a>
-  <a href="komponenty-ocieplenie.html">Ocieplenie</a>
-  <a href="komponenty-stolarka.html">Stolarka</a>
-  <a href="chat.html">Komunikator</a>
-  <a href="ustawienia.html">Ustawienia</a>
+  <a data-page="offers" class="active">📑 Oferty</a>
+  <a data-page="logo">🏷 Logo</a>
+  <a data-page="signClient">✍ Podpis Klienta</a>
+  <a data-page="signRep">✍ Podpis Przedstawiciela</a>
 </nav>
 
-<div class="wrap grid cols-2">
-  <!-- LEWA: PLIKI -->
+<div id="offers" class="page active wrap">
   <section class="card">
-    <h2 style="margin:0 0 8px">Pliki klienta (IndexedDB)</h2>
+    <h2>📑 Oferty</h2>
     <div class="row">
-      <select id="selClient" title="Klient" style="min-width:280px"></select>
-      <select id="selCat">
-        <option>Umowa z firmą</option>
-        <option>Audyt</option>
-        <option>Dokument do audytu Czyste Powietrze</option>
-        <option>Audyt rozprowadzenia instalacji</option>
-        <option>Pomiary budynku</option>
-        <option>Rzut budynku</option>
-        <option>Zdjęcia kotłowni</option>
-        <option>Faktura za prąd</option>
-        <option>Zdjęcia falownika</option>
-        <option>Zdjęcia budynku</option>
-        <option>Oferta (PDF)</option>
-        <option>Ulotka</option>
-        <option>Inne</option>
-      </select>
-      <input id="tags" placeholder="tagi, przecinkami">
-      <label class="btn">Dodaj pliki… <input id="inFiles" type="file" multiple hidden></label>
-      <button id="btnRefresh" class="btn ghost">Odśwież</button>
+      <input id="clientName" placeholder="Nazwa klienta">
+      <input id="offTitle" placeholder="Tytuł oferty">
+      <button id="offAdd" class="btn">+ Pozycja</button>
+      <button id="offPdf" class="btn">⬇ PDF</button>
+      <button id="offDocx" class="btn ghost">⬇ Word</button>
     </div>
-    <div class="small" style="margin:6px 0">Pliki zapisują się lokalnie w IndexedDB. Eksport/Import zawiera też same pliki.</div>
-
-    <div class="card" style="padding:10px;margin-top:8px">
-      <div class="row" style="margin-bottom:6px">
-        <input id="qFiles" placeholder="🔎 filtr: nazwa/typ/kategoria/tag/klient…" style="min-width:260px">
-        <select id="fCat"><option value="">Kategoria (wszystkie)</option></select>
-        <button id="btnClear" class="btn ghost">Wyczyść filtr</button>
-        <span class="pill">Widocznych: <b id="filesVis">0</b></span>
-      </div>
-      <div class="scroll" style="max-height:360px">
-        <table class="table" id="tblFiles">
-          <thead>
-            <tr>
-              <th>Akcje</th><th>Nazwa</th><th>Klient</th><th>Kategoria</th><th>Tagi</th><th>Typ</th><th>Rozmiar</th><th>Data</th>
-            </tr>
-          </thead>
-          <tbody id="tbFiles"></tbody>
-        </table>
-      </div>
-    </div>
+    <div class="scroll"><table><thead><tr><th>Pozycja</th><th>Ilość</th><th>Cena</th><th>Razem</th></tr></thead><tbody id="tblOffer"></tbody></table></div>
   </section>
+</div>
 
-  <!-- PRAWA: OFERTY + ULOTKI -->
-  <section class="grid">
-    <div class="card">
-      <h2 style="margin:0 0 8px">Oferty klienta</h2>
-      <div class="row">
-        <select id="offClient" style="min-width:280px"></select>
-        <input id="offTitle" placeholder="Tytuł oferty (np. PV 6 kWp + magazyn 10 kWh)">
-        <button id="offNew" class="btn ok">+ Nowa oferta</button>
-        <button id="offExport" class="btn ghost">Eksport JSON</button>
-        <label class="btn ghost">Import JSON <input id="offImport" type="file" accept="application/json" hidden></label>
-      </div>
-
-      <div class="tabs" role="tablist" aria-label="Źródła pozycji">
-        <button class="tab" data-tab="builder" aria-selected="true">🔧 Edytor pozycji</button>
-        <button class="tab" data-tab="components">📦 Komponenty (z innych stron)</button>
-        <button class="tab" data-tab="list">📑 Lista ofert</button>
-      </div>
-
-      <!-- BUILDER -->
-      <div id="tab-builder">
-        <div class="row small"><span class="pill">Pozycje: <b id="cntItems">0</b></span><span class="pill">Suma: <b id="sumItems">0 zł</b></span></div>
-        <div class="scroll" style="max-height:260px">
-          <table class="table">
-            <thead><tr>
-              <th>Akcje</th><th>Kategoria</th><th>Marka/Model</th><th>Specyfikacja</th>
-              <th>Ilość</th><th>Cena netto [zł]</th><th>Rabat %</th><th>Razem [zł]</th>
-            </tr></thead>
-            <tbody id="offBody"></tbody>
-          </table>
-        </div>
-        <div class="right" style="margin-top:6px">
-          <button id="offAddRow" class="btn">+ Pozycja</button>
-          <button id="offSave" class="btn ok">💾 Zapisz ofertę</button>
-        </div>
-      </div>
-
-      <!-- KOMPONENTY -->
-      <div id="tab-components" hidden>
-        <div class="row">
-          <select id="compCat">
-            <option value="pv">Fotowoltaika</option>
-            <option value="pumps">Pompy ciepła</option>
-            <option value="boilers">Piece / kotły</option>
-            <option value="insul">Ocieplenie</option>
-            <option value="windows">Stolarka</option>
-          </select>
-          <input id="compQ" placeholder="🔎 szukaj w komponentach">
-          <button id="compAddSel" class="btn">+ Dodaj zaznaczone do oferty</button>
-          <span class="pill">Widocznych: <b id="compVis">0</b></span>
-        </div>
-        <div class="scroll" style="max-height:260px;margin-top:6px">
-          <table class="table">
-            <thead><tr><th>+</th><th>Marka</th><th>Model</th><th>Spec</th><th>Cena</th></tr></thead>
-            <tbody id="compBody"></tbody>
-          </table>
-        </div>
-        <div class="small">Źródła danych: LocalStorage z poszczególnych stron komponentów. Obsługiwane klucze: <code>arkon_cmp_*.json</code> lub zgodne (np. <code>arkon_cmp_pv_v1</code>).</div>
-      </div>
-
-      <!-- LISTA OFERT -->
-      <div id="tab-list" hidden>
-        <div class="row" style="margin-bottom:6px">
-          <input id="offQ" placeholder="🔎 filtruj po tytule/kliencie">
-          <button id="offClear" class="btn ghost">Wyczyść</button>
-          <span class="pill">Łącznie: <b id="cntOffers">0</b></span>
-        </div>
-        <div class="scroll" style="max-height:240px">
-          <table class="table"><thead><tr>
-            <th>Akcje</th><th>Tytuł</th><th>Klient</th><th>Pozycji</th><th>Suma [zł]</th><th>Data</th>
-          </tr></thead><tbody id="offList"></tbody></table>
-        </div>
-      </div>
+<div id="logo" class="page wrap">
+  <section class="card">
+    <h2>🏷 Logo firmy</h2>
+    <div class="row">
+      <input type="file" id="logoFile" accept="image/*">
+      <button id="saveLogo" class="btn ok">💾 Zapisz logo</button>
     </div>
+    <p>Aktualne logo:</p>
+    <img id="logoPreview" src="" alt="brak" style="max-height:100px;background:#fff;padding:6px;border-radius:8px">
+  </section>
+</div>
 
-    <div class="card">
-      <h2 style="margin:0 0 8px">Ulotki z ofertami</h2>
-      <div class="row">
-        <select id="flyClient" style="min-width:280px"></select>
-        <input id="flyTitle" placeholder="Tytuł ulotki / kampanii">
-        <input id="flySource" placeholder="Kanał (np. FB, Google, druk)">
-        <label class="btn">Dodaj plik ulotki… <input id="flyFile" type="file" accept=".pdf,image/*" hidden></label>
-        <button id="flyAdd" class="btn ok">+ Dodaj ulotkę</button>
-      </div>
-      <div class="small" style="margin:6px 0">Ulotka zapisuje się jako rekord + (opcjonalnie) plik w IndexedDB. Możesz dołączać wiele ulotek do klienta lub zostawić bez przypisania.</div>
-      <div class="scroll" style="max-height:260px">
-        <table class="table">
-          <thead><tr><th>Akcje</th><th>Tytuł</th><th>Klient</th><th>Kanał</th><th>Plik</th><th>Data</th></tr></thead>
-          <tbody id="flyBody"></tbody>
-        </table>
-      </div>
+<div id="signClient" class="page wrap">
+  <section class="card">
+    <h2>✍ Podpis Klienta</h2>
+    <canvas id="signPadClient" width="400" height="150"></canvas>
+    <div class="row">
+      <button class="btn bad" onclick="clearPad('Client')">🗑 Wyczyść</button>
+      <button class="btn ok" onclick="savePad('Client')">💾 Zapisz podpis</button>
     </div>
+    <img id="signPreviewClient" src="" style="max-height:100px;background:#fff;padding:6px;border-radius:8px">
+  </section>
+</div>
+
+<div id="signRep" class="page wrap">
+  <section class="card">
+    <h2>✍ Podpis Przedstawiciela</h2>
+    <canvas id="signPadRep" width="400" height="150"></canvas>
+    <div class="row">
+      <button class="btn bad" onclick="clearPad('Rep')">🗑 Wyczyść</button>
+      <button class="btn ok" onclick="savePad('Rep')">💾 Zapisz podpis</button>
+    </div>
+    <img id="signPreviewRep" src="" style="max-height:100px;background:#fff;padding:6px;border-radius:8px">
   </section>
 </div>
 
 <script>
-  // ===== SUPABASE: konfiguracja uploadu umów =====
-  const {SUPA_URL= 'https://phxxjirqlktzcwnygaha.supabase.co', SUPA_KEY = 'sb_publishable_iOXdu9fUGGko3MqPmltAag_ZbPUxp4r'} = window;
-  const supa = window.supabase.createClient(SUPA_URL, SUPA_KEY);
-
-
-const BUCKET = 'umowy'; // utwórz w Storage
-// opcjonalny identyfikator „konta” (żeby rozdzielać pliki między arkon-crm / pawel itd.)
-const ACCOUNT_ID = (localStorage.getItem('arkon_account_id') || 'arkon-crm').toLowerCase();
-
-// UI status chmury
-function setCloudState(txt, ok){
-  const el = document.getElementById('cloudState');
-  if(!el) return;
-  el.textContent = txt;
-  el.style.borderColor = ok ? '#2e925e' : '#7b3341';
-  el.style.background = ok ? '#0f2c22' : '#2e1117';
-}
-
-// proste „ping” – sprawdzamy, czy bucket istnieje/odczyt działa
-async function supaPing(){
-  try{
-    const { data, error } = await supa.storage.from(BUCKET).list('', { limit: 1 });
-    if(error) throw error;
-    setCloudState('Chmura: połączono ✓', true);
-  }catch(e){
-    setCloudState('Chmura: błąd (sprawdź bucket/polityki)', false);
-    console.warn('Supabase ping error:', e);
-  }
-}
-supaPing();
-
-// bezpieczna nazwa pliku
-function safeName(name){
-  return String(name || 'plik')
-    .normalize('NFKD').replace(/[^\w.\-]+/g,'').replace(/+/g,'_').toLowerCase();
-}
-
-// ścieżka: upload/<clientId|bez-klienta>/<ISO>_<plik>
-function buildPath({clientId, file}){
-  const who  = (clientId || 'bez-klienta').toLowerCase();
-  const ts   = new Date().toISOString().replace(/[:.]/g,'-');
-  return upload/${who}/${ts}_${safeName(file.name)};
-}
-
-// faktyczny upload do Supabase + wpis metadanych (opcjonalny)
-async function uploadToSupabase({file, clientId, clientName, category, tags}){
-  const path = buildPath({clientId, file});
-
-  // 1) wgrywamy do Storage
-  const { error: upErr } = await supa
-    .storage.from(BUCKET)
-    .upload(path, file, { upsert:true, cacheControl:'3600', contentType: file.type || 'application/octet-stream' });
-
-  if (upErr) throw upErr;
-
-  // 2) publiczny URL do podglądu
-  const { data: pub } = supa.storage.from(BUCKET).getPublicUrl(path);
-  const file_url = pub?.publicUrl || null;
-
-  // 3) zapis metadanych (jeśli masz tabelę public.files – patrz SQL na końcu)
-  //    jeśli nie masz tej tabeli, możesz ten blok pominąć lub zostawić – po prostu zignoruje błąd
-  try{
-    await supa.from('files').insert({
-      account_id: ACCOUNT_ID,
-      client_id:  clientId || '',
-      client_name: clientName || '',
-      category:   category || '',
-      tags:       tags || '',
-      file_name:  file.name,
-      file_path:  path,
-      file_url:   file_url,
-      author:     ACCOUNT_ID,
-      uploaded_at: new Date().toISOString()
-    });
-  }catch(e){
-    // brak tabeli 'files' – to tylko metadane, więc nie przerywamy
-    console.info('files meta insert skipped/failed:', e?.message || e);
-  }
-
-  return { path, file_url };
-}
-</cript>
-
-`use strict`;
-
-/* ===== helpers ===== */
+'use strict';
 const $=s=>document.querySelector(s);
-const $$=s=>Array.from(document.querySelectorAll(s));
-const INT0=new Intl.NumberFormat('pl-PL',{maximumFractionDigits:0});
-const fmt=n=>isFinite(n)?INT0.format(Math.round(n)):'—';
-const bytes=n=>n<1024? n+' B' : n<1048576? (n/1024).toFixed(1)+' KB' : n<1073741824? (n/1048576).toFixed(1)+' MB' : (n/1073741824).toFixed(1)+' GB';
-const uid=()=> 'ID_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2);
-function esc(s){return (s||'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
-function debounce(fn,ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms||180); }; }
 
-/* ===== clients (compatible with v1 & v2) ===== */
-function loadClients(){
-  let a=[];
-  try{ a = JSON.parse(localStorage.getItem('arkon_clients_v1')||'[]'); }catch{}
-  if(!Array.isArray(a) || !a.length){
-    try{ a = JSON.parse(localStorage.getItem('arkon_clients_v2')||'[]'); }catch{}
-  }
-  return Array.isArray(a)?a:[];
-}
+/* === SPA: zmiana stron === */
+document.querySelectorAll("nav a").forEach(a=>{
+  a.onclick=()=>{document.querySelectorAll("nav a").forEach(x=>x.classList.remove("active"));a.classList.add("active");
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  $("#"+a.dataset.page).classList.add("active");};
+});
 
-/* ===== components sources (from other pages) ===== */
-const CMP_KEYS = {
-  pv:      ['arkon_cmp_pv_v1','cmp_pv','arkon_components_pv'],
-  pumps:   ['arkon_cmp_pumps_v1','cmp_pumps','arkon_components_pumps'],
-  boilers: ['arkon_cmp_boilers_v1','cmp_boilers','arkon_components_boilers','cmp_piece'],
-  insul:   ['arkon_cmp_insul_v1','cmp_insul','arkon_components_insul','cmp_ocieplenie'],
-  windows: ['arkon_cmp_windows_v1','cmp_windows','arkon_components_windows','cmp_stolarka']
-};
-function loadComponents(cat){
-  const keys = CMP_KEYS[cat]||[];
-  for(const k of keys){
-    try{
-      const v = JSON.parse(localStorage.getItem(k)||'[]');
-      if(Array.isArray(v) && v.length) return v;
-    }catch{}
-  }
-  return [];
-}
-
-/* ===== IndexedDB: files ===== */
+/* === IndexedDB (logo + podpisy) === */
 let db;
-function dbOpen(){
-  return new Promise((res,rej)=>{
-    const r=indexedDB.open('arkonCRM_local',2);
-    r.onupgradeneeded=()=>{const d=r.result; if(!d.objectStoreNames.contains('files')) d.createObjectStore('files',{keyPath:'id'});};
-    r.onsuccess=()=>{db=r.result; res();};
-    r.onerror=()=>rej(r.error);
-  });
-}
-function dbPut(o){return new Promise((res,rej)=>{const tx=db.transaction('files','readwrite'); tx.objectStore('files').put(o); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error);});}
-function dbGet(id){return new Promise((res,rej)=>{const tx=db.transaction('files','readonly'); const rq=tx.objectStore('files').get(id); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error);});}
-function dbAll(){return new Promise((res,rej)=>{const tx=db.transaction('files','readonly'); const rq=tx.objectStore('files').getAll(); rq.onsuccess=()=>res(rq.result||[]); rq.onerror=()=>rej(rq.error);});}
-function dbDel(id){return new Promise((res,rej)=>{const tx=db.transaction('files','readwrite'); tx.objectStore('files').delete(id); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error);});}
+function dbOpen(){return new Promise(res=>{const r=indexedDB.open("arkonCRM_data",1);r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains("logo"))d.createObjectStore("logo");if(!d.objectStoreNames.contains("sign"))d.createObjectStore("sign");};r.onsuccess=()=>{db=r.result;res();};});}
+function dbPut(store,key,val){return new Promise(res=>{const tx=db.transaction(store,"readwrite");tx.objectStore(store).put(val,key);tx.oncomplete=res;});}
+function dbGet(store,key){return new Promise(res=>{const tx=db.transaction(store,"readonly");const rq=tx.objectStore(store).get(key);rq.onsuccess=()=>res(rq.result);});}
 
-/* ===== offers storage ===== */
-const LS_OFFERS = 'arkon_offers_v1'; // {id, clientId, title, at, items:[{cat,brand,model,spec,qty,price,disc}]}
-function loadOffers(){ try{ return JSON.parse(localStorage.getItem(LS_OFFERS)||'[]'); }catch{ return []; } }
-function saveOffers(list){ localStorage.setItem(LS_OFFERS, JSON.stringify(list)); }
+/* === Oferty === */
+let curItems=[];
+function renderOffer(){const tb=$("#tblOffer");tb.innerHTML="";let sum=0;curItems.forEach((it,i)=>{const rowSum=it.qty*it.price;sum+=rowSum;tb.innerHTML+=<tr><td contenteditable oninput="curItems[${i}].name=this.innerText">${it.name}</td><td><input type=number step=1 value=${it.qty} onchange="curItems[${i}].qty=this.value;renderOffer()"></td><td><input type=number step=0.01 value=${it.price} onchange="curItems[${i}].price=this.value;renderOffer()"></td><td>${rowSum.toFixed(2)}</td></tr>});tb.innerHTML+=<tr><th colspan=3>Suma</th><th>${sum.toFixed(2)}</th></tr>;localStorage.setItem("offer_autosave",JSON.stringify({client:$("#clientName").value,title:$("#offTitle").value,items:curItems}));}
+$("#offAdd").onclick=()=>{curItems.push({name:"Pozycja",qty:1,price:0});renderOffer();};
+window.addEventListener("load",async()=>{await dbOpen();const rec=JSON.parse(localStorage.getItem("offer_autosave")||"{}");if(rec.items){curItems=rec.items;$("#clientName").value=rec.client||"";$("#offTitle").value=rec.title||"";renderOffer();}const logo=await dbGet("logo","main");if(logo)$("#logoPreview").src=logo;const sc=await dbGet("sign","Client");if(sc)$("#signPreviewClient").src=sc;const sr=await dbGet("sign","Rep");if(sr)$("#signPreviewRep").src=sr;});
 
-/* ===== flyers storage ===== */
-const LS_FLY = 'arkon_flyers_v1'; // {id, clientId, title, source, at, fileId?, fileName?}
-function loadFlyers(){ try{ return JSON.parse(localStorage.getItem(LS_FLY)||'[]'); }catch{ return []; } }
-function saveFlyers(list){ localStorage.setItem(LS_FLY, JSON.stringify(list)); }
+/* === Logo upload === */
+$("#saveLogo").onclick=async()=>{const f=$("#logoFile").files[0];if(!f)return alert("Wybierz plik");const reader=new FileReader();reader.onload=async()=>{await dbPut("logo","main",reader.result);$("#logoPreview").src=reader.result;alert("Logo zapisane!");};reader.readAsDataURL(f);};
 
-/* ===== clients select fill ===== */
-function fillClients(selIds){
-  const clients = loadClients();
-  selIds.forEach(id=>{
-    const el = document.getElementById(id);
-    if(!el) return;
-    el.innerHTML = '<option value="">(bez przypisania)</option>' + clients.map(c=>`<option value="${c.id}">${esc(c.name||'')}</option>`).join('');
-  });
-}
+/* === Podpisy === */
+function initPad(id){const pad=$("#signPad"+id),ctx=pad.getContext("2d");let drawing=false;pad.addEventListener("mousedown",e=>{drawing=true;ctx.moveTo(e.offsetX,e.offsetY);});pad.addEventListener("mousemove",e=>{if(drawing){ctx.lineTo(e.offsetX,e.offsetY);ctx.stroke();}});pad.addEventListener("mouseup",()=>drawing=false);}
+function clearPad(id){const pad=$("#signPad"+id),ctx=pad.getContext("2d");ctx.clearRect(0,0,pad.width,pad.height);}
+function savePad(id){const pad=$("#signPad"+id);const data=pad.toDataURL("image/png");dbPut("sign",id,data);$("#signPreview"+id).src=data;alert("Podpis "+id+" zapisany!");}
+initPad("Client");initPad("Rep");
 
-/* ===== FILES UI ===== */
-let fileFilter={q:'',cat:''};
-async function handleFiles(files){
-  const clientId = $('#selClient').value || '';
-  const clientName = clientId ? (loadClients().find(c=>c.id===clientId)?.name||'') : '';
-  const category = $('#selCat').value || 'Inne';
-  const tags = $('#tags').value;
-  for(const f of Array.from(files||[])){
-    const id=uid();
-    await dbPut({ id, name:f.name, type:f.type||'application/octet-stream', size:f.size, blob:f, at:Date.now(),
-      category, clientId, clientName, origin:'upload', tags });
-  }
-  renderFiles();
-}
-// ===== SUPABASE: konfiguracja uploadu umów =====
-const SUPA_URL = 'https://phxxjirqlktzcwnygaha.supabase.co';
-const SUPA_KEY = 'sb_publishable_iOXdu9fUGGko3MqPmltAag_ZbPUxp4r'; // PUBLISHABLE (anon) key
-const supa = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+/* === PDF premium eksport === */
+async function exportPDF(){const {jsPDF}=window.jspdf;const doc=new jsPDF();const logo=await dbGet("logo","main");if(logo){doc.addImage(logo,"PNG",15,10,25,25);doc.setFontSize(60);doc.setTextColor(200,200,200);doc.text("ARKON",60,150,{angle:45});doc.setTextColor(0);}doc.setFontSize(16);doc.text($("#offTitle").value||"Oferta",50,20);doc.setFontSize(11);doc.text("Klient: "+($("#clientName").value||"—"),50,28);doc.text("Data: "+new Date().toLocaleDateString("pl-PL"),50,34);let y=50,sum=0;doc.setFontSize(10);doc.setFillColor(34,48,102);doc.setTextColor(255);doc.rect(20,y-5,170,8,"F");doc.text("Pozycja",22,y);doc.text("Ilość",90,y);doc.text("Cena",120,y);doc.text("Razem",160,y);doc.setTextColor(0);y+=8;curItems.forEach(it=>{const r=it.qty*it.price;sum+=r;if(y>260){doc.addPage();y=20;doc.setFillColor(34,48,102);doc.setTextColor(255);doc.rect(20,y-5,170,8,"F");doc.text("Pozycja",22,y);doc.text("Ilość",90,y);doc.text("Cena",120,y);doc.text("Razem",160,y);doc.setTextColor(0);y+=8;}doc.text(it.name,22,y);doc.text(String(it.qty),90,y);doc.text(it.price.toFixed(2),120,y);doc.text(r.toFixed(2),160,y);y+=6;});doc.setFontSize(12);doc.text("SUMA: "+sum.toFixed(2)+" PLN",120,y+10);const sc=await dbGet("sign","Client");if(sc){doc.text("Podpis klienta:",20,y+30);doc.addImage(sc,"PNG",60,y+20,50,30);}const sr=await dbGet("sign","Rep");if(sr){doc.text("Podpis przedstawiciela:",20,y+70);doc.addImage(sr,"PNG",80,y+60,50,30);}doc.setFontSize(9);doc.text("ARKON Sp. z o.o. • kontakt@arkon.pl • +48 123 456 789",20,290);doc.save(($("#offTitle").value||"oferta")+".pdf");}
+$("#offPdf").onclick=exportPDF;
 
-const BUCKET = 'umowy'; // utwórz w Storage
-// opcjonalny identyfikator „konta” (żeby rozdzielać pliki między arkon-crm / pawel itd.)
-const ACCOUNT_ID = (localStorage.getItem('arkon_account_id') || 'arkon-crm').toLowerCase();
-
-// UI status chmury
-function setCloudState(txt, ok){
-  const el = document.getElementById('cloudState');
-  if(!el) return;
-  el.textContent = txt;
-  el.style.borderColor = ok ? '#2e925e' : '#7b3341';
-  el.style.background = ok ? '#0f2c22' : '#2e1117';
-}
-
-// proste „ping” – sprawdzamy, czy bucket istnieje/odczyt działa
-async function supaPing(){
-  try{
-    const { data, error } = await supa.storage.from(BUCKET).list('', { limit: 1 });
-    if(error) throw error;
-    setCloudState('Chmura: połączono ✓', true);
-  }catch(e){
-    setCloudState('Chmura: błąd (sprawdź bucket/polityki)', false);
-    console.warn('Supabase ping error:', e);
-  }
-}
-supaPing();
-
-// bezpieczna nazwa pliku
-function safeName(name){
-  return String(name || 'plik')
-    .normalize('NFKD').replace(/[^\w.\-]+/g,'').replace(/+/g,'_').toLowerCase();
-}
-
-// ścieżka: upload/<clientId|bez-klienta>/<ISO>_<plik>
-function buildPath({clientId, file}){
-  const who  = (clientId || 'bez-klienta').toLowerCase();
-  const ts   = new Date().toISOString().replace(/[:.]/g,'-');
-  return `upload/${who}/${ts}_${safeName(file.name)}`;
-}
-
-// faktyczny upload do Supabase + wpis metadanych (opcjonalny)
-async function uploadToSupabase({file, clientId, clientName, category, tags}){
-  const path = buildPath({clientId, file});
-
-  // 1) wgrywamy do Storage
-  const { error: upErr } = await supa
-    .storage.from(BUCKET)
-    .upload(path, file, { upsert:true, cacheControl:'3600', contentType: file.type || 'application/octet-stream' });
-
-  if (upErr) throw upErr;
-
-  // 2) publiczny URL do podglądu
-  const { data: pub } = supa.storage.from(BUCKET).getPublicUrl(path);
-  const file_url = pub?.publicUrl || null;
-
-  // 3) zapis metadanych (jeśli masz tabelę public.files – patrz SQL na końcu)
-  //    jeśli nie masz tej tabeli, możesz ten blok pominąć lub zostawić – po prostu zignoruje błąd
-  try{
-    await supa.from('files').insert({
-      account_id: ACCOUNT_ID,
-      client_id:  clientId || '',
-      client_name: clientName || '',
-      category:   category || '',
-      tags:       tags || '',
-      file_name:  file.name,
-      file_path:  path,
-      file_url:   file_url,
-      author:     ACCOUNT_ID,
-      uploaded_at: new Date().toISOString()
-    });
-  }catch(e){
-    // brak tabeli 'files' – to tylko metadane, więc nie przerywamy
-    console.info('files meta insert skipped/failed:', e?.message || e);
-  }
-
-  return { path, file_url };
-</>
-/* ===== OFFERS UI ===== */
-let offers = loadOffers();
-let curItems = []; // editor working items
-let curOfferId = null;
-
-function offerSum(items){ return items.reduce((a,it)=> a + ( (Number(it.price||0)||0) * (Number(it.qty||0)||0) * (1 - (Number(it.disc||0)||0)/100 ) ), 0); }
-
-function refreshOfferCounters(){
-  $('#cntItems').textContent = curItems.length;
-  $('#sumItems').textContent = fmt(offerSum(curItems))+' zł';
-}
-
-function renderOfferEditor(){
-  const tb = $('#offBody'); tb.innerHTML='';
-  curItems.forEach((it,i)=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML = `
-      <td class="row">
-        <button class="btn ghost" data-up="${i}">↑</button>
-        <button class="btn ghost" data-down="${i}">↓</button>
-        <button class="btn bad" data-del="${i}">Usuń</button>
-      </td>
-      <td><select data-k="cat" data-i="${i}">
-        ${['PV','Pompa','Piec','Ocieplenie','Stolarka','Inne'].map(x=>`<option ${it.cat===x?'selected':''}>${x}</option>`).join('')}
-      </select></td>
-      <td><input data-k="mm" data-i="${i}" placeholder="Marka/Model" value="${esc(it.mm||'')}"></td>
-      <td><input data-k="spec" data-i="${i}" placeholder="Specyfikacja" value="${esc(it.spec||'')}"></td>
-      <td><input data-k="qty" data-i="${i}" type="number" step="1" min="0" value="${it.qty||1}"></td>
-      <td><input data-k="price" data-i="${i}" type="number" step="1" min="0" value="${it.price||0}"></td>
-      <td><input data-k="disc" data-i="${i}" type="number" step="0.1" min="0" value="${it.disc||0}"></td>
-      <td>${fmt( (it.price||0)*(it.qty||0)*(1-(it.disc||0)/100) )} zł</td>`;
-    tb.appendChild(tr);
-  });
-  refreshOfferCounters();
-  // binds
-  tb.querySelectorAll('input,select').forEach(el=>{
-    const i=+el.dataset.i, k=el.dataset.k;
-    el.addEventListener('input', debounce(()=>{
-      let v=el.value; if(['qty','price','disc'].includes(k)) v=Number(v)||0;
-      if(k==='mm'){ curItems[i].mm=v; }
-      else if(k==='spec'){ curItems[i].spec=v; }
-      else curItems[i][k]=v;
-      renderOfferEditor();
-    },120));
-  });
-  tb.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{ curItems.splice(+b.dataset.del,1); renderOfferEditor(); }));
-  tb.querySelectorAll('[data-up]').forEach(b=>b.addEventListener('click',()=>{ const i=+b.dataset.up; if(i>0){[curItems[i-1],curItems[i]]=[curItems[i],curItems[i-1]]; renderOfferEditor(); }}));
-  tb.querySelectorAll('[data-down]').forEach(b=>b.addEventListener('click',()=>{ const i=+b.dataset.down; if(i<curItems.length-1){[curItems[i+1],curItems[i]]=[curItems[i],curItems[i+1]]; renderOfferEditor(); }}));
-}
-
-function newOffer(){
-  curOfferId = null;
-  curItems = [];
-  $('#offTitle').value = $('#offTitle').value || 'Oferta';
-  renderOfferEditor();
-}
-function saveOffer(){
-  const clientId = $('#offClient').value || '';
-  const title = $('#offTitle').value.trim() || 'Oferta';
-  if(!clientId){ alert('Wybierz klienta.'); return; }
-  const rec = { id: curOfferId || uid(), clientId, title, at: Date.now(), items: curItems.slice() };
-  const i = offers.findIndex(o=>o.id===rec.id);
-  if(i>=0) offers[i]=rec; else offers.unshift(rec);
-  saveOffers(offers);
-  curOfferId = rec.id;
-  renderOfferList();
-  alert('Zapisano ofertę.');
-}
-function renderOfferList(){
-  const q=($('#offQ').value||'').toLowerCase();
-  const tb=$('#offList'); tb.innerHTML='';
-  const clients=loadClients();
-  const clientName = id => clients.find(c=>c.id===id)?.name||'';
-  const rows = offers.filter(o=> !q || (o.title||'').toLowerCase().includes(q) || clientName(o.clientId).toLowerCase().includes(q) );
-  $('#cntOffers').textContent = offers.length;
-  rows.sort((a,b)=>(b.at||0)-(a.at||0)).forEach(o=>{
-    const sum = offerSum(o.items||[]);
-    const tr=document.createElement('tr');
-    tr.innerHTML = `
-      <td class="row">
-        <button class="btn" data-open="${o.id}">Otwórz</button>
-        <button class="btn ghost" data-json="${o.id}">JSON</button>
-        <button class="btn bad" data-del="${o.id}">Usuń</button>
-      </td>
-      <td>${esc(o.title||'Oferta')}</td>
-      <td>${esc(clientName(o.clientId))}</td>
-      <td>${(o.items||[]).length}</td>
-      <td>${fmt(sum)} zł</td>
-      <td>${new Date(o.at||Date.now()).toLocaleString('pl-PL')}</td>`;
-    tb.appendChild(tr);
-  });
-  // binds
-  tb.querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',()=>{
-    const o=offers.find(x=>x.id===b.dataset.open); if(!o) return;
-    curOfferId=o.id; $('#offClient').value=o.clientId; $('#offTitle').value=o.title||'Oferta'; curItems = (o.items||[]).map(x=>({...x})); selectTab('builder'); renderOfferEditor();
-  }));
-  tb.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{
-    if(!confirm('Usunąć ofertę?')) return; offers=offers.filter(x=>x.id!==b.dataset.del); saveOffers(offers); renderOfferList();
-  }));
-  tb.querySelectorAll('[data-json]').forEach(b=>b.addEventListener('click',()=>{
-    const o=offers.find(x=>x.id===b.dataset.json); if(!o) return;
-    const a=document.createElement('a'); const blob=new Blob([JSON.stringify(o,null,2)],{type:'application/json'});
-    a.href=URL.createObjectURL(blob); a.download=(o.title||'oferta')+'.json'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1200);
-  }));
-}
-
-/* add row quickly */
-$('#offAddRow').addEventListener('click',()=>{ curItems.push({cat:'Inne',mm:'',spec:'',qty:1,price:0,disc:0}); renderOfferEditor(); });
-$('#offNew').addEventListener('click',newOffer);
-$('#offSave').addEventListener('click',saveOffer);
-$('#offExport').addEventListener('click',()=>{
-  const a=document.createElement('a'); const blob=new Blob([JSON.stringify(offers,null,2)],{type:'application/json'});
-  a.href=URL.createObjectURL(blob); a.download='arkon_oferty.json'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1200);
-});
-$('#offImport').addEventListener('change', async e=>{
-  const f=e.target.files[0]; if(!f) return; try{ const arr=JSON.parse(await f.text()); if(!Array.isArray(arr)) throw 0; offers=arr; saveOffers(offers); renderOfferList(); alert('Zaimportowano.'); }catch{ alert('Zły plik JSON'); } e.target.value='';
-});
-$('#offQ').addEventListener('input',debounce(renderOfferList,120));
-$('#offClear').addEventListener('click',()=>{ $('#offQ').value=''; renderOfferList(); });
-
-/* ===== Components picker ===== */
-let compState={cat:'pv',q:''};
-function renderComponents(){
-  const list = loadComponents(compState.cat);
-  const q=(compState.q||'').toLowerCase();
-  const tb=$('#compBody'); tb.innerHTML='';
-  let vis=0;
-  list.filter(r=> JSON.stringify(r).toLowerCase().includes(q) ).forEach((r,i)=>{
-    vis++;
-    const brand = r.brand||r.marka||'';
-    const model = r.model||'';
-    const spec = r.spec || r.power || r.watt || r.size || r.tech || r.note || '';
-    const price = Number(r.price || r.cena || r.price_m2 || 0) || 0;
-    const tr=document.createElement('tr');
-    tr.innerHTML = `
-      <td><input type="checkbox" data-i="${i}"></td>
-      <td>${esc(brand)}</td>
-      <td>${esc(model)}</td>
-      <td>${esc(spec)}</td>
-      <td>${fmt(price)} zł</td>`;
-    tb.appendChild(tr);
-  });
-  $('#compVis').textContent=vis;
-}
-$('#compCat').addEventListener('change',e=>{ compState.cat=e.target.value; renderComponents(); });
-$('#compQ').addEventListener('input',e=>{ compState.q=e.target.value.trim(); renderComponents(); });
-$('#compAddSel').addEventListener('click',()=>{
-  const list = loadComponents(compState.cat);
-  $$('#compBody input[type="checkbox"]:checked').forEach(ch=>{
-    const r=list[+ch.dataset.i]; if(!r) return;
-    const brand=r.brand||r.marka||''; const model=r.model||'';
-    const spec=r.spec||r.power||r.watt||r.size||r.tech||r.note||'';
-    const price=Number(r.price||r.cena||r.price_m2||0)||0;
-    const catMap={pv:'PV',pumps:'Pompa',boilers:'Piec',insul:'Ocieplenie',windows:'Stolarka'};
-    curItems.push({cat:catMap[compState.cat]||'Inne', mm: (brand+' '+model).trim(), spec: String(spec), qty:1, price, disc:0});
-  });
-  selectTab('builder'); renderOfferEditor();
-});
-
-/* ===== tabs ===== */
-function selectTab(key){
-  $$('.tabs .tab').forEach(b=>b.setAttribute('aria-selected','false'));
-  $(`.tabs .tab[data-tab="${key}"]`).setAttribute('aria-selected','true');
-  $('#tab-builder').hidden = key!=='builder';
-  $('#tab-components').hidden = key!=='components';
-  $('#tab-list').hidden = key!=='list';
-}
-$$('.tabs .tab').forEach(b=>b.addEventListener('click',()=>selectTab(b.dataset.tab)));
-
-/* ===== FLYERS (ulotki) ===== */
-let flyers = loadFlyers();
-let flyerPendingFile = null;
-
-$('#flyFile').addEventListener('change',e=>{
-  const f=e.target.files[0]; flyerPendingFile = f || null;
-});
-
-async function addFlyer(){
-  const clientId = $('#flyClient').value || '';
-  const title = $('#flyTitle').value.trim() || 'Ulotka';
-  const source = $('#flySource').value.trim() || '';
-  let fileId='', fileName='';
-  if(flyerPendingFile){
-    fileId = uid();
-    fileName = flyerPendingFile.name;
-    await dbPut({ id:fileId, name:fileName, type: flyerPendingFile.type||'application/octet-stream', size: flyerPendingFile.size, blob: flyerPendingFile, at: Date.now(), category:'Ulotka', clientId, clientName: clientId? (loadClients().find(c=>c.id===clientId)?.name||'') : '', origin:'flyer', tags:'ulotka' });
-    flyerPendingFile = null; $('#flyFile').value='';
-  }
-  const rec = { id:uid(), clientId, title, source, at:Date.now(), fileId, fileName };
-  flyers.unshift(rec); saveFlyers(flyers); renderFlyers();
-  $('#flyTitle').value=''; $('#flySource').value='';
-}
-function renderFlyers(){
-  const tb=$('#flyBody'); tb.innerHTML='';
-  const clients=loadClients();
-  const name=id=> clients.find(c=>c.id===id)?.name||'';
-  flyers.forEach(f=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML = `
-      <td class="row">
-        <button class="btn" data-open="${f.id}">Edytuj</button>
-        <button class="btn ghost" data-dl="${f.fileId||''}" ${f.fileId?'':'disabled'}>Pobierz plik</button>
-        <button class="btn bad" data-del="${f.id}">Usuń</button>
-      </td>
-      <td>${esc(f.title)}</td>
-      <td>${esc(name(f.clientId))}</td>
-      <td>${esc(f.source||'')}</td>
-      <td>${esc(f.fileName||'—')}</td>
-      <td>${new Date(f.at||Date.now()).toLocaleString('pl-PL')}</td>`;
-    tb.appendChild(tr);
-  });
-  // binds
-  tb.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{
-    if(!confirm('Usunąć ulotkę?')) return;
-    flyers = flyers.filter(x=>x.id!==b.dataset.del);
-    saveFlyers(flyers); renderFlyers();
-  }));
-  tb.querySelectorAll('[data-dl]').forEach(b=>b.addEventListener('click', async ()=>{
-    const id=b.dataset.dl; if(!id) return;
-    const rec=await dbGet(id); if(!rec){ alert('Plik niedostępny.'); return; }
-    const url=URL.createObjectURL(rec.blob); const a=document.createElement('a'); a.href=url; a.download=rec.name; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1500);
-  }));
-  tb.querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',()=>{
-    const f=flyers.find(x=>x.id===b.dataset.open); if(!f) return;
-    const title=prompt('Tytuł', f.title)||f.title;
-    const source=prompt('Kanał', f.source||'')||f.source||'';
-    const clientId=prompt('ID klienta (puste = bez przypisania)', f.clientId||'')||'';
-    flyers = flyers.map(x=> x.id===f.id ? {...x, title, source, clientId} : x);
-    saveFlyers(flyers); renderFlyers();
-  }));
-}
-$('#flyAdd').addEventListener('click', addFlyer);
-
-/* ===== INIT ===== */
-(async function init(){
-  await dbOpen();
-  fillClients(['selClient','offClient','flyClient']);
-  // files
-  $('#inFiles').addEventListener('change',e=>{ handleFiles(e.target.files); e.target.value=''; });
-  $('#btnRefresh').addEventListener('click',renderFiles);
-  $('#qFiles').addEventListener('input', e=>{ fileFilter.q=e.target.value.trim(); renderFiles(); });
-  $('#btnClear').addEventListener('click',()=>{ fileFilter={q:'',cat:''}; $('#qFiles').value=''; $('#fCat').value=''; renderFiles(); });
-  $('#fCat').addEventListener('change', e=>{ fileFilter.cat=e.target.value||''; renderFiles(); });
-  // offers
-  newOffer();
-  renderOfferList();
-  renderComponents();
-
-  // keyboard shortcuts
-  document.addEventListener('keydown',e=>{
-    if(e.key==='/' && !/input|textarea|select/i.test(e.target.tagName)){ e.preventDefault(); $('#qFiles').focus(); }
-    if(e.altKey && e.key.toLowerCase()==='n'){ e.preventDefault(); newOffer(); }
-    if(e.altKey && e.key.toLowerCase()==='s'){ e.preventDefault(); saveOffer(); }
-  });
-
-  // first render files
-  renderFiles();
-})();
+/* === Word eksport === */
+async function exportDocx(){const {Document,Packer,Paragraph,TextRun,Table,TableRow,TableCell}=window.docx;const rows=[new TableRow({children:["Pozycja","Ilość","Cena","Razem"].map(h=>new TableCell({children:[new Paragraph(h)]}))})];let sum=0;curItems.forEach(it=>{const r=it.qty*it.price;sum+=r;rows.push(new TableRow({children:[it.name,it.qty.toString(),it.price.toFixed(2),r.toFixed(2)].map(t=>new TableCell({children:[new Paragraph(t)]}))}));});rows.push(new TableRow({children:[new TableCell({children:[new Paragraph("SUMA")],columnSpan:3}),new TableCell({children:[new Paragraph(sum.toFixed(2))]})]}));const doc=new Document({sections:[{children:[new Paragraph({children:[new TextRun({text:$("#offTitle").value||"Oferta",bold:true,size:32})]}),new Paragraph("Klient: "+($("#clientName").value||"—")),new Paragraph("Data: "+new Date().toLocaleDateString("pl-PL")),new Table({rows}),new Paragraph("Podpis Klienta: _______________"),new Paragraph("Podpis Przedstawiciela: _______________")]}]});const blob=await Packer.toBlob(doc);const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=($("#offTitle").value||"oferta")+".docx";a.click();}
+$("#offDocx").onclick=exportDocx;
 </script>
 </body>
 </html>
