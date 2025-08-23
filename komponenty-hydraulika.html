@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARKON — Komponenty: Hydraulika</title>
+<meta name="description" content="Samodzielny moduł ARKON CRM dla komponentów hydraulicznych: rury, kształtki, zawory, grupy pompowe, rozdzielacze, separatory, filtry, pompy obiegowe, akcesoria. Import/eksport CSV/JSON, wyszukiwanie, koszyk i sumowanie.">
+<style>
+  :root{
+    --bg:#0b1020; --grad1:#0a1028; --grad2:#0d1536;
+    --ink:#e8edff; --muted:#aeb8da; --line:#22306a;
+    --card:#0f1636; --chip:#16245a; --accent:#4cc9f0;
+    --ok:#2fbf71; --warn:#ffb84d; --bad:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.55 system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,var(--grad1),var(--grad2));color:var(--ink)}
+  a{color:#cfe0ff;text-decoration:none}
+  header{padding:16px;border-bottom:1px solid var(--line);background:#0e1534;position:sticky;top:0;z-index:10}
+  header h1{margin:0;font-size:22px}
+  header .muted{color:var(--muted);font-size:13px}
+  nav{display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line);background:#121a44}
+  nav a{padding:8px 12px;border-radius:999px;border:1px solid #2a3a75}
+  nav a:hover{background:#1a2758}
+  .wrap{max-width:1400px;margin:0 auto;padding:16px}
+  .grid{display:grid;gap:12px}
+  @media(min-width:1100px){ .cols-2{grid-template-columns:2fr 1fr} }
+  .card{background:linear-gradient(180deg,#0f1636,#0f1a42);border:1px solid var(--line);border-radius:14px;padding:14px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px dashed #3a4ca3}
+  .btn.bad{background:#3a1f2a;border-color:#7b3341}
+  .btn.ok{background:#194d34;border-color:#2f9762}
+  input,select,textarea{background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:8px 10px;color:var(--ink);font:inherit}
+  input::placeholder{color:#aeb8da99}
+  table{width:100%;border-collapse:separate;border-spacing:0}
+  th,td{padding:8px 6px;border-bottom:1px solid #1a244d;text-align:left;vertical-align:top}
+  th{font-size:12px;color:var(--muted);position:sticky;top:0;background:#101a45;z-index:1}
+  .small{font-size:12px;color:var(--muted)}
+  .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
+  .right{display:flex;gap:8px;justify-content:flex-end}
+  .scroll{overflow:auto;max-height:62vh}
+  .tag{display:inline-block;margin:2px 6px 0 0;padding:3px 8px;border:1px solid #3a4ca3;border-radius:999px;font-size:12px}
+  .qty{width:80px}
+  .price{width:110px}
+  .narrow{width:120px}
+  .wide{min-width:220px}
+  .sel{outline:2px solid #67a1ff55}
+  @media print{ nav,.btn,.toolbar,.right,.pill{display:none!important} .scroll{max-height:none} th{position:static} body{background:#fff;color:#000} .card{background:#fff;border-color:#ccc} }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Komponenty • Hydraulika — ARKON</h1>
+  <div class="small">Rury/kształtki, zawory, filtry, separatory, rozdzielacze, grupy pompowe, pompy obiegowe, sprzęgła, armatura bezpieczeństwa, akcesoria. Edycja inline, import/eksport CSV/JSON, koszyk i podsumowania. Dane zapisywane w localStorage.</div>
+</header>
+
+<nav aria-label="Nawigacja">
+  <a href="index.html">🏠 Pulpit</a>
+  <a href="komponenty.html">🧩 Komponenty</a>
+  <a href="klienci.html">👥 Klienci</a>
+  <a href="upload.html">📤 Przesył plików</a>
+  <a href="#" id="printBtn">🖨️ Drukuj / PDF</a>
+</nav>
+
+<div class="wrap grid cols-2">
+  <section class="grid">
+    <!-- TOOLBAR / FILTRY -->
+    <div class="card toolbar">
+      <div class="row">
+        <select id="fCat" class="narrow">
+          <option value="">Kategoria (wszystkie)</option>
+          <option>Rury i kształtki</option>
+          <option>Zawory i armatura</option>
+          <option>Filtry i separatory</option>
+          <option>Rozdzielacze i grupy pompowe</option>
+          <option>Pompy obiegowe</option>
+          <option>Sprzęgła / Bufory podrzędne</option>
+          <option>Bezpieczeństwo (nacz., zawory)</option>
+          <option>Akcesoria i montaż</option>
+        </select>
+        <select id="fBrand" class="narrow">
+          <option value="">Marka (wszystkie)</option>
+        </select>
+        <select id="fSort" class="narrow">
+          <option value="name.asc">Sort: Nazwa ↑</option>
+          <option value="name.desc">Sort: Nazwa ↓</option>
+          <option value="price.asc">Sort: Cena ↑</option>
+          <option value="price.desc">Sort: Cena ↓</option>
+          <option value="created.desc">Sort: Najnowsze</option>
+          <option value="created.asc">Sort: Najstarsze</option>
+        </select>
+        <input id="q" class="wide" placeholder="🔎 Szukaj: nazwa, marka, SKU, średnica, gwint, materiał, tagi…">
+        <label class="btn ghost">Import CSV<input id="inCSV" type="file" accept=".csv" hidden></label>
+        <label class="btn ghost">Import JSON<input id="inJSON" type="file" accept="application/json" hidden></label>
+        <button id="exCSV" class="btn ghost">Eksport CSV</button>
+        <button id="exJSON" class="btn ghost">Eksport JSON</button>
+        <button id="btnAdd" class="btn ok">+ Dodaj pozycję</button>
+        <span class="pill">Widocznych: <b id="countVis">0</b></span>
+      </div>
+    </div>
+
+    <!-- TABELA -->
+    <div class="card" style="padding:0">
+      <div class="scroll">
+        <table id="tbl">
+          <thead>
+            <tr>
+              <th>Akcje</th>
+              <th>Kategoria</th>
+              <th>Marka</th>
+              <th>Model/Nazwa</th>
+              <th>SKU</th>
+              <th>Średnica/DN</th>
+              <th>Przyłącze</th>
+              <th>Materiał</th>
+              <th>Parametry (Tmax/PN/Kvs/∆p)</th>
+              <th>Klasa/Sprawność</th>
+              <th>Jedn.</th>
+              <th>Cena netto</th>
+              <th>VAT %</th>
+              <th>Brutto</th>
+              <th>Dostawca</th>
+              <th>Gwar. [m]</th>
+              <th>Stan</th>
+              <th>Tagi</th>
+              <th>Notatki</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL PRAWY: KOSZYK i PODSUMOWANIE -->
+  <aside class="grid">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <b>Koszyk / Zestawienie</b>
+        <div class="small">zaznacz pozycje ✅</div>
+      </div>
+      <div id="cartList" class="small" style="margin-top:6px"></div>
+      <div class="row" style="margin-top:8px">
+        <span class="pill">Poz. <b id="cartCount">0</b></span>
+        <span class="pill">Netto <b id="cartNet">0,00</b> zł</span>
+        <span class="pill">VAT <b id="cartVAT">0,00</b> zł</span>
+        <span class="pill">Brutto <b id="cartGross">0,00</b> zł</span>
+        <button id="cartClear" class="btn ghost">Wyczyść koszyk</button>
+        <button id="cartExport" class="btn">Eksportuj ofertę (CSV)</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <b>Notatka do zestawienia</b>
+      <textarea id="note" placeholder="np. Uwagi do montażu, transport, terminy…" style="width:100%;min-height:120px;margin-top:8px"></textarea>
+      <div class="right" style="margin-top:8px">
+        <button id="btnClearNote" class="btn ghost">Wyczyść</button>
+      </div>
+      <div class="small">Zapis lokalny (localStorage).</div>
+    </div>
+  </aside>
+</div>
+
+<script>
+'use strict';
+
+/* ===== helpers ===== */
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const INT = new Intl.NumberFormat('pl-PL',{minimumFractionDigits:2, maximumFractionDigits:2});
+const INT0 = new Intl.NumberFormat('pl-PL',{maximumFractionDigits:0});
+const fmtMoney = n => INT.format(Number(n)||0);
+function escapeHtml(s){ return (s==null?'':String(s)).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c])); }
+function csvEsc(v){ let s=v==null?'':String(v); if(/[;\"\\n]/.test(s)) s='\"'+s.replace(/\"/g,'\"\"')+'\"'; return s; }
+function csvUnesc(s){ if(/^\".*\"$/.test(s)) return s.slice(1,-1).replace(/\"\"/g,'\"'); return s; }
+
+/* ===== storage keys ===== */
+const LS_KEY = 'arkon_cmp_hydraulika_v1';
+const NOTE_KEY = 'arkon_cmp_hydraulika_note';
+
+/* ===== state ===== */
+let rows = load(LS_KEY, []);
+let filter = {q:'', cat:'', brand:'', sort:'name.asc'};
+let cart = new Set(); // ids
+
+/* ===== seed (przykładowe pozycje) ===== */
+if(!rows.length){
+  rows = [
+    // RURY I KSZTAŁTKI
+    {id:uid(),created:Date.now(),cat:'Rury i kształtki',brand:'Viega',name:'Rura stal. systemowa Prestabo',sku:'P-Prestabo-28',dn:'DN25 / 28mm',conn:'press M',mat:'stal ocynk',params:'Tmax 120°C • PN16',class:'—',unit:'mb',price:38,vat:23,supplier:'Onninen',warr:24,stock:120,tags:['rura','press'],note:''},
+    {id:uid(),created:Date.now(),cat:'Rury i kształtki',brand:'Uponor',name:'PEX-a rura Comfort Pipe 25x2,3',sku:'UP-CP-25',dn:'25x2,3',conn:'—',mat:'PEX-a',params:'Tmax 95°C • PN6',class:'—',unit:'mb',price:9.5,vat:23,supplier:'Keller',warr:120,stock:500,tags:['podłogówka'],note:''},
+    {id:uid(),created:Date.now(),cat:'Rury i kształtki',brand:'TECE',name:'Kształtka press kolano 90° 1"',sku:'TE-PR-K90-1',dn:'DN25',conn:'press TH',mat:'mosiądz',params:'Tmax 110°C • PN16',class:'—',unit:'szt',price:21.9,vat:23,supplier:'Hurtownia XYZ',warr:36,stock:60,tags:['kształtki'],note:''},
+
+    // ZAWORY I ARMATURA
+    {id:uid(),created:Date.now(),cat:'Zawory i armatura',brand:'Danfoss',name:'Zawór mieszający 3-drogowy H-MIX 1"',sku:'DA-HMIX-1',dn:'DN25',conn:'GW 1"',mat:'mosiądz',params:'Kvs 10 • Tmax 130°C • PN10',class:'—',unit:'szt',price:189,vat:23,supplier:'Onninen',warr:24,stock:15,tags:['mieszający'],note:''},
+    {id:uid(),created:Date.now(),cat:'Zawory i armatura',brand:'HERZ',name:'Zawór odcinający kulowy 1/2"',sku:'HZ-BV-12',dn:'DN15',conn:'GW 1/2"',mat:'mosiądz nikl.',params:'PN25 • Tmax 120°C',class:'—',unit:'szt',price:19.8,vat:23,supplier:'BimsPlus',warr:60,stock:200,tags:['odcinający'],note:''},
+    {id:uid(),created:Date.now(),cat:'Zawory i armatura',brand:'ESBE',name:'Siłownik ARA661 (3-pkt) do zaworu miesz.',sku:'ES-ARA661',dn:'—',conn:'na zawór VRG',mat:'—',params:'3-punkt • 230V',class:'—',unit:'szt',price:369,vat:23,supplier:'Keller',warr:24,stock:12,tags:['siłownik'],note:''},
+
+    // FILTRY I SEPARATORY
+    {id:uid(),created:Date.now(),cat:'Filtry i separatory',brand:'Caleffi',name:'Separator zanieczyszczeń DIRTMAG 1"',sku:'CA-546305',dn:'DN25',conn:'GW 1"',mat:'mosiądz',params:'PN10 • Tmax 110°C',class:'—',unit:'szt',price:349,vat:23,supplier:'Onninen',warr:24,stock:10,tags:['separator'],note:''},
+    {id:uid(),created:Date.now(),cat:'Filtry i separatory',brand:'Honeywell',name:'Filtr siatkowy 3/4" z manometrem',sku:'HY-FS-34M',dn:'DN20',conn:'GW 3/4"',mat:'mosiądz',params:'80 µm • PN16',class:'—',unit:'szt',price:129,vat:23,supplier:'BimsPlus',warr:24,stock:30,tags:['filtr'],note:''},
+
+    // ROZDZIELACZE I GRUPY POMPOWE
+    {id:uid(),created:Date.now(),cat:'Rozdzielacze i grupy pompowe',brand:'Meibes',name:'Grupa pompowa mieszająca MM1 25/6',sku:'ME-MM1-25-6',dn:'DN25',conn:'GW 1"',mat:'stal/mosiądz',params:'v. zasilania 25-60',class:'—',unit:'kpl',price:1120,vat:23,supplier:'Onninen',warr:24,stock:4,tags:['grupa','mieszająca'],note:''},
+    {id:uid(),created:Date.now(),cat:'Rozdzielacze i grupy pompowe',brand:'Afriso',name:'Rozdzielacz podłogowy 8 obwodów',sku:'AF-RZ-8',dn:'1"',conn:'GZ 1" / Eurokonus',mat:'stal nierdz.',params:'z przepływomierzami',class:'—',unit:'kpl',price:899,vat:23,supplier:'Keller',warr:24,stock:7,tags:['rozdzielacz'],note:''},
+
+    // POMPY OBIEGOWE
+    {id:uid(),created:Date.now(),cat:'Pompy obiegowe',brand:'Wilo',name:'Yonos PICO 25/1-8',sku:'WILO-Y-25-1-8',dn:'DN25',conn:'G 1 1/2"',mat:'—',params:'Hmax 8 m • 230V • EEI ≤0,20',class:'A',unit:'szt',price:610,vat:23,supplier:'Onninen',warr:60,stock:9,tags:['pompa obiegowa'],note:''},
+    {id:uid(),created:Date.now(),cat:'Pompy obiegowe',brand:'Grundfos',name:'ALPHA2 25-60 180',sku:'GR-ALPHA2-25-60',dn:'DN25',conn:'180 mm',mat:'—',params:'Hmax 6 m • 230V • EEI ≤0,15',class:'A',unit:'szt',price:640,vat:23,supplier:'BimsPlus',warr:60,stock:6,tags:['pompa obiegowa'],note:''},
+
+    // SPRZĘGŁA / BUFORY PODRZĘDNE
+    {id:uid(),created:Date.now(),cat:'Sprzęgła / Bufory podrzędne',brand:'Kermi',name:'Sprzęgło hydrauliczne SH DN32',sku:'KE-SH-DN32',dn:'DN32',conn:'GW 1 1/4"',mat:'stal malowana',params:'do 50 kW',class:'—',unit:'szt',price:520,vat:23,supplier:'Onninen',warr:24,stock:3,tags:['sprzęgło'],note:''},
+
+    // BEZPIECZEŃSTWO
+    {id:uid(),created:Date.now(),cat:'Bezpieczeństwo (nacz., zawory)',brand:'Reflex',name:'Naczynie przeponowe DE 18',sku:'RF-DE-18',dn:'18 l',conn:'GW 3/4"',mat:'stal',params:'do C.O. • 3 bar',class:'—',unit:'szt',price:199,vat:23,supplier:'BimsPlus',warr:24,stock:14,tags:['naczynie'],note:''},
+    {id:uid(),created:Date.now(),cat:'Bezpieczeństwo (nacz., zawory)',brand:'Afriso',name:'Zawór bezpieczeństwa 3 bar 1/2"',sku:'AF-ZB-3B-12',dn:'DN15',conn:'GW 1/2"',mat:'mosiądz',params:'3 bar',class:'—',unit:'szt',price:35,vat:23,supplier:'Keller',warr:24,stock:50,tags:['bezpieczeństwo'],note:''},
+
+    // AKCESORIA
+    {id:uid(),created:Date.now(),cat:'Akcesoria i montaż',brand:'Tiemme',name:'Odpowietrznik automatyczny 1/2"',sku:'TM-OA-12',dn:'DN15',conn:'GW 1/2"',mat:'mosiądz',params:'max 110°C',class:'—',unit:'szt',price:27,vat:23,supplier:'Onninen',warr:24,stock:40,tags:['odpowietrznik'],note:''},
+    {id:uid(),created:Date.now(),cat:'Akcesoria i montaż',brand:'Honeywell',name:'Zawór zwrotny 1"',sku:'HY-CHK-1',dn:'DN25',conn:'GW 1"',mat:'mosiądz',params:'PN16',class:'—',unit:'szt',price:42,vat:23,supplier:'BimsPlus',warr:24,stock:26,tags:['zwrotny'],note:''}
+  ];
+  persist();
+}
+
+/* ===== init UI ===== */
+$('#printBtn').addEventListener('click',()=>window.print());
+$('#btnAdd').addEventListener('click', addRow);
+$('#inCSV').addEventListener('change', e=>{ const f=e.target.files[0]; if(f) importCSV(f); e.target.value=''; });
+$('#inJSON').addEventListener('change', e=>{ const f=e.target.files[0]; if(f) importJSON(f); e.target.value=''; });
+$('#exCSV').addEventListener('click', exportCSV);
+$('#exJSON').addEventListener('click', exportJSON);
+$('#fCat').addEventListener('change', e=>{ filter.cat=e.target.value; render(); });
+$('#fBrand').addEventListener('change', e=>{ filter.brand=e.target.value; render(); });
+$('#fSort').addEventListener('change', e=>{ filter.sort=e.target.value; render(); });
+$('#q').addEventListener('input', e=>{ filter.q=e.target.value.trim(); render(); });
+$('#cartClear').addEventListener('click', ()=>{ cart.clear(); renderCart(); });
+$('#cartExport').addEventListener('click', exportCartCSV);
+$('#btnClearNote').addEventListener('click', ()=>{ if(confirm('Wyczyścić notatkę koszyka?')){ localStorage.removeItem(NOTE_KEY); $('#note').value=''; }});
+
+/* ===== note load ===== */
+$('#note').value = localStorage.getItem(NOTE_KEY) || '';
+$('#note').addEventListener('input', ()=> localStorage.setItem(NOTE_KEY, $('#note').value));
+
+/* ===== render ===== */
+function render(){
+  // fill brands select
+  const brands = Array.from(new Set(rows.map(r=>r.brand).filter(Boolean))).sort();
+  const sel = $('#fBrand'); sel.innerHTML = '<option value="">Marka (wszystkie)</option>' + brands.map(b=>`<option ${filter.brand===b?'selected':''}>${escapeHtml(b)}</option>`).join('');
+
+  const tb = $('#tbody'); tb.innerHTML='';
+  let list = rows.slice();
+
+  // filters
+  if(filter.cat) list = list.filter(r=>r.cat===filter.cat);
+  if(filter.brand) list = list.filter(r=>r.brand===filter.brand);
+  if(filter.q){
+    const q=filter.q.toLowerCase();
+    list = list.filter(r=> JSON.stringify(r).toLowerCase().includes(q));
+  }
+  // sort
+  list.sort((a,b)=>{
+    switch(filter.sort){
+      case 'name.asc': return (a.name||'').localeCompare(b.name||'', 'pl',{sensitivity:'base'});
+      case 'name.desc': return (b.name||'').localeCompare(a.name||'', 'pl',{sensitivity:'base'});
+      case 'price.asc': return (num(a.price) - num(b.price));
+      case 'price.desc': return (num(b.price) - num(a.price));
+      case 'created.desc': return (b.created||0)-(a.created||0);
+      case 'created.asc': return (a.created||0)-(b.created||0);
+    }
+    return 0;
+  });
+
+  $('#countVis').textContent = list.length;
+
+  list.forEach((r,i)=>{
+    const tr = document.createElement('tr');
+    if(cart.has(r.id)) tr.classList.add('sel');
+    tr.innerHTML = `
+      <td class="row">
+        <label class="pill"><input type="checkbox" data-cart="${r.id}" ${cart.has(r.id)?'checked':''}> ✅</label>
+        <button class="btn ghost" data-dup="${r.id}">Kopia</button>
+        <button class="btn bad" data-del="${r.id}">Usuń</button>
+      </td>
+      <td>${selectHtml(['Rury i kształtki','Zawory i armatura','Filtry i separatory','Rozdzielacze i grupy pompowe','Pompy obiegowe','Sprzęgła / Bufory podrzędne','Bezpieczeństwo (nacz., zawory)','Akcesoria i montaż'], r.cat, {i:r.id,k:'cat'})}</td>
+      <td>${inputHtml(r.brand,{i:r.id,k:'brand'})}</td>
+      <td>${inputHtml(r.name,{i:r.id,k:'name',cls:'wide'})}</td>
+      <td>${inputHtml(r.sku,{i:r.id,k:'sku',cls:'narrow'})}</td>
+      <td>${inputHtml(r.dn,{i:r.id,k:'dn',cls:'narrow'})}</td>
+      <td>${inputHtml(r.conn,{i:r.id,k:'conn',cls:'narrow'})}</td>
+      <td>${inputHtml(r.mat,{i:r.id,k:'mat',cls:'narrow'})}</td>
+      <td>${inputHtml(r.params,{i:r.id,k:'params',cls:'wide'})}</td>
+      <td>${inputHtml(r.class,{i:r.id,k:'class',cls:'narrow'})}</td>
+      <td>${selectHtml(['szt','kpl','mb','para'], r.unit, {i:r.id,k:'unit'})}</td>
+      <td>${numberHtml(r.price,{i:r.id,k:'price',cls:'price',step:'0.01'})}</td>
+      <td>${numberHtml(r.vat??23,{i:r.id,k:'vat',cls:'qty',step:'1'})}</td>
+      <td><span id="g_${r.id}">${fmtMoney(gross(r))}</span> zł</td>
+      <td>${inputHtml(r.supplier,{i:r.id,k:'supplier',cls:'narrow'})}</td>
+      <td>${numberHtml(r.warr??24,{i:r.id,k:'warr',cls:'qty',step:'1'})}</td>
+      <td>${numberHtml(r.stock??0,{i:r.id,k:'stock',cls:'qty',step:'1'})}</td>
+      <td>${inputHtml((r.tags||[]).join(', '),{i:r.id,k:'tags',cls:'wide',ph:'tagi po przecinku'})}</td>
+      <td>${inputHtml(r.note||'',{i:r.id,k:'note',cls:'wide'})}</td>
+    `;
+    tb.appendChild(tr);
+  });
+
+  // binds
+  tb.querySelectorAll('input[data-i],select[data-i]').forEach(el=>{
+    el.addEventListener('input', onCellInput);
+    el.addEventListener('change', onCellInput);
+  });
+  tb.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{ if(confirm('Usunąć pozycję?')) delRow(b.dataset.del); }));
+  tb.querySelectorAll('[data-dup]').forEach(b=>b.addEventListener('click',()=>dupRow(b.dataset.dup)));
+  tb.querySelectorAll('[data-cart]').forEach(chk=>{
+    chk.addEventListener('change',()=>{
+      const id=chk.dataset.cart;
+      if(chk.checked) cart.add(id); else cart.delete(id);
+      render(); renderCart();
+    });
+  });
+
+  renderCart();
+}
+
+function onCellInput(e){
+  const id = e.target.dataset.i;
+  const key= e.target.dataset.k;
+  const row = rows.find(x=>x.id===id); if(!row) return;
+  let v = e.target.type==='number' ? Number(e.target.value) : e.target.value;
+  if(key==='tags'){ v = String(v).split(',').map(s=>s.trim()).filter(Boolean); }
+  row[key] = v;
+  // recompute gross cell
+  const g = $('#g_'+id); if(g) g.textContent = fmtMoney(gross(row));
+  persist();
+}
+
+function addRow(){
+  const r = {id:uid(),created:Date.now(),cat:$('#fCat').value||'Rury i kształtki',brand:'',name:'Nowa pozycja',sku:'',dn:'',conn:'',mat:'',params:'',class:'',unit:'szt',price:0,vat:23,supplier:'',warr:24,stock:0,tags:[],note:''};
+  rows.unshift(r); persist(); render();
+}
+function delRow(id){ rows = rows.filter(r=>r.id!==id); cart.delete(id); persist(); render(); }
+function dupRow(id){
+  const src = rows.find(r=>r.id===id); if(!src) return;
+  const d = JSON.parse(JSON.stringify(src));
+  d.id = uid(); d.name = (src.name||'')+' (kopia)'; d.created = Date.now();
+  rows.unshift(d); persist(); render();
+}
+
+/* ===== cart ===== */
+function renderCart(){
+  const list = rows.filter(r=>cart.has(r.id));
+  const div = $('#cartList'); div.innerHTML = '';
+  if(!list.length){ div.innerHTML = '<div class="small">Koszyk pusty. Zaznacz ✅ wybrane pozycje.</div>'; }
+  else{
+    div.innerHTML = list.map(r=>`
+      <div class="row" style="justify-content:space-between;border-bottom:1px dashed #2b3a77;padding:4px 0">
+        <div><b>${escapeHtml(r.name)}</b> <span class="small">(${escapeHtml(r.brand||'')})</span><div class="small">${escapeHtml(r.sku||'')} • ${escapeHtml(r.dn||'')} • ${escapeHtml(r.conn||'')}</div></div>
+        <div class="small" style="text-align:right">
+          netto: ${fmtMoney(num(r.price))} zł<br>
+          VAT ${INT0.format(num(r.vat))}% • brutto <b>${fmtMoney(gross(r))} zł</b>
+        </div>
+      </div>
+    `).join('');
+  }
+  const net = list.reduce((a,r)=>a+num(r.price),0);
+  const vat = list.reduce((a,r)=>a+(num(r.price)*num(r.vat)/100),0);
+  const gro = net+vat;
+  $('#cartCount').textContent = list.length;
+  $('#cartNet').textContent   = fmtMoney(net);
+  $('#cartVAT').textContent   = fmtMoney(vat);
+  $('#cartGross').textContent = fmtMoney(gro);
+}
+function exportCartCSV(){
+  const list = rows.filter(r=>cart.has(r.id));
+  const cols = ['cat','brand','name','sku','dn','conn','mat','params','unit','price','vat','gross','supplier','warr','stock','tags'];
+  const out = [cols.join(';')].concat(list.map(r=>{
+    return [
+      r.cat,r.brand,r.name,r.sku,r.dn,r.conn,r.mat,r.params,r.unit,
+      num(r.price).toFixed(2), INT0.format(num(r.vat)), gross(r).toFixed(2),
+      r.supplier, r.warr, r.stock, (r.tags||[]).join('|')
+    ].map(csvEsc).join(';');
+  }));
+  downloadText('arkon_hydraulika_koszyk.csv', out.join('\\n'), 'text/csv;charset=utf-8');
+}
+
+/* ===== import/export ===== */
+function exportCSV(){
+  const cols = ['id','created','cat','brand','name','sku','dn','conn','mat','params','class','unit','price','vat','supplier','warr','stock','tags','note'];
+  const out = [cols.join(';')].concat(rows.map(r=>{
+    return [r.id,new Date(r.created||Date.now()).toISOString(),r.cat,r.brand,r.name,r.sku,r.dn,r.conn,r.mat,r.params,r.class,r.unit,
+      num(r.price).toFixed(2), INT0.format(num(r.vat||23)), r.supplier, r.warr, r.stock, (r.tags||[]).join('|'), r.note].map(csvEsc).join(';');
+  }));
+  downloadText('arkon_hydraulika.csv', out.join('\\n'), 'text/csv;charset=utf-8');
+}
+function exportJSON(){ downloadText('arkon_hydraulika.json', JSON.stringify(rows,null,2)); }
+async function importCSV(file){
+  try{
+    const txt = await file.text();
+    const lines = txt.split(/\\r?\\n/).filter(Boolean);
+    const head = lines.shift().split(';');
+    const arr = lines.map(line=>{
+      const v = splitCsv(line);
+      const o = {};
+      head.forEach((k,i)=> o[k] = (v[i]??''));
+      // coercions
+      o.id = o.id || uid();
+      o.created = Date.parse(o.created||'') || Date.now();
+      o.price = Number(o.price)||0; o.vat = Number(o.vat)||23;
+      o.warr = Number(o.warr)||0; o.stock = Number(o.stock)||0;
+      o.tags = String(o.tags||'').split('|').map(s=>s.trim()).filter(Boolean);
+      return o;
+    });
+    rows = arr; persist(); render(); alert('Zaimportowano CSV.');
+  }catch(e){ alert('Błąd importu CSV: '+e.message); }
+}
+async function importJSON(file){
+  try{
+    const txt = await file.text();
+    const arr = JSON.parse(txt);
+    if(!Array.isArray(arr)) throw new Error('Zły format JSON.');
+    rows = arr.map(o=>({ ...o, id:o.id||uid(), created:o.created||Date.now(), tags:(o.tags||[])}));
+    persist(); render(); alert('Zaimportowano JSON.');
+  }catch(e){ alert('Błąd importu JSON: '+e.message); }
+}
+
+/* ===== utils ===== */
+function load(key, fallback){ try{ return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }catch{ return fallback; } }
+function persist(){ localStorage.setItem(LS_KEY, JSON.stringify(rows)); }
+function downloadText(name, text, mime){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:mime||'application/json'})); a.download=name; a.click(); URL.revokeObjectURL(a.href); }
+function splitCsv(line){
+  const out=[]; let cur=''; let inq=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c==='\"'){ if(inq && line[i+1]==='\"'){ cur+='\"'; i++; } else inq=!inq; continue; }
+    if(c===';' && !inq){ out.push(cur); cur=''; continue; }
+    cur+=c;
+  }
+  out.push(cur); return out;
+}
+function uid(){ return Math.random().toString(36).slice(2)+Date.now().toString(36); }
+function num(x){ return Number(x)||0; }
+function gross(r){ return num(r.price)*(1+num(r.vat)/100); }
+function inputHtml(val,{i,k,cls='',ph=''}={}){ return `<input data-i="${i}" data-k="${k}" class="${cls}" placeholder="${escapeHtml(ph)}" value="${escapeHtml(val??'')}">`; }
+function numberHtml(val,{i,k,cls='',step='1'}={}){ return `<input data-i="${i}" data-k="${k}" class="${cls}" type="number" step="${step}" value="${val??0}">`; }
+function selectHtml(opts,val,{i,k}={}){ return `<select data-i="${i}" data-k="${k}">` + opts.map(o=>`<option ${val===o?'selected':''}>${escapeHtml(o)}</option>`).join('') + `</select>`; }
+
+/* ===== boot ===== */
+render();
+</script>
+</body>
+</html>
