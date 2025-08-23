@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARKON — Komponenty: Pompy ciepła + osprzęt</title>
+<meta name="description" content="Komponenty pomp ciepła oraz pełny osprzęt: bufory, zasobniki, hydraulika, elektryka/sterowanie, bezpieczeństwo, montaż. Import/eksport CSV/JSON, filtrowanie i edycja.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🌞</text></svg>">
+<style>
+  :root{
+    --bg:#0b1020; --p1:#0e1433; --p2:#121a44; --ink:#e8edff;
+    --muted:#aeb8da; --line:#20306a; --accent:#4cc9f0; --ok:#2fbf71;
+    --bad:#ff6b6b; --chip:#152355; --field:#0d1530;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,var(--p1),var(--p2));color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
+  header{padding:16px;border-bottom:1px solid var(--line);background:#0f1a42;position:sticky;top:0;z-index:10}
+  header h1{margin:0;font-size:22px}
+  header .small{color:var(--muted);font-size:12px}
+  nav{background:#121a44;display:flex;gap:8px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line)}
+  nav a{color:#cfe0ff;text-decoration:none;padding:8px 12px;border-radius:999px;border:1px solid #2a3a75}
+  nav a:hover{background:#16255a}
+  .wrap{max-width:1400px;margin:auto;padding:16px}
+  .grid{display:grid;gap:12px}
+  @media(min-width:1100px){ .cols-2{grid-template-columns:2fr 1fr} }
+  .card{background:linear-gradient(180deg,#111a48,#0f1a42);border:1px solid var(--line);border-radius:14px;padding:14px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px dashed #3a4ca3}
+  .btn.bad{background:#3a1f2a;border-color:#7b3341}
+  .btn.ok{background:#194d34;border-color:#2f9762}
+  input,select,textarea{background:var(--field);border:1px solid #28356c;border-radius:10px;padding:8px 10px;color:var(--ink);font:inherit}
+  input::placeholder{color:#aeb8da99}
+  table{width:100%;border-collapse:separate;border-spacing:0}
+  th,td{padding:8px;border-bottom:1px solid #223169;text-align:left;vertical-align:top}
+  th{font-size:12px;color:var(--muted);white-space:nowrap}
+  .small{font-size:12px;color:var(--muted)}
+  .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
+  .scroll{overflow:auto}
+  .subtabs{display:flex;gap:8px;flex-wrap:wrap}
+  .sb{padding:6px 10px;border-radius:999px;border:1px solid #2a3a75;cursor:pointer;background:#0f1a42}
+  .sb[aria-selected="true"]{background:#1c2a66;border-color:#67a1ff}
+  .tag{display:inline-block;margin:2px 6px 0 0;padding:3px 8px;border:1px solid #3a4ca3;border-radius:999px;font-size:12px}
+  .right{display:flex;gap:8px;justify-content:flex-end}
+  .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
+  .hint{opacity:.9}
+  @media print{ nav,.btn,.sb,.right{display:none!important} }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Komponenty • Pompy ciepła + osprzęt</h1>
+  <div class="small">Baza producentów i modeli z edycją inline, filtrowaniem, importem/eksportem CSV/JSON i podsumowaniami.
+    Skróty: <span class="kbd">Alt+N</span> nowa pozycja • <span class="kbd">/</span> fokus szukaj.</div>
+</header>
+
+<nav>
+  <a href="index.html">Pulpit</a>
+  <a href="klienci.html">Klienci</a>
+  <a href="lidy.html">Lidy</a>
+  <a href="komponenty.html">Komponenty (lista)</a>
+  <a href="upload.html">Przesył plików</a>
+  <a href="dokumenty.html">Dokumenty</a>
+  <a href="chat.html">Komunikator</a>
+  <a href="ustawienia.html">Ustawienia</a>
+  <a href="kalkulator.html" target="_blank" rel="noopener">Kalkulator ↗️</a>
+</nav>
+
+<div class="wrap grid cols-2">
+  <section class="grid">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div class="row">
+          <input id="q" placeholder="🔎 Szukaj marka/model/uwagi/parametry…" style="min-width:280px">
+          <select id="cat">
+            <option value="hp" selected>Pompy ciepła (agregaty)</option>
+            <option value="buffer">Bufory / sprzęgła</option>
+            <option value="dhw">Zasobniki CWU</option>
+            <option value="hydro">Hydraulika (pompy obiegowe, zawory, rozdzielacze…)</option>
+            <option value="safety">Armatura bezpieczeństwa (naczynia, zawory, filtry…)</option>
+            <option value="elec">Elektryka / sterowanie (zabezpieczenia, moduły Wi‑Fi, termostaty…)</option>
+            <option value="mount">Montaż / akcesoria (stojaki, wibroizolacja, izolacje, tacki skroplin…)</option>
+            <option value="chem">Media i chemia (glikol, płukanki, inhibitory, czynniki)</option>
+          </select>
+          <span class="pill">Widocznych: <b id="vis">0</b></span>
+        </div>
+        <div class="row">
+          <button id="btnAdd" class="btn ok">+ Dodaj pozycję</button>
+          <button id="btnCSV" class="btn ghost">CSV eksport</button>
+          <label class="btn ghost">CSV import<input id="inCSV" type="file" accept=".csv" hidden></label>
+          <button id="btnJSON" class="btn ghost">JSON eksport</button>
+          <label class="btn ghost">JSON import<input id="inJSON" type="file" accept="application/json" hidden></label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabele -->
+    <div id="tbl_hp" class="card" style="padding:0">
+      <div class="scroll">
+        <table>
+          <thead><tr>
+            <th>Akcje</th><th>Marka</th><th>Seria</th><th>Model</th>
+            <th>Typ</th><th>Moc [kW]</th><th>SCOP</th><th>Czynnik</th>
+            <th>Akustyka [dB]</th><th>Cena [zł]</th><th>Uwagi</th>
+          </tr></thead>
+          <tbody id="tb_hp"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tbl_buffer" class="card" style="padding:0;display:none">
+      <div class="scroll">
+        <table>
+          <thead><tr>
+            <th>Akcje</th><th>Marka</th><th>Model</th><th>Poj. [l]</th><th>Wężownica</th><th>Izolacja</th><th>Przyłącza</th><th>Cena [zł]</th><th>Uwagi</th>
+          </tr></thead>
+          <tbody id="tb_buffer"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tbl_dhw" class="card" style="padding:0;display:none">
+      <div class="scroll">
+        <table>
+          <thead><tr>
+            <th>Akcje</th><th>Marka</th><th>Model</th><th>Poj. [l]</th><th>Wężownice</th><th>Pow. wym. [m²]</th><th>Antykorozja</th><th>Cena [zł]</th><th>Uwagi</th>
+          </tr></thead>
+          <tbody id="tb_dhw"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tbl_hydro" class="card" style="padding:0;display:none">
+      <div class="scroll">
+        <table>
+          <thead><tr>
+            <th>Akcje</th><th>Kategoria</th><th>Marka</th><th>Model</th><th>Parametry</th><th>Średnice</th><th>Cena [zł]</th><th>Uwagi</th>
+          </tr></thead>
+          <tbody id="tb_hydro"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tbl_safety" class="card" style="padding:0;display:none">
+      <div class="scroll">
+        <table>
+          <thead><tr>
+            <th>Akcje</th><th>Kategoria</th><th>Marka</th><th>Model</th><th>Parametry</th><th>Średnice</th><th>Cena [zł]</th><th>Uwagi</th>
+          </tr></thead>
+          <tbody id="tb_safety"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tbl_elec" class="card" style="padding:0;display:none">
+      <div class="scroll">
+        <table>
+          <thead><tr>
+            <th>Akcje</th><th>Kategoria</th><th>Marka</th><th>Model</th><th>Parametry</th><th>Cena [zł]</th><th>Uwagi</th>
+          </tr></thead>
+          <tbody id="tb_elec"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tbl_mount" class="card" style="padding:0;display:none">
+      <div class="scroll">
+        <table>
+          <thead><tr>
+            <th>Akcje</th><th>Kategoria</th><th>Marka</th><th>Model</th><th>Parametry</th><th>Cena [zł]</th><th>Uwagi</th>
+          </tr></thead>
+          <tbody id="tb_mount"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tbl_chem" class="card" style="padding:0;display:none">
+      <div class="scroll">
+        <table>
+          <thead><tr>
+            <th>Akcje</th><th>Rodzaj</th><th>Marka</th><th>Nazwa</th><th>Stężenie/klasa</th><th>Opakowanie</th><th>Cena [zł]</th><th>Uwagi</th>
+          </tr></thead>
+          <tbody id="tb_chem"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </section>
+
+  <aside class="grid">
+    <div class="card">
+      <b>Podsumowania</b>
+      <div class="grid" style="margin-top:8px">
+        <div class="row"><span class="pill">Agregaty: <b id="sum_hp">0</b></span><span class="pill">Bufory: <b id="sum_buffer">0</b></span></div>
+        <div class="row"><span class="pill">Zasobniki CWU: <b id="sum_dhw">0</b></span><span class="pill">Hydraulika: <b id="sum_hydro">0</b></span></div>
+        <div class="row"><span class="pill">Bezpieczeństwo: <b id="sum_safety">0</b></span><span class="pill">Elektryka: <b id="sum_elec">0</b></span></div>
+        <div class="row"><span class="pill">Montaż: <b id="sum_mount">0</b></span><span class="pill">Media/Chemia: <b id="sum_chem">0</b></span></div>
+        <div class="row"><span class="pill">Łącznie pozycji: <b id="sum_all">0</b></span></div>
+      </div>
+    </div>
+    <div class="card small">
+      <b>Wskazówki</b>
+      <ul>
+        <li>Edycja bezpośrednio w komórkach, zapis natychmiast do <code>localStorage</code>.</li>
+        <li>CSV/JSON działają per aktualna kategoria.</li>
+        <li>Przy wprowadzaniu większej ilości danych polecam JSON.</li>
+      </ul>
+    </div>
+  </aside>
+</div>
+
+<script>
+'use strict';
+
+/* ===== helpers ===== */
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const INT0 = new Intl.NumberFormat('pl-PL', {maximumFractionDigits:0});
+const fmt0 = n => INT0.format(Math.round(Number(n)||0));
+function escapeHtml(s){ return (s==null?'':String(s)).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]); }
+function escCsv(v){ let s=(v==null?'':String(v)); if(/[;\\n"]/.test(s)) s='"'+s.replace(/"/g,'""')+'"'; return s; }
+
+/* ===== storage keys ===== */
+const LS = {
+  hp:     'arkon_hp_units_v2',
+  buffer: 'arkon_hp_buffers_v1',
+  dhw:    'arkon_hp_dhw_v1',
+  hydro:  'arkon_hp_hydro_v1',
+  safety: 'arkon_hp_safety_v1',
+  elec:   'arkon_hp_elec_v1',
+  mount:  'arkon_hp_mount_v1',
+  chem:   'arkon_hp_chem_v1'
+};
+
+function load(key, fallback){ try{ return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }catch{ return fallback; } }
+function save(key, data){ localStorage.setItem(key, JSON.stringify(data)); refresh(); }
+
+/* ===== state ===== */
+let state = {
+  cat: 'hp',
+  q: '',
+  data: {
+    hp: load(LS.hp, []),
+    buffer: load(LS.buffer, []),
+    dhw: load(LS.dhw, []),
+    hydro: load(LS.hydro, []),
+    safety: load(LS.safety, []),
+    elec: load(LS.elec, []),
+    mount: load(LS.mount, []),
+    chem: load(LS.chem, [])
+  }
+};
+
+/* ===== seed (jeśli pusto) ===== */
+(function seed(){
+  if(!state.data.hp.length){
+    state.data.hp = [
+      {brand:'Daikin', series:'Altherma 3 H HT', model:'EPRA14DV3', type:'powietrze‑woda monoblok', power:14, scop:4.6, refrigerant:'R32', noise:54, price:35000, note:'HT do wysokich temp. zasilania'},
+      {brand:'Panasonic', series:'Aquarea L', model:'WH-MDC09J3E5', type:'powietrze‑woda monoblok', power:9, scop:4.7, refrigerant:'R290', noise:53, price:26000, note:'Naturalny czynnik, cicha praca'},
+      {brand:'Mitsubishi Electric', series:'Ecodan', model:'PUZ-WM112VHA', type:'powietrze‑woda split', power:11.2, scop:4.5, refrigerant:'R32', noise:52, price:31000, note:'Z Hydroboxem'},
+      {brand:'LG', series:'Therma V R290', model:'HU14MR.U33', type:'powietrze‑woda monoblok', power:14, scop:4.6, refrigerant:'R290', noise:55, price:30000, note:'Nowa generacja, Wi‑Fi'},
+      {brand:'Samsung', series:'EHS Mono HT Quiet', model:'AE120BXYDEG', type:'powietrze‑woda monoblok', power:12, scop:4.7, refrigerant:'R32', noise:35, price:31500, note:'Bardzo cicha seria'},
+      {brand:'Viessmann', series:'Vitocal 250-A', model:'AWO-E-10', type:'powietrze‑woda monoblok', power:10, scop:4.6, refrigerant:'R290', noise:39, price:36000, note:'Seria na R290'},
+      {brand:'Vaillant', series:'aroTHERM plus', model:'VWL 105/6 A', type:'powietrze‑woda monoblok', power:10.5, scop:4.6, refrigerant:'R290', noise:38, price:34500, note:'Wysoka temp. zasilania'},
+      {brand:'Bosch', series:'Compress 6800i AW', model:'AW 13 OR', type:'powietrze‑woda monoblok', power:13, scop:4.6, refrigerant:'R290', noise:40, price:33500, note:'Zintegrowane sterowanie'},
+      {brand:'NIBE', series:'S2125', model:'S2125-12', type:'powietrze‑woda monoblok', power:12, scop:4.8, refrigerant:'R290', noise:40, price:39000, note:'Smart control'},
+      {brand:'Stiebel Eltron', series:'WPL 25 A', model:'WPL 25 A', type:'powietrze‑woda monoblok', power:10, scop:4.5, refrigerant:'R32', noise:52, price:37000, note:''}];
+  }
+  if(!state.data.buffer.length){
+    state.data.buffer = [
+      {brand:'Kospel', model:'SB-200', vol:200, coil:'brak', ins:'pianka 50 mm', ports:'1”', price:2200, note:'mały bufor pod mieszkaniówkę'},
+      {brand:'Galmet', model:'Buffer SG(B)-300', vol:300, coil:'1x', ins:'poliuretan 50 mm', ports:'1 1/4”', price:3300, note:'wężownica solarna'},
+      {brand:'Viessmann', model:'Vitocell 100-E 400', vol:400, coil:'brak', ins:'EPS 80 mm', ports:'1 1/2”', price:5200, note:'sprzęgło hydrauliczne'},
+      {brand:'Reflex', model:'Storatherm Buffer 500', vol:500, coil:'brak', ins:'80 mm', ports:'DN32', price:6200, note:''}
+    ];
+  }
+  if(!state.data.dhw.length){
+    state.data.dhw = [
+      {brand:'Galmet', model:'SGW(S) 200', vol:200, coils:'1', area:1.2, anticorrosion:'emalia + anoda Mg', price:2400, note:''},
+      {brand:'Biawar', model:'MEGA Solar 300', vol:300, coils:'2', area:2.5, anticorrosion:'emalia + anoda', price:3900, note:'pod PV/solary'},
+      {brand:'Viessmann', model:'Vitocell 100-V 300', vol:300, coils:'1', area:1.8, anticorrosion:'Ceraprotect', price:6200, note:''},
+      {brand:'NIBE', model:'VPB 200', vol:200, coils:'1', area:1.4, anticorrosion:'emalia', price:5600, note:''}
+    ];
+  }
+  if(!state.data.hydro.length){
+    state.data.hydro = [
+      {cat:'Pompa obiegowa', brand:'Wilo', model:'Yonos PICO 25/1-8', params:'6 m, 1‑8 m, 1~230V', dn:'G1 1/2”', price:650, note:'A‑klasa'},
+      {cat:'Pompa obiegowa', brand:'Grundfos', model:'Alpha2 25-60', params:'6 m, 1~230V', dn:'G1 1/2”', price:720, note:''},
+      {cat:'Rozdzielacz podłogowy', brand:'Tece', model:'Stainless 8 obwodów', params:'z przepływomierzami', dn:'Eurokonus 3/4”', price:980, note:''},
+      {cat:'Separator powietrza', brand:'Spirotech', model:'Spirovent', params:'HVAC DN25', dn:'1”', price:520, note:''},
+      {cat:'Separator zanieczyszczeń', brand:'Fernox', model:'TF1 Total Filter', params:'magnetyczny', dn:'3/4”', price:480, note:''},
+      {cat:'Zawór mieszający 3D', brand:'ESBE', model:'VRG131', params:'Kvs 10', dn:'1”', price:330, note:''},
+      {cat:'Siłownik zaworu', brand:'ESBE', model:'ARA661', params:'230V, 3‑punkt', dn:'—', price:360, note:''},
+      {cat:'Grupa bezpieczeństwa CO', brand:'Afriso', model:'KB 001', params:'z zaworem 3 bar i manometrem', dn:'1”', price:240, note:''}
+    ];
+  }
+  if(!state.data.safety.length){
+    state.data.safety = [
+      {cat:'Naczynie wzbiorcze', brand:'Reflex', model:'N 25', params:'25 l, 3 bar', dn:'G3/4”', price:260, note:''},
+      {cat:'Naczynie wzbiorcze', brand:'Zilmet', model:'CAL-PRO 35', params:'35 l, 3 bar', dn:'G3/4”', price:320, note:''},
+      {cat:'Zawór bezpieczeństwa', brand:'Caleffi', model:'311', params:'3 bar', dn:'1/2”', price:80, note:''},
+      {cat:'Odpowietrznik automatyczny', brand:'Flamco', model:'Flexvent Top', params:'do 110°C', dn:'3/8”', price:45, note:''}
+    ];
+  }
+  if(!state.data.elec.length){
+    state.data.elec = [
+      {cat:'Wyłącznik różnicowoprądowy', brand:'Legrand', model:'30mA 40A', params:'typ A', price:180, note:''},
+      {cat:'Ogranicznik przepięć', brand:'Dehn', model:'DEHNshield', params:'T1+T2 3‑faz', price:780, note:''},
+      {cat:'Zabezpieczenie nadprądowe', brand:'Schneider', model:'C16', params:'3P, 6kA', price:75, note:''},
+      {cat:'Termostat pokojowy', brand:'Salus', model:'RT310i', params:'Wi‑Fi, on/off', price:260, note:''},
+      {cat:'Moduł Wi‑Fi', brand:'Daikin', model:'BRP069A', params:'aplikacja Onecta', price:600, note:''}
+    ];
+  }
+  if(!state.data.mount.length){
+    state.data.mount = [
+      {cat:'Stojak zewnętrzny', brand:'Lenz', model:'ST400', params:'do 140 kg, stal oc.', price:420, note:''},
+      {cat:'Podstawa antywibracyjna', brand:'Roth', model:'AVP 600', params:'guma EPDM', price:220, note:''},
+      {cat:'Tacka skroplin', brand:'Aspen', model:'MM', params:'z pompą kondensatu', price:680, note:''},
+      {cat:'Izolacja rur', brand:'Armaflex', model:'AF-2', params:'gr. 20 mm', price:14, note:'/mb'},
+      {cat:'Zawór antyzamrożeniowy', brand:'Caleffi', model:'Discald 108', params:'aktywny przy 3°C', price:260, note:''}
+    ];
+  }
+  if(!state.data.chem.length){
+    state.data.chem = [
+      {kind:'Glikol propylenowy', brand:'Borygo', name:'Eko 35%', conc:'-20°C', pack:'20 l', price:220, note:''},
+      {kind:'Inhibitor korozji', brand:'Fernox', name:'F1', conc:'—', pack:'500 ml', price:140, note:''},
+      {kind:'Płukanka', brand:'Fernox', name:'F3', conc:'—', pack:'500 ml', price:120, note:''}
+    ];
+  }
+  // zapisz seed
+  Object.entries(state.data).forEach(([k,v])=> save(LS[k], v));
+})();
+
+/* ===== render ===== */
+function render(){
+  const q = (state.q||'').toLowerCase();
+  const cat = state.cat;
+  let vis = 0;
+
+  function draw(tbId, rows, mapCols){
+    const tb = $(tbId); tb.innerHTML='';
+    rows.forEach((r,idx)=>{
+      const hay = JSON.stringify(r).toLowerCase();
+      if(q && !hay.includes(q)) return;
+      vis++;
+      const tr = document.createElement('tr');
+      const del = '<button class="btn bad" data-del="'+idx+'">Usuń</button>';
+      tr.innerHTML = '<td class="row">'+del+'</td>' + mapCols(r, idx);
+      tb.appendChild(tr);
+    });
+    tb.querySelectorAll('[data-del]').forEach(b=> b.addEventListener('click',()=>{
+      if(!confirm('Usunąć pozycję?')) return;
+      state.data[cat].splice(+b.dataset.del,1);
+      save(LS[cat], state.data[cat]);
+    }));
+  }
+
+  if(cat==='hp'){
+    draw('#tb_hp', state.data.hp, (r,i)=>{
+      return [
+        cell('brand', r.brand, i), cell('series', r.series, i), cell('model', r.model, i),
+        selectCell('type', r.type, i, ['powietrze‑woda monoblok','powietrze‑woda split','solanka‑woda','woda‑woda']),
+        numberCell('power', r.power, i, '0.1'),
+        numberCell('scop', r.scop, i, '0.01'),
+        textCell('refrigerant', r.refrigerant, i),
+        numberCell('noise', r.noise, i, '1'),
+        numberCell('price', r.price, i, '1'),
+        textCell('note', r.note, i)
+      ].join('');
+    });
+  }else if(cat==='buffer'){
+    draw('#tb_buffer', state.data.buffer, (r,i)=>[
+      cell('brand',r.brand,i), cell('model',r.model,i),
+      numberCell('vol',r.vol,i,'1'),
+      selectCell('coil',r.coil,i,['brak','1x','2x']),
+      cell('ins',r.ins,i), cell('ports',r.ports,i),
+      numberCell('price',r.price,i,'1'), textCell('note',r.note,i)
+    ].join(''));
+  }else if(cat==='dhw'){
+    draw('#tb_dhw', state.data.dhw, (r,i)=>[
+      cell('brand',r.brand,i), cell('model',r.model,i),
+      numberCell('vol',r.vol,i,'1'),
+      selectCell('coils',r.coils,i,['1','2']),
+      numberCell('area',r.area,i,'0.1'),
+      cell('anticorrosion',r.anticorrosion,i),
+      numberCell('price',r.price,i,'1'),
+      textCell('note',r.note,i)
+    ].join(''));
+  }else if(cat==='hydro'){
+    draw('#tb_hydro', state.data.hydro, (r,i)=>[
+      selectCell('cat',r.cat,i,['Pompa obiegowa','Rozdzielacz podłogowy','Separator powietrza','Separator zanieczyszczeń','Zawór mieszający 3D','Siłownik zaworu','Grupa bezpieczeństwa CO','Wymiennik płytowy','Sprzęgło hydrauliczne']),
+      cell('brand',r.brand,i), cell('model',r.model,i),
+      cell('params',r.params,i), cell('dn',r.dn,i),
+      numberCell('price',r.price,i,'1'),
+      textCell('note',r.note,i)
+    ].join(''));
+  }else if(cat==='safety'){
+    draw('#tb_safety', state.data.safety, (r,i)=>[
+      selectCell('cat',r.cat,i,['Naczynie wzbiorcze','Zawór bezpieczeństwa','Odpowietrznik automatyczny','Zawór zwrotny','Manometr','Termomanometr']),
+      cell('brand',r.brand,i), cell('model',r.model,i),
+      cell('params',r.params,i), cell('dn',r.dn,i),
+      numberCell('price',r.price,i,'1'),
+      textCell('note',r.note,i)
+    ].join(''));
+  }else if(cat==='elec'){
+    draw('#tb_elec', state.data.elec, (r,i)=>[
+      selectCell('cat',r.cat,i,['RCD (różnicówka)','Ogranicznik przepięć','MCB (nadprądowe)','Termostat pokojowy','Moduł Wi‑Fi','Sterownik strefowy','Czujnik temperatury zewn.']),
+      cell('brand',r.brand,i), cell('model',r.model,i),
+      cell('params',r.params,i),
+      numberCell('price',r.price,i,'1'),
+      textCell('note',r.note,i)
+    ].join(''));
+  }else if(cat==='mount'){
+    draw('#tb_mount', state.data.mount, (r,i)=>[
+      selectCell('cat',r.cat,i,['Stojak zewnętrzny','Podstawa antywibracyjna','Tacka skroplin','Izolacja rur','Zawór antyzamrożeniowy','Króćce, kolana, złączki','Przepust dachowy','Odpływ skroplin']),
+      cell('brand',r.brand,i), cell('model',r.model,i),
+      cell('params',r.params,i),
+      numberCell('price',r.price,i,'1'),
+      textCell('note',r.note,i)
+    ].join(''));
+  }else if(cat==='chem'){
+    draw('#tb_chem', state.data.chem, (r,i)=>[
+      selectCell('kind',r.kind,i,['Glikol propylenowy','Inhibitor korozji','Płukanka','Środek biobójczy','Czynnik chłodniczy']),
+      cell('brand',r.brand,i), cell('name',r.name,i),
+      cell('conc',r.conc,i), cell('pack',r.pack,i),
+      numberCell('price',r.price,i,'1'),
+      textCell('note',r.note,i)
+    ].join(''));
+  }
+
+  $('#vis').textContent = vis;
+}
+
+/* ===== input cells ===== */
+function textCell(key,val,i){ return '<td><input class="fld" data-k="'+key+'" data-i="'+i+'" value="'+escapeHtml(val??'')+'"></td>'; }
+function numberCell(key,val,i,step){ return '<td><input class="fld" type="number" step="'+(step||'1')+'" data-k="'+key+'" data-i="'+i+'" value="'+(val??'')+'"></td>'; }
+function cell(key,val,i){ return textCell(key,val,i); }
+function selectCell(key,val,i,opts){ return '<td><select class="fld" data-k="'+key+'" data-i="'+i+'">'+opts.map(o=>'<option'+(o===val?' selected':'')+'>'+o+'</option>').join('')+'</select></td>'; }
+
+/* ===== bind ===== */
+$('#q').addEventListener('input', e=>{ state.q=e.target.value.trim(); render(); });
+$('#cat').addEventListener('change', e=>{ state.cat=e.target.value; toggleTables(); render(); });
+$('#btnAdd').addEventListener('click', ()=>{
+  const c = state.cat;
+  const blank = {
+    hp:{brand:'',series:'',model:'',type:'powietrze‑woda monoblok',power:0,scop:4.5,refrigerant:'R290',noise:0,price:0,note:''},
+    buffer:{brand:'',model:'',vol:100,coil:'brak',ins:'',ports:'',price:0,note:''},
+    dhw:{brand:'',model:'',vol:200,coils:'1',area:1.0,anticorrosion:'',price:0,note:''},
+    hydro:{cat:'Pompa obiegowa',brand:'',model:'',params:'',dn:'',price:0,note:''},
+    safety:{cat:'Naczynie wzbiorcze',brand:'',model:'',params:'',dn:'',price:0,note:''},
+    elec:{cat:'RCD (różnicówka)',brand:'',model:'',params:'',price:0,note:''},
+    mount:{cat:'Stojak zewnętrzny',brand:'',model:'',params:'',price:0,note:''},
+    chem:{kind:'Glikol propylenowy',brand:'',name:'',conc:'',pack:'',price:0,note:''}
+  }[c];
+  state.data[c].push(blank);
+  save(LS[c], state.data[c]);
+});
+document.addEventListener('input', (e)=>{
+  const el = e.target;
+  if(!el.classList.contains('fld')) return;
+  const i = +el.dataset.i, k = el.dataset.k;
+  const c = state.cat;
+  let v = el.value;
+  if(el.type==='number') v = Number(v)||0;
+  state.data[c][i][k] = v;
+  save(LS[c], state.data[c]);
+});
+// CSV export/import per category
+$('#btnCSV').addEventListener('click', ()=>{
+  const c = state.cat, rows = state.data[c];
+  if(!rows.length){ alert('Brak danych do eksportu.'); return; }
+  const cols = Object.keys(rows[0]);
+  const out = [cols.join(';')].concat(rows.map(r=> cols.map(k=>escCsv(r[k])).join(';')));
+  downloadText('komponenty_'+c+'.csv', out.join('\\n'), 'text/csv;charset=utf-8');
+});
+$('#inCSV').addEventListener('change', async e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const txt = await f.text();
+  const [head, ...lines] = txt.split(/\\r?\\n/).filter(Boolean);
+  const cols = head.split(';');
+  const arr = lines.map(line=>{
+    const v = line.split(';'); const o={};
+    cols.forEach((k,i)=> o[k]=v[i]??'');
+    // liczby
+    Object.keys(o).forEach(k=>{ if(/^(power|scop|noise|price|vol|area)$/i.test(k)) o[k] = Number(o[k])||0; });
+    return o;
+  });
+  state.data[state.cat] = arr;
+  save(LS[state.cat], arr);
+  e.target.value='';
+});
+// JSON export/import
+$('#btnJSON').addEventListener('click', ()=>{
+  const c = state.cat, rows = state.data[c];
+  downloadText('komponenty_'+c+'.json', JSON.stringify(rows, null, 2), 'application/json');
+});
+$('#inJSON').addEventListener('change', async e=>{
+  const f = e.target.files[0]; if(!f) return;
+  try{
+    const arr = JSON.parse(await f.text());
+    if(!Array.isArray(arr)) throw 0;
+    state.data[state.cat] = arr;
+    save(LS[state.cat], arr);
+  }catch{ alert('Błędny JSON.'); }
+  e.target.value='';
+});
+
+function downloadText(name, text, mime){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text],{type:mime||'text/plain'}));
+  a.download = name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 800);
+}
+
+function toggleTables(){
+  const id = 'tbl_'+state.cat;
+  ['hp','buffer','dhw','hydro','safety','elec','mount','chem'].forEach(k=>{
+    const el = document.getElementById('tbl_'+k);
+    if(el) el.style.display = (id==='tbl_'+k)?'block':'none';
+  });
+}
+
+/* ===== refresh sums ===== */
+function refreshSums(){
+  ['hp','buffer','dhw','hydro','safety','elec','mount','chem'].forEach(k=>{
+    const el = document.getElementById('sum_'+k);
+    if(el) el.textContent = (state.data[k]||[]).length;
+  });
+  const total = ['hp','buffer','dhw','hydro','safety','elec','mount','chem'].reduce((a,k)=>a+(state.data[k]||[]).length,0);
+  $('#sum_all').textContent = total;
+}
+
+function refresh(){ render(); refreshSums(); }
+
+/* ===== boot ===== */
+toggleTables(); refresh();
+
+// shortcuts
+window.addEventListener('keydown', (e)=>{
+  if(e.key==='/'){ e.preventDefault(); $('#q').focus(); }
+  if(e.altKey && (e.key==='n' || e.key==='N')){ e.preventDefault(); $('#btnAdd').click(); }
+});
+</script>
+</body>
+</html>
