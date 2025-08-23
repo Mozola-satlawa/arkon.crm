@@ -6,6 +6,7 @@
 <title>ARKON — Przesył dokumentów / Oferty / Ulotki</title>
 <meta name="description" content="Upload plików powiązanych z klientem, baza ofert i ulotek. Integracja z klientami i komponentami (pompy, piece, PV, ocieplenie, stolarka).">
 <style>
+https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2
   :root{
     --bg:#0b1020;--p1:#0f1533;--p2:#121a38;--ink:#e7ecff;--muted:#aeb8da;--line:#223066;
     --accent:#4cc9f0;--ok:#2fbf71;--bad:#ff6b6b;--warn:#ffb84d;
@@ -58,7 +59,14 @@
   <h1>Przesył dokumentów • ARKON CRM</h1>
   <div class="small">Powiąż pliki z klientami, buduj <b>oferty</b>, prowadź bazę <b>ulotek</b>. Integracja z komponentami (Pompy, Piece, PV, Ocieplenie, Stolarka).</div>
 </header>
+<label class="btn">Dodaj pliki… <input id="inFiles" type="file" multiple hidden></label>
 
+<!-- DOPISZ TE 2 ELEMENTY TUŻ ZA powyższą linią -->
+<label class="pill" style="cursor:pointer">
+  <input id="toCloud" type="checkbox" checked>
+  Wyślij do chmury (Supabase)
+</label>
+<span id="cloudState" class="pill">Chmura: niepołączono</span>
 <nav>
   <a href="index.html">Pulpit</a>
   <a href="klienci.html">Klienci</a>
@@ -213,6 +221,89 @@
 </div>
 
 <script>
+  <script>
+// ===== SUPABASE: konfiguracja uploadu umów =====
+const SUPA_URL = 'https://phxxjirqlktzcwnygaha.supabase.co';
+const SUPA_KEY = 'sb_publishable_iOXdu9fUGGko3MqPmltAag_ZbPUxp4r'; // PUBLISHABLE (anon) key
+const supa = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+
+const BUCKET = 'umowy'; // utwórz w Storage
+// opcjonalny identyfikator „konta” (żeby rozdzielać pliki między arkon-crm / pawel itd.)
+const ACCOUNT_ID = (localStorage.getItem('arkon_account_id') || 'arkon-crm').toLowerCase();
+
+// UI status chmury
+function setCloudState(txt, ok){
+  const el = document.getElementById('cloudState');
+  if(!el) return;
+  el.textContent = txt;
+  el.style.borderColor = ok ? '#2e925e' : '#7b3341';
+  el.style.background = ok ? '#0f2c22' : '#2e1117';
+}
+
+// proste „ping” – sprawdzamy, czy bucket istnieje/odczyt działa
+async function supaPing(){
+  try{
+    const { data, error } = await supa.storage.from(BUCKET).list('', { limit: 1 });
+    if(error) throw error;
+    setCloudState('Chmura: połączono ✓', true);
+  }catch(e){
+    setCloudState('Chmura: błąd (sprawdź bucket/polityki)', false);
+    console.warn('Supabase ping error:', e);
+  }
+}
+supaPing();
+
+// bezpieczna nazwa pliku
+function safeName(name){
+  return String(name || 'plik')
+    .normalize('NFKD').replace(/[^\w.\-]+/g,'').replace(/+/g,'_').toLowerCase();
+}
+
+// ścieżka: upload/<clientId|bez-klienta>/<ISO>_<plik>
+function buildPath({clientId, file}){
+  const who  = (clientId || 'bez-klienta').toLowerCase();
+  const ts   = new Date().toISOString().replace(/[:.]/g,'-');
+  return upload/${who}/${ts}_${safeName(file.name)};
+}
+
+// faktyczny upload do Supabase + wpis metadanych (opcjonalny)
+async function uploadToSupabase({file, clientId, clientName, category, tags}){
+  const path = buildPath({clientId, file});
+
+  // 1) wgrywamy do Storage
+  const { error: upErr } = await supa
+    .storage.from(BUCKET)
+    .upload(path, file, { upsert:true, cacheControl:'3600', contentType: file.type || 'application/octet-stream' });
+
+  if (upErr) throw upErr;
+
+  // 2) publiczny URL do podglądu
+  const { data: pub } = supa.storage.from(BUCKET).getPublicUrl(path);
+  const file_url = pub?.publicUrl || null;
+
+  // 3) zapis metadanych (jeśli masz tabelę public.files – patrz SQL na końcu)
+  //    jeśli nie masz tej tabeli, możesz ten blok pominąć lub zostawić – po prostu zignoruje błąd
+  try{
+    await supa.from('files').insert({
+      account_id: ACCOUNT_ID,
+      client_id:  clientId || '',
+      client_name: clientName || '',
+      category:   category || '',
+      tags:       tags || '',
+      file_name:  file.name,
+      file_path:  path,
+      file_url:   file_url,
+      author:     ACCOUNT_ID,
+      uploaded_at: new Date().toISOString()
+    });
+  }catch(e){
+    // brak tabeli 'files' – to tylko metadane, więc nie przerywamy
+    console.info('files meta insert skipped/failed:', e?.message || e);
+  }
+
+  return { path, file_url };
+}
+</script>
 'use strict';
 
 /* ===== helpers ===== */
@@ -303,60 +394,89 @@ async function handleFiles(files){
   }
   renderFiles();
 }
-async function renderFiles(){
-  const list = await dbAll();
-  const q=(fileFilter.q||'').toLowerCase();
-  const cat = fileFilter.cat||'';
-  const tb = $('#tbFiles'); tb.innerHTML='';
-  const cats = new Set();
-  list.sort((a,b)=>(b.at||0)-(a.at||0)).forEach(rec=>cats.add(rec.category||''));
-  // fill category filter
-  $('#fCat').innerHTML = '<option value="">Kategoria (wszystkie)</option>' + Array.from(cats).filter(Boolean).map(c=>`<option ${cat===c?'selected':''}>${esc(c)}</option>`).join('');
-  let vis=0;
-  list.filter(x=>{
-    if(cat && (x.category||'')!==cat) return false;
-    const hay=[x.name,x.clientName,x.category,x.type,x.tags].join(' ').toLowerCase();
-    return !q || hay.includes(q);
-  }).forEach(rec=>{
-    vis++;
-    const tr=document.createElement('tr');
-    const when=rec.at? new Date(rec.at).toLocaleString('pl-PL'):'';
-    tr.innerHTML = `
-      <td class="row">
-        <button class="btn ghost" data-dl="${rec.id}">Pobierz</button>
-        <button class="btn" data-edit="${rec.id}">Edytuj</button>
-        <button class="btn bad" data-del="${rec.id}">Usuń</button>
-      </td>
-      <td>${esc(rec.name)}</td>
-      <td>${esc(rec.clientName||'')}</td>
-      <td>${esc(rec.category||'')}</td>
-      <td>${esc(rec.tags||'')}</td>
-      <td>${esc(rec.type||'')}</td>
-      <td>${bytes(rec.size||0)}</td>
-      <td>${when}</td>`;
-    tb.appendChild(tr);
-  });
-  $('#filesVis').textContent = vis;
-  // binds
-  tb.querySelectorAll('[data-dl]').forEach(b=>b.addEventListener('click', async ()=>{
-    const rec=await dbGet(b.dataset.dl); if(!rec){ alert('Plik niedostępny.'); return; }
-    const url=URL.createObjectURL(rec.blob); const a=document.createElement('a'); a.href=url; a.download=rec.name; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1500);
-  }));
-  tb.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', async ()=>{
-    if(!confirm('Usunąć plik?')) return; await dbDel(b.dataset.del); renderFiles();
-  }));
-  tb.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click', async ()=>{
-    const rec=await dbGet(b.dataset.edit); if(!rec){ alert('Brak pliku.'); return; }
-    const newName = prompt('Nowa nazwa pliku', rec.name) || rec.name;
-    const newCat = prompt('Kategoria', rec.category||'') || rec.category||'';
-    const newTags = prompt('Tagi (przecinkami)', rec.tags||'') || rec.tags||'';
-    const clientId = prompt('ID klienta (puste = bez przypisania)', rec.clientId||'') || '';
-    const clientName = clientId ? (loadClients().find(c=>c.id===clientId)?.name||'') : '';
-    await dbPut({...rec, name:newName, category:newCat, tags:newTags, clientId, clientName });
-    renderFiles();
-  }));
+<script>
+// ===== SUPABASE: konfiguracja uploadu umów =====
+const SUPA_URL = 'https://phxxjirqlktzcwnygaha.supabase.co';
+const SUPA_KEY = 'sb_publishable_iOXdu9fUGGko3MqPmltAag_ZbPUxp4r'; // PUBLISHABLE (anon) key
+const supa = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+
+const BUCKET = 'umowy'; // utwórz w Storage
+// opcjonalny identyfikator „konta” (żeby rozdzielać pliki między arkon-crm / pawel itd.)
+const ACCOUNT_ID = (localStorage.getItem('arkon_account_id') || 'arkon-crm').toLowerCase();
+
+// UI status chmury
+function setCloudState(txt, ok){
+  const el = document.getElementById('cloudState');
+  if(!el) return;
+  el.textContent = txt;
+  el.style.borderColor = ok ? '#2e925e' : '#7b3341';
+  el.style.background = ok ? '#0f2c22' : '#2e1117';
 }
 
+// proste „ping” – sprawdzamy, czy bucket istnieje/odczyt działa
+async function supaPing(){
+  try{
+    const { data, error } = await supa.storage.from(BUCKET).list('', { limit: 1 });
+    if(error) throw error;
+    setCloudState('Chmura: połączono ✓', true);
+  }catch(e){
+    setCloudState('Chmura: błąd (sprawdź bucket/polityki)', false);
+    console.warn('Supabase ping error:', e);
+  }
+}
+supaPing();
+
+// bezpieczna nazwa pliku
+function safeName(name){
+  return String(name || 'plik')
+    .normalize('NFKD').replace(/[^\w.\-]+/g,'').replace(/+/g,'_').toLowerCase();
+}
+
+// ścieżka: upload/<clientId|bez-klienta>/<ISO>_<plik>
+function buildPath({clientId, file}){
+  const who  = (clientId || 'bez-klienta').toLowerCase();
+  const ts   = new Date().toISOString().replace(/[:.]/g,'-');
+  return upload/${who}/${ts}_${safeName(file.name)};
+}
+
+// faktyczny upload do Supabase + wpis metadanych (opcjonalny)
+async function uploadToSupabase({file, clientId, clientName, category, tags}){
+  const path = buildPath({clientId, file});
+
+  // 1) wgrywamy do Storage
+  const { error: upErr } = await supa
+    .storage.from(BUCKET)
+    .upload(path, file, { upsert:true, cacheControl:'3600', contentType: file.type || 'application/octet-stream' });
+
+  if (upErr) throw upErr;
+
+  // 2) publiczny URL do podglądu
+  const { data: pub } = supa.storage.from(BUCKET).getPublicUrl(path);
+  const file_url = pub?.publicUrl || null;
+
+  // 3) zapis metadanych (jeśli masz tabelę public.files – patrz SQL na końcu)
+  //    jeśli nie masz tej tabeli, możesz ten blok pominąć lub zostawić – po prostu zignoruje błąd
+  try{
+    await supa.from('files').insert({
+      account_id: ACCOUNT_ID,
+      client_id:  clientId || '',
+      client_name: clientName || '',
+      category:   category || '',
+      tags:       tags || '',
+      file_name:  file.name,
+      file_path:  path,
+      file_url:   file_url,
+      author:     ACCOUNT_ID,
+      uploaded_at: new Date().toISOString()
+    });
+  }catch(e){
+    // brak tabeli 'files' – to tylko metadane, więc nie przerywamy
+    console.info('files meta insert skipped/failed:', e?.message || e);
+  }
+
+  return { path, file_url };
+}
+</script>
 /* ===== OFFERS UI ===== */
 let offers = loadOffers();
 let curItems = []; // editor working items
