@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARKON — Kalendarz Montaży</title>
+<meta name="description" content="Kalendarz montażowy ARKON: planowanie, klienci, monterzy, statusy, eksport/import.">
+<style>
+  :root{
+    --bg:#0b1020; --p1:#121a34; --p2:#172142; --ink:#e8edff; --muted:#aeb8da;
+    --accent:#4cc9f0; --ok:#2fbf71; --warn:#ffb84d; --bad:#ff6b6b;
+    --card:#0f1533; --line:#1c2750; --grid:#243059; --chip:#0d1530;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#0a0f1e,#0c1230 60%,#0a0f1e);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
+  header{padding:16px;background:#11183a;border-bottom:1px solid var(--line)}
+  header h1{margin:0;font-size:22px}
+  nav{background:#172142;display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line)}
+  nav a{color:#cfe1ff;text-decoration:none;padding:8px 12px;border-radius:999px;border:1px solid #2a3a75}
+  nav a:hover{background:#223160}
+  .wrap{max-width:1300px;margin:auto;padding:16px}
+  .grid{display:grid;gap:14px}
+  @media(min-width:1100px){ .cols-2{grid-template-columns:2fr 1fr} }
+  .card{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;padding:14px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px dashed #3a4ca3}
+  .btn.bad{background:#3a1f2a;border-color:#7b3341}
+  .btn.ok{background:#194d34;border-color:var(--ok)}
+  input,select,textarea{background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:8px 10px;color:var(--ink);font:inherit}
+  input::placeholder,textarea::placeholder{color:#aeb8da99}
+  .small{font-size:12px;color:var(--muted)}
+  .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
+  .legend{display:flex;flex-wrap:wrap;gap:8px}
+  .dot{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;border:1px solid #2a3a77;background:#0d1530}
+  .dot .c{width:10px;height:10px;border-radius:50%}
+  .right{display:flex;gap:8px;justify-content:flex-end}
+  .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
+
+  /* Calendar */
+  .calendar{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .cal-head{display:grid;grid-template-columns:repeat(7,1fr);background:#0f173a;border-bottom:1px solid var(--line)}
+  .cal-head div{padding:8px 6px;text-align:center;color:#aeb8da}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:140px}
+  .cell{border-right:1px solid #1a244d;border-bottom:1px solid #1a244d;position:relative;background:#0e1435}
+  .cell:nth-child(7n){border-right:0}
+  .cell .d{position:absolute;top:6px;right:8px;font-size:12px;color:#aeb8da}
+  .cell .today{background:#20306b;color:#fff;padding:2px 6px;border-radius:6px}
+  .ev{display:block;margin:2px 6px 0;padding:3px 6px;border-radius:6px;border:1px solid #2a3a77;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+  .ev .bar{display:inline-block;width:6px;height:10px;border-radius:3px;margin-right:6px;vertical-align:middle}
+  .ev:hover{outline:1px solid #67a1ff44}
+
+  /* List */
+  table{width:100%;border-collapse:separate;border-spacing:0}
+  th,td{padding:8px 6px;border-bottom:1px solid #1a244d;text-align:left;vertical-align:top}
+  th{font-size:12px;color:var(--muted)}
+
+  /* Drawer (editor) */
+  .drawer{position:fixed;right:0;top:0;height:100%;width:520px;max-width:100%;background:linear-gradient(180deg,#0e1433,#0e173d);border-left:1px solid #2b3a77;box-shadow:-20px 0 60px #0008;transform:translateX(100%);transition:.25s;z-index:20;overflow:auto}
+  .drawer.open{transform:none}
+  .drawer .hd{position:sticky;top:0;background:#101a45;border-bottom:1px solid #2b3a77;padding:12px}
+  .drawer .bd{padding:12px}
+  .kv{display:grid;grid-template-columns:140px 1fr;gap:10px;align-items:center}
+  .kv label{font-size:13px;color:#aeb8da}
+  .kv input,.kv select,.kv textarea{width:100%}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .status{padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid #2a3a75;background:#0f1a44}
+  .status.plan{background:#21305f}
+  .status.conf{background:#24336b}
+  .status.done{background:#1d3d2f}
+  .status.canc{background:#4a1d1d}
+
+  @media print{
+    nav,.btn,.drawer{display:none!important}
+    .wrap{max-width:none}
+    .calendar .cell{min-height:120px}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Kalendarz Montaży • ARKON</h1>
+  <div class="small">Planowanie ekip i terminów. Dane: <code>localStorage</code> — eksport JSON/ICS, druk do PDF.</div>
+</header>
+
+<nav>
+  <a href="index.html">Pulpit</a>
+  <a href="klienci.html">Klienci</a>
+  <a href="lidy.html">Lidy</a>
+  <a href="komponenty.html">Komponenty</a>
+  <a href="upload.html">Przesył plików</a>
+  <a href="chat.html">Komunikator</a>
+  <a href="kalendarz-montaze.html" style="background:#223160">Kalendarz</a>
+</nav>
+
+<div class="wrap grid cols-2">
+  <!-- LEWY: kalendarz + lista -->
+  <section class="grid">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div class="row">
+          <button id="prev" class="btn">←</button>
+          <button id="today" class="btn ghost">Dziś</button>
+          <button id="next" class="btn">→</button>
+          <input id="jump" type="month" title="Skocz do miesiąca">
+        </div>
+        <div class="row">
+          <select id="fInstaller"><option value="">Monter (wszyscy)</option></select>
+          <select id="fStatus">
+            <option value="">Status (wszystkie)</option>
+            <option value="PLAN">PLAN</option>
+            <option value="POTWIERDZONY">POTWIERDZONY</option>
+            <option value="ZAKOŃCZONY">ZAKOŃCZONY</option>
+            <option value="ANULOWANY">ANULOWANY</option>
+          </select>
+          <input id="q" placeholder="🔎 Szukaj: klient/adres/uwagi">
+          <button id="btnClear" class="btn ghost">Wyczyść filtry</button>
+          <button id="btnNew" class="btn ok">+ Nowy montaż</button>
+        </div>
+      </div>
+
+      <div id="cal" class="calendar" style="margin-top:10px">
+        <div class="cal-head" id="calHead"></div>
+        <div class="cal-grid" id="calGrid" aria-live="polite"></div>
+      </div>
+      <div class="small" style="margin-top:6px">Kliknij w dzień, aby dodać montaż. Kliknij w kafelek montażu, aby edytować.</div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <b>Lista montaży (widok tabeli)</b>
+        <div class="right">
+          <button id="btnExport" class="btn">Eksport JSON</button>
+          <label class="btn ghost">Import JSON<input id="importJSON" type="file" accept="application/json" hidden></label>
+          <button id="btnPrint" class="btn ghost">Drukuj / PDF</button>
+        </div>
+      </div>
+      <div style="overflow:auto;margin-top:6px">
+        <table id="tbl">
+          <thead>
+            <tr>
+              <th>Data</th><th>Godz.</th><th>Klient</th><th>Adres</th><th>Zakres</th><th>Monterzy</th><th>Status</th><th>Akcje</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRAWY: legendy, obłożenie, szybkie dodawanie -->
+  <aside class="grid">
+    <div class="card">
+      <b>Monterzy • legenda</b>
+      <div id="legend" class="legend" style="margin-top:8px"></div>
+      <div class="row" style="margin-top:10px">
+        <input id="newInstName" placeholder="Imię i nazwisko">
+        <input id="newInstColor" type="color" value="#7dd3fc" title="Kolor">
+        <button id="btnAddInstaller" class="btn ok">+ Monter</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <b>Obłożenie w miesiącu</b>
+      <div id="load" class="small" style="margin-top:8px"></div>
+    </div>
+
+    <div class="card">
+      <b>Szybkie dodawanie</b>
+      <div class="small">Wypełnij i kliknij „Dodaj”. Wszystko możesz później edytować.</div>
+      <div class="grid" style="margin-top:8px">
+        <input id="qDate" type="date">
+        <div class="row"><input id="qTime" type="time" style="flex:1"><input id="qDur" type="number" min="1" value="4" title="Czas [h]" style="width:100px"><span class="pill">Czas [h]</span></div>
+        <input id="qClient" placeholder="Klient (nazwa)">
+        <input id="qAddr" placeholder="Adres">
+        <input id="qScope" placeholder="Zakres (np. PC 12 kW + bufor)">
+        <select id="qStatus">
+          <option>PLAN</option><option>POTWIERDZONY</option><option>ZAKOŃCZONY</option><option>ANULOWANY</option>
+        </select>
+        <div>
+          <label class="small">Monterzy (Ctrl/⌘, aby wybrać kilku)</label>
+          <select id="qInst" multiple size="4" style="width:100%"></select>
+        </div>
+        <textarea id="qNotes" placeholder="Uwagi (opcjonalnie)"></textarea>
+        <button id="btnQuickAdd" class="btn ok">+ Dodaj montaż</button>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<!-- Drawer (edycja szczegółowa) -->
+<aside id="drawer" class="drawer" aria-label="Edycja montażu">
+  <div class="hd row" style="justify-content:space-between">
+    <b>Edycja montażu</b>
+    <div class="right">
+      <button id="btnIcs" class="btn ghost" type="button">Eksport ICS</button>
+      <button id="btnDup" class="btn ghost" type="button">Duplikuj</button>
+      <button id="btnDel" class="btn bad" type="button">Usuń</button>
+      <button id="btnClose" class="btn ghost" type="button">Zamknij</button>
+    </div>
+  </div>
+  <div class="bd">
+    <div class="kv">
+      <label>Data</label><input id="e_date" type="date">
+      <label>Godzina</label><input id="e_time" type="time">
+      <label>Czas [h]</label><input id="e_dur" type="number" min="1">
+      <label>Klient</label><input id="e_client">
+      <label>Adres</label><input id="e_addr">
+      <label>Zakres</label><input id="e_scope">
+      <label>Status</label>
+      <select id="e_status">
+        <option>PLAN</option><option>POTWIERDZONY</option><option>ZAKOŃCZONY</option><option>ANULOWANY</option>
+      </select>
+      <label>Monterzy</label>
+      <div id="e_instBox" class="chips"></div>
+      <label>Uwagi</label><textarea id="e_notes"></textarea>
+      <label>Powiązany klient (z modułu Klienci)</label>
+      <select id="e_clientId"><option value="">— niepowiązany —</option></select>
+    </div>
+  </div>
+</aside>
+
+<script>
+'use strict';
+
+/* ===== helpers ===== */
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const INT = new Intl.NumberFormat('pl-PL',{maximumFractionDigits:0});
+const fmtDate = ts => new Date(ts||Date.now()).toLocaleDateString('pl-PL');
+const fmtDT   = ts => new Date(ts||Date.now()).toLocaleString('pl-PL');
+const pad2 = n => String(n).padStart(2,'0');
+const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
+function escapeHtml(s){return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function toLocalDateStr(d){ return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
+
+/* ===== storage keys ===== */
+const LS = {
+  events: 'arkon_montaze_v1',
+  installers: 'arkon_installers_v1',
+  clients: 'arkon_clients_v1'
+};
+
+/* ===== state ===== */
+let events = load(LS.events, []);
+let installers = load(LS.installers, []);
+let clients = load(LS.clients, []);
+let view = {year: new Date().getFullYear(), month: new Date().getMonth()}; // 0-11
+let filter = {q:'', installer:'', status:''};
+let openId = null;
+
+/* ===== load/save ===== */
+function load(key, fb){ try{ return JSON.parse(localStorage.getItem(key)||JSON.stringify(fb)); }catch{ return fb; } }
+function saveEvents(){ localStorage.setItem(LS.events, JSON.stringify(events)); render(); }
+function saveInstallers(){ localStorage.setItem(LS.installers, JSON.stringify(installers)); fillInstallerFilters(); renderLegend(); renderQuickInstallerSelect(); render(); }
+
+/* ===== seed (gdy pusto) ===== */
+if(!installers.length){
+  installers = [
+    {id:uid(), name:'Emil Trynda',   color:'#60a5fa'},
+    {id:uid(), name:'Adrian Witka',  color:'#34d399'},
+    {id:uid(), name:'Szefowa Gwiazda', color:'#fbbf24'},
+  ];
+  saveInstallers();
+}
+if(!events.length){
+  const d = new Date();
+  const y = d.getFullYear(), m=d.getMonth();
+  events = [
+    {id:uid(), date: toLocalDateStr(new Date(y,m, 5)), time:'08:00', dur:6, client:'Jan Kowalski', addr:'Przemków', scope:'Pompa 12 kW + bufor 100l', installers:[installers[0].id], status:'PLAN', notes:''},
+    {id:uid(), date: toLocalDateStr(new Date(y,m, 8)), time:'09:00', dur:8, client:'Firma XYZ', addr:'Legnica', scope:'PV 6kWp + pompa 9 kW', installers:[installers[1].id, installers[2].id], status:'POTWIERDZONY', notes:'Podjazd ciasny'},
+    {id:uid(), date: toLocalDateStr(new Date(y,m,15)), time:'07:30', dur:4, client:'Teresa Siek', addr:'Głogów', scope:'Serwis kotłowni', installers:[installers[0].id], status:'ZAKOŃCZONY', notes:'✔'},
+  ];
+  saveEvents();
+}
+
+/* ===== UI init ===== */
+const calHead = $('#calHead'), calGrid = $('#calGrid');
+const drawer = $('#drawer');
+
+/* toolbar */
+$('#prev').onclick = ()=>{ shiftMonth(-1); };
+$('#next').onclick = ()=>{ shiftMonth(+1); };
+$('#today').onclick = ()=>{ const d=new Date(); view.year=d.getFullYear(); view.month=d.getMonth(); render(); };
+$('#jump').onchange = (e)=>{ const [y,m]=e.target.value.split('-').map(Number); if(y) {view.year=y; view.month=(m||1)-1; render();} };
+
+$('#q').oninput = e=>{ filter.q=e.target.value.trim().toLowerCase(); renderList(); renderCalendar(); };
+$('#fInstaller').onchange = e=>{ filter.installer=e.target.value; renderList(); renderCalendar(); };
+$('#fStatus').onchange = e=>{ filter.status=e.target.value; renderList(); renderCalendar(); };
+$('#btnClear').onclick = ()=>{ filter={q:'',installer:'',status:''}; $('#q').value=''; $('#fInstaller').value=''; $('#fStatus').value=''; render(); };
+$('#btnNew').onclick = ()=> openEditorForNew();
+
+/* quick add */
+$('#btnAddInstaller').onclick = ()=>{
+  const name=$('#newInstName').value.trim();
+  const color=$('#newInstColor').value||'#7dd3fc';
+  if(!name) return alert('Podaj imię/nazwisko.');
+  installers.push({id:uid(), name, color}); saveInstallers();
+  $('#newInstName').value='';
+};
+$('#btnQuickAdd').onclick = ()=>{
+  const date=$('#qDate').value||toLocalDateStr(new Date());
+  const time=$('#qTime').value||'08:00';
+  const dur =Math.max(1, Number($('#qDur').value)||4);
+  const client=$('#qClient').value.trim()||'Klient';
+  const addr=$('#qAddr').value.trim();
+  const scope=$('#qScope').value.trim();
+  const status=$('#qStatus').value||'PLAN';
+  const inst=Array.from($('#qInst').selectedOptions).map(o=>o.value);
+  const notes=$('#qNotes').value.trim();
+  events.push({id:uid(), date,time,dur,client,addr,scope,status,installers:inst,notes});
+  saveEvents();
+  // skocz do miesiąca dodanej daty
+  const dt = new Date(date+'T00:00:00');
+  view.year=dt.getFullYear(); view.month=dt.getMonth(); render();
+  // wyczyść
+  ['#qClient','#qAddr','#qScope','#qNotes'].forEach(s=>$(s).value='');
+};
+
+/* drawer actions */
+$('#btnClose').onclick = ()=> closeDrawer();
+$('#btnDel').onclick = ()=>{ if(!openId) return; if(confirm('Usunąć montaż?')){ events = events.filter(e=>e.id!==openId); saveEvents(); closeDrawer(); } };
+$('#btnDup').onclick = ()=>{ if(!openId) return; const src=events.find(x=>x.id===openId); const cp=JSON.parse(JSON.stringify(src)); cp.id=uid(); events.push(cp); saveEvents(); alert('Zduplikowano.'); };
+$('#btnIcs').onclick = ()=>{ if(!openId) return; const ev=events.find(x=>x.id===openId); if(!ev) return; exportICS(ev); };
+
+/* export/import/print */
+$('#btnExport').onclick = ()=> exportJSON();
+$('#importJSON').onchange = async (e)=>{ const f=e.target.files[0]; if(!f) return; try{ const dump=JSON.parse(await f.text()); if(!Array.isArray(dump)) throw 0; events=dump; saveEvents(); alert('Zaimportowano.'); }catch{ alert('Błędny plik JSON.'); } e.target.value=''; };
+$('#btnPrint').onclick = ()=> window.print();
+
+/* keyboard */
+window.addEventListener('keydown',(e)=>{
+  if(e.key==='ArrowLeft' && (e.altKey||e.metaKey)) shiftMonth(-1);
+  if(e.key==='ArrowRight'&& (e.altKey||e.metaKey)) shiftMonth(+1);
+  if(e.key==='n' && e.altKey){ e.preventDefault(); openEditorForNew(); }
+});
+
+/* ===== RENDER ===== */
+function render(){
+  // head labels
+  const days = ['Pon','Wt','Śr','Czw','Pt','Sob','Ndz'];
+  calHead.innerHTML = days.map(d=><div>${d}</div>).join('');
+  // set month picker
+  $('#jump').value = view.year+'-'+pad2(view.month+1);
+  renderCalendar();
+  renderList();
+  renderLegend();
+  renderLoad();
+  fillClientSelect();
+  renderQuickInstallerSelect();
+}
+function renderCalendar(){
+  const first = new Date(view.year, view.month, 1);
+  const start = new Date(first); // Monday-start
+  const wd = (first.getDay()+6)%7; // 0=Mon
+  start.setDate(first.getDate()-wd);
+  const cells = [];
+  const todayStr = toLocalDateStr(new Date());
+  for(let i=0;i<42;i++){
+    const d = new Date(start); d.setDate(start.getDate()+i);
+    const ds = toLocalDateStr(d);
+    const inMonth = d.getMonth()===view.month;
+    const tag = ds===todayStr ? '<span class="today">dziś</span>' : '';
+    cells.push(`<div class="cell" data-date="${ds}" aria-label="${fmtDate(d)}">
+      <div class="d">${d.getDate()} ${tag}</div>
+      <div class="list"></div>
+    </div>`);
+  }
+  calGrid.innerHTML = cells.join('');
+  // fill events
+  const filtered = filterEvents(events);
+  filtered.forEach(ev=>{
+    const el = calGrid.querySelector(.cell[data-date="${ev.date}"] .list);
+    if(!el) return;
+    const clr = colorFor(ev);
+    const label = escapeHtml(shortEventText(ev));
+    const div = document.createElement('a');
+    div.href='#'; div.className='ev';
+    div.innerHTML = <span class="bar" style="background:${clr}"></span>${label};
+    div.title = ${ev.time} • ${ev.client} • ${ev.scope};
+    div.addEventListener('click',(e)=>{ e.preventDefault(); openDrawer(ev.id); });
+    el.appendChild(div);
+  });
+  // click to add
+  $$('.cell').forEach(c=>{
+    c.addEventListener('dblclick', ()=>{ openEditorForNew(c.dataset.date); });
+    c.addEventListener('click', (e)=>{
+      // single click does nothing to avoid misclicks; left for future
+    });
+  });
+}
+function renderList(){
+  const tb = $('#tbody'); tb.innerHTML='';
+  const rows = filterEvents(events).slice().sort((a,b)=>{
+    const da = a.date+(a.time||'00:00'), db=b.date+(b.time||'00:00');
+    return da.localeCompare(db);
+  });
+  if(!rows.length){
+    tb.innerHTML = '<tr><td colspan="8" class="small">Brak pozycji dla aktualnych filtrów.</td></tr>';
+    return;
+  }
+  rows.forEach(ev=>{
+    const inst = (ev.installers||[]).map(id=>{
+      const ins = installers.find(x=>x.id===id);
+      if(!ins) return '';
+      return <span class="dot"><span class="c" style="background:${ins.color}"></span>${escapeHtml(ins.name)}</span>;
+    }).join(' ');
+    const stCl = statusClass(ev.status);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${ev.date}</td>
+      <td>${ev.time||''} (${ev.dur||''}h)</td>
+      <td>${escapeHtml(ev.client||'')}</td>
+      <td>${escapeHtml(ev.addr||'')}</td>
+      <td>${escapeHtml(ev.scope||'')}</td>
+      <td>${inst}</td>
+      <td><span class="status ${stCl}">${escapeHtml(ev.status)}</span></td>
+      <td class="row"><button class="btn ghost ed">Edytuj</button></td>
+    `;
+    tr.querySelector('.ed').onclick = ()=> openDrawer(ev.id);
+    tb.appendChild(tr);
+  });
+}
+function renderLegend(){
+  const box = $('#legend'); box.innerHTML='';
+  installers.forEach(i=>{
+    const div = document.createElement('span');
+    div.className='dot';
+    div.innerHTML = <span class="c" style="background:${i.color}"></span>${escapeHtml(i.name)};
+    box.appendChild(div);
+  });
+}
+function renderLoad(){
+  // zlicz liczbę montaży /montera w bieżącym miesiącu
+  const ym = view.year+'-'+pad2(view.month+1);
+  const counts = {};
+  installers.forEach(i=>counts[i.id]=0);
+  events.forEach(ev=>{
+    if((ev.date||'').startsWith(ym)){
+      (ev.installers||[]).forEach(id=>{ if(counts[id]!=null) counts[id]++; });
+    }
+  });
+  const html = installers.map(i=>{
+    return `<div class="row" style="justify-content:space-between;border-bottom:1px dashed #28356c;padding:4px 0">
+      <span class="dot"><span class="c" style="background:${i.color}"></span>${escapeHtml(i.name)}</span>
+      <b>${counts[i.id]||0}</b>
+    </div>`;
+  }).join('');
+  $('#load').innerHTML = html || '<div class="small">Brak monterów.</div>';
+}
+function renderQuickInstallerSelect(){
+  const sel = $('#qInst'); sel.innerHTML='';
+  installers.forEach(i=>{
+    const opt=document.createElement('option');
+    opt.value=i.id; opt.textContent=i.name;
+    sel.appendChild(opt);
+  });
+}
+
+/* ===== filters & colors ===== */
+function filterEvents(arr){
+  return arr.filter(ev=>{
+    if(filter.q){
+      const hay = [ev.client, ev.addr, ev.scope, ev.notes].join(' ').toLowerCase();
+      if(!hay.includes(filter.q)) return false;
+    }
+    if(filter.status && ev.status!==filter.status) return false;
+    if(filter.installer && !(ev.installers||[]).includes(filter.installer)) return false;
+    return true;
+  });
+}
+function colorFor(ev){
+  const id=(ev.installers||[])[0];
+  const ins = installers.find(x=>x.id===id);
+  return ins ? ins.color : '#67a1ff';
+}
+function statusClass(s){
+  switch((s||'').toUpperCase()){
+    case 'PLAN': return 'plan';
+    case 'POTWIERDZONY': return 'conf';
+    case 'ZAKOŃCZONY': return 'done';
+    case 'ANULOWANY': return 'canc';
+    default: return '';
+  }
+}
+function shortEventText(ev){
+  const insCount = (ev.installers||[]).length;
+  const who = insCount ? ` • ${insCount} os.` : '';
+  const time = ev.time? ev.time+' ' : '';
+  return ${time}${ev.client||''}${who};
+}
+
+/* ===== month nav ===== */
+function shiftMonth(delta){
+  let y=view.year, m=view.month+delta;
+  if(m<0){ m=11; y--; }
+  if(m>11){ m=0; y++; }
+  view.year=y; view.month=m; render();
+}
+
+/* ===== drawer ===== */
+function openDrawer(id){
+  openId=id; drawer.classList.add('open');
+  const ev = events.find(x=>x.id===id);
+  if(!ev) return;
+  $('#e_date').value = ev.date||'';
+  $('#e_time').value = ev.time||'';
+  $('#e_dur').value  = ev.dur||4;
+  $('#e_client').value=ev.client||'';
+  $('#e_addr').value = ev.addr||'';
+  $('#e_scope').value= ev.scope||'';
+  $('#e_status').value= ev.status||'PLAN';
+  $('#e_notes').value = ev.notes||'';
+  // monterzy (chipsy z możliwością dod/usuń)
+  drawInstallerChips(ev.installers||[]);
+  // powiązany klient
+  fillClientSelect(ev.clientId||'');
+}
+function drawInstallerChips(list){
+  const box=$('#e_instBox'); box.innerHTML='';
+  const set=new Set(list||[]);
+  // aktywni
+  (list||[]).forEach(id=>{
+    const ins = installers.find(x=>x.id===id); if(!ins) return;
+    const chip=document.createElement('span');
+    chip.className='dot';
+    chip.innerHTML = <span class="c" style="background:${ins.color}"></span>${escapeHtml(ins.name)} <a href="#" data-id="${ins.id}" title="Usuń" style="color:#ffb4b4;margin-left:6px">×</a>;
+    chip.querySelector('a').onclick = (e)=>{ e.preventDefault(); set.delete(ins.id); drawInstallerChips([...set]); saveFromEditor({installers:[...set]}); };
+    box.appendChild(chip);
+  });
+  // dodaj
+  const sel=document.createElement('select');
+  sel.innerHTML = '<option value="">+ Dodaj montera…</option>' + installers.map(i=><option value="${i.id}">${escapeHtml(i.name)}</option>).join('');
+  sel.onchange = ()=>{ if(sel.value){ set.add(sel.value); drawInstallerChips([...set]); saveFromEditor({installers:[...set]}); sel.value=''; } };
+  box.appendChild(sel);
+}
+function closeDrawer(){ drawer.classList.remove('open'); openId=null; }
+
+/* ===== editor bindings (autosave) ===== */
+['#e_date','#e_time','#e_dur','#e_client','#e_addr','#e_scope','#e_status','#e_notes','#e_clientId'].forEach(sel=>{
+  const el=$(sel);
+  const evType = el.tagName==='SELECT' ? 'change' : 'input';
+  el.addEventListener(evType, ()=> {
+    const patch={};
+    if(sel==='#e_date') patch.date=el.value;
+    if(sel==='#e_time') patch.time=el.value;
+    if(sel==='#e_dur') patch.dur=Math.max(1,Number(el.value)||4);
+    if(sel==='#e_client') patch.client=el.value;
+    if(sel==='#e_addr') patch.addr=el.value;
+    if(sel==='#e_scope') patch.scope=el.value;
+    if(sel==='#e_status') patch.status=el.value;
+    if(sel==='#e_notes') patch.notes=el.value;
+    if(sel==='#e_clientId') patch.clientId=el.value||'';
+    saveFromEditor(patch);
+  });
+});
+function saveFromEditor(patch){
+  if(!openId) return;
+  const i = events.findIndex(x=>x.id===openId); if(i<0) return;
+  events[i] = {...events[i], ...patch};
+  saveEvents();
+  // odśwież chipsy po zmianie klienta (linki itp. można dodać)
+}
+
+/* ===== clients / installers in UI ===== */
+function fillInstallerFilters(){
+  const sel=$('#fInstaller'); const v=sel.value;
+  sel.innerHTML='<option value="">Monter (wszyscy)</option>'+installers.map(i=><option value="${i.id}">${escapeHtml(i.name)}</option>).join('');
+  sel.value=v||'';
+}
+function fillClientSelect(selected){
+  const sel=$('#e_clientId'); const v=selected||sel.value;
+  const data = load(LS.clients, []);
+  sel.innerHTML='<option value="">— niepowiązany —</option>'+data.map(c=><option value="${c.id}">${escapeHtml(c.name||'Klient')}</option>).join('');
+  sel.value=v||'';
+}
+
+/* ===== exports ===== */
+function exportJSON(){
+  const blob = new Blob([JSON.stringify(events,null,2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'arkon_montaze.json';
+  a.click(); URL.revokeObjectURL(a.href);
+}
+function exportICS(ev){
+  // Single VEVENT export (local time, no TZ)
+  const dt = (ev.date||'')+(ev.time? 'T'+ev.time.replace(':','')+'00' : 'T000000');
+  const durH = Math.max(1, Number(ev.dur)||1);
+  const end = new Date(ev.date+'T'+(ev.time||'00:00')+':00');
+  end.setHours(end.getHours()+durH);
+  const dtEnd = toLocalDateStr(end).replace(/-/g,'')+'T'+pad2(end.getHours())+pad2(end.getMinutes())+'00';
+  const uidStr = ev.id+'@arkon';
+  const sum = (ev.client||'Montaż')+' — '+(ev.scope||'');
+  const desc = Adres: ${ev.addr||''}\\nMonterzy: ${(ev.installers||[]).map(id=>installers.find(x=>x.id===id)?.name||'').join(', ')}\\nStatus: ${ev.status||''}\\nUwagi: ${ev.notes||''};
+  const ics = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//ARKON//Kalendarz Montaży//PL
+BEGIN:VEVENT
+UID:${uidStr}
+DTSTAMP:${new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+Z/,'Z')}
+DTSTART:${(ev.date||'').replace(/-/g,'')}${ev.time? 'T'+ev.time.replace(':','')+'00' : 'T000000'}
+DTEND:${dtEnd}
+SUMMARY:${sum}
+DESCRIPTION:${desc}
+LOCATION:${ev.addr||''}
+END:VEVENT
+END:VCALENDAR`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));
+  a.download = montaz_${(ev.client||'klient').replace(/\s+/g,'_')}.ics;
+  a.click(); URL.revokeObjectURL(a.href);
+}
+
+/* ===== start ===== */
+render();
+
+/* ===== accessibility/nice-to-have ===== */
+calGrid.addEventListener('keydown',(e)=>{
+  if(e.key==='Enter' && e.target.classList.contains('cell')){
+    openEditorForNew(e.target.dataset.date);
+  }
+});
+function openEditorForNew(dateStr){
+  const d = dateStr || toLocalDateStr(new Date(view.year,view.month,1));
+  const tmp = {id:uid(), date:d, time:'08:00', dur:4, client:'Nowy klient', addr:'', scope:'', installers:[], status:'PLAN', notes:''};
+  events.push(tmp); saveEvents();
+  openDrawer(tmp.id);
+}
+</script>
+</body>
+</html>
