@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARKON — Komponenty: Bramy garażowe</title>
+<meta name="description" content="Baza komponentów: bramy garażowe. Producenci, modele, wymiary, izolacja, napędy, akcesoria, ceny, import/eksport CSV/JSON, filtrowanie i edycja w tabeli.">
+<link rel="icon" type="image/svg+xml" href="pv-icon.svg">
+<style>
+  :root{ --bg:#0b1020; --p1:#121a34; --p2:#172142; --ink:#e8edff; --muted:#aeb8da; --accent:#4cc9f0; --ok:#2b8a57; --grid:#243059; --line:#1c2750; }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:linear-gradient(180deg,#0a0f1e,#0c1230 60%,#0a0f1e);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
+  header{padding:16px;background:#0f1636;border-bottom:1px solid var(--line)}
+  header h1{margin:0;font-size:22px}
+  header .muted{color:var(--muted);font-size:13px}
+  nav{display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line);background:#121a44;position:sticky;top:0;z-index:5}
+  nav a{color:#cfe1ff;text-decoration:none;padding:8px 12px;border-radius:999px;border:1px solid #2a3a75}
+  nav a:hover{background:#1a2758}
+  nav a[aria-current="page"]{background:#1b2550;border-color:#67a1ff;box-shadow:0 0 0 2px #67a1ff44}
+  .wrap{max-width:1400px;margin:auto;padding:16px}
+  .card{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;padding:14px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px dashed #3a4ca3}
+  .btn.ok{background:#194d34;border-color:var(--ok)}
+  .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
+  input,select{background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:8px 10px;color:var(--ink);font:inherit}
+  table{width:100%;border-collapse:separate;border-spacing:0}
+  th,td{padding:10px;border-bottom:1px solid var(--grid);text-align:left;vertical-align:top}
+  th{font-size:12px;color:var(--muted);white-space:nowrap}
+  td.num,th.num{text-align:right}
+  .small{font-size:12px;color:var(--muted)}
+  .right{display:flex;gap:8px;justify-content:flex-end}
+  .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
+  .tag{display:inline-block;margin:2px 6px 0 0;padding:3px 8px;border:1px solid #3a4ca3;border-radius:999px;font-size:12px}
+  .muted{color:var(--muted)}
+  .sum{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  @media(max-width:900px){ .sum{grid-template-columns:1fr 1fr} }
+</style>
+</head>
+<body>
+<header>
+  <h1>Komponenty — Bramy garażowe</h1>
+  <div class="muted">Filtrowanie, edycja w tabeli, import/eksport. Skróty: <span class="kbd">Alt+N</span> nowa pozycja • <span class="kbd">/</span> szukaj.</div>
+</header>
+
+<nav aria-label="Nawigacja">
+  <a href="index.html">Pulpit</a>
+  <a href="komponenty.html">Komponenty (hub)</a>
+  <a href="komponenty-pompy.html">Pompy</a>
+  <a href="komponenty-piece.html">Piece</a>
+  <a href="komponenty-fotowoltaika.html">Fotowoltaika</a>
+  <a href="komponenty-ocieplenie.html">Ocieplenie</a>
+  <a href="komponenty-stolarka.html">Stolarka</a>
+  <a href="komponenty-bramy.html" aria-current="page">Bramy</a>
+</nav>
+
+<div class="wrap">
+  <div class="card">
+    <div class="row">
+      <input id="q" placeholder="🔎 Szukaj: producent, model, kolor, napęd, uwagi…" style="min-width:260px">
+      <select id="fType">
+        <option value="">Typ (wszystkie)</option>
+        <option>segmentowa</option>
+        <option>roletowa</option>
+        <option>uchylna</option>
+        <option>dwuskrzydłowa</option>
+      </select>
+      <select id="fBrand">
+        <option value="">Producent</option>
+        <option>Hörmann</option>
+        <option>Wiśniowski</option>
+        <option>Krispol</option>
+        <option>Novoferm</option>
+        <option>Normstahl</option>
+        <option>Inny</option>
+      </select>
+      <select id="fIns">
+        <option value="">Izolacja (panel)</option>
+        <option>40 mm</option>
+        <option>45 mm</option>
+        <option>60 mm</option>
+      </select>
+      <select id="fDrive">
+        <option value="">Napęd</option>
+        <option>bez napędu</option>
+        <option>napęd</option>
+      </select>
+      <button id="btnClear" class="btn ghost" type="button">Wyczyść</button>
+      <span class="pill">Pozycji: <b id="countAll">0</b></span>
+      <span class="pill">Widocznych: <b id="countVis">0</b></span>
+      <span class="pill">Wartość (netto): <b id="sumNet">0</b> zł</span>
+      <span class="pill">Wartość (brutto 8%): <b id="sumGross">0</b> zł</span>
+      <span style="flex:1"></span>
+      <button id="btnAdd" class="btn ok" type="button">+ Dodaj</button>
+      <button id="btnCSV" class="btn ghost" type="button">CSV</button>
+      <button id="btnJSON" class="btn ghost" type="button">JSON</button>
+      <label class="btn ghost">Import JSON <input id="importJSON" type="file" accept="application/json" hidden></label>
+    </div>
+  </div>
+
+  <div class="card" style="overflow:auto">
+    <table id="tbl" role="grid" aria-label="Tabela bram">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Producent</th>
+          <th>Model</th>
+          <th>Typ</th>
+          <th>Wymiar [szer×wys mm]</th>
+          <th>Kolor</th>
+          <th>Panel</th>
+          <th>U [W/m²K]</th>
+          <th>Napęd</th>
+          <th>Sterowanie</th>
+          <th>Akcesoria</th>
+          <th>Dostawca</th>
+          <th>Gwarancja</th>
+          <th>Cena netto [zł]</th>
+          <th>Uwagi</th>
+          <th>Lead time</th>
+          <th>Instalacja</th>
+          <th>Link/karta</th>
+          <th>✕</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="small muted" style="margin-top:8px">
+    Dane zapisywane lokalnie w przeglądarce (<code>localStorage: arkon_cmp_garage_v1</code>). Edycja bezpośrednio w tabeli. Dwuklik = edycja pola.
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ===== utils =====
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const INT = new Intl.NumberFormat('pl-PL',{maximumFractionDigits:0});
+const fmt = n => INT.format(Math.round(Number(n)||0));
+function toNum(v){ if(typeof v==='number') return v; if(!v) return 0; const s=String(v).replace(/\s|\u00A0/g,'').replace(/\./g,'').replace(',', '.'); const n=parseFloat(s); return isFinite(n)?n:0; }
+function escapeHtml(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+// ===== storage key (zgodne z pulpit) =====
+const LS_KEY = 'arkon_cmp_garage_v1';
+
+// ===== state =====
+let rows = load() || seed();
+let filter = { q:'', type:'', brand:'', panel:'', drive:'' };
+
+// ===== load/save =====
+function load(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)||'null'); }catch{ return null; } }
+function save(){ localStorage.setItem(LS_KEY, JSON.stringify(rows)); render(); }
+
+// ===== seed sample data =====
+function seed(){
+  const data = [
+    {id:uid(), brand:'Hörmann', model:'LPU 42 M', type:'segmentowa', size:'2500×2125', color:'antracyt RAL 7016', panel:'42 mm', U:1.0, drive:'napęd', control:'pilot BiSecur', acc:'fotokomórki, odblokowanie awaryjne', supplier:'Hörmann Polska', warranty:'5 lat', price:5200, note:'Panel gładki Silkgrain', lead:'4–6 tyg.', install:'tak', link:''},
+    {id:uid(), brand:'Wiśniowski', model:'UniTherm 60', type:'segmentowa', size:'5000×2250', color:'złoty dąb', panel:'60 mm', U:0.79, drive:'napęd', control:'pilot, Wi‑Fi', acc:'fotokomórki, listwa krawędziowa', supplier:'Wiśniowski', warranty:'5 lat', price:9800, note:'Panele PRIME, ciepły montaż', lead:'5 tyg.', install:'tak', link:''},
+    {id:uid(), brand:'Krispol', model:'Segmentowa S40', type:'segmentowa', size:'2750×2250', color:'biały', panel:'40 mm', U:1.3, drive:'bez napędu', control:'—', acc:'—', supplier:'Krispol', warranty:'2 lata', price:3800, note:'Napęd jako opcja', lead:'3–4 tyg.', install:'nie', link:''},
+    {id:uid(), brand:'Novoferm', model:'ISO45', type:'segmentowa', size:'2400×2000', color:'antracyt', panel:'45 mm', U:1.0, drive:'napęd', control:'pilot Somfy RTS', acc:'fotokomórki', supplier:'Novoferm', warranty:'5 lat', price:5600, note:'Rowkowanie M', lead:'4 tyg.', install:'tak', link:''},
+    {id:uid(), brand:'Inny', model:'Bramster R77', type:'roletowa', size:'2400×2100', color:'brąz', panel:'77 mm (pancerz)', U:2.5, drive:'napęd', control:'pilot', acc:'hamulec inercyjny', supplier:'Bramster', warranty:'2 lata', price:4500, note:'Skrzynka 300 mm', lead:'2–3 tyg.', install:'tak', link:''}
+  ];
+  localStorage.setItem(LS_KEY, JSON.stringify(data));
+  return data;
+}
+function uid(){ return Math.random().toString(36).slice(2)+Date.now().toString(36); }
+
+// ===== render =====
+function applyFilters(list){
+  let out = list.slice();
+  if(filter.q){
+    const q = filter.q.toLowerCase();
+    out = out.filter(r =>
+      (r.brand||'').toLowerCase().includes(q) ||
+      (r.model||'').toLowerCase().includes(q) ||
+      (r.color||'').toLowerCase().includes(q) ||
+      (r.type||'').toLowerCase().includes(q) ||
+      (r.note||'').toLowerCase().includes(q) ||
+      (r.acc||'').toLowerCase().includes(q)
+    );
+  }
+  if(filter.type)  out = out.filter(r => (r.type||'') === filter.type);
+  if(filter.brand) out = out.filter(r => (r.brand||'') === filter.brand);
+  if(filter.panel) out = out.filter(r => (r.panel||'').includes(filter.panel));
+  if(filter.drive) out = out.filter(r => (r.drive||'') === filter.drive);
+  return out;
+}
+function render(){
+  const tb = $('#tbl tbody'); tb.innerHTML='';
+  const list = applyFilters(rows);
+  $('#countAll').textContent = rows.length;
+  $('#countVis').textContent = list.length;
+  let sNet=0, sGross=0;
+  list.forEach((r,i)=>{ sNet += toNum(r.price); sGross += toNum(r.price)*1.08; });
+  $('#sumNet').textContent = fmt(sNet);
+  $('#sumGross').textContent = fmt(sGross);
+
+  list.forEach((r, idx)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${idx+1}</td>
+      <td data-k="brand">${escapeHtml(r.brand||'')}</td>
+      <td data-k="model">${escapeHtml(r.model||'')}</td>
+      <td data-k="type">${escapeHtml(r.type||'')}</td>
+      <td data-k="size">${escapeHtml(r.size||'')}</td>
+      <td data-k="color">${escapeHtml(r.color||'')}</td>
+      <td data-k="panel">${escapeHtml(r.panel||'')}</td>
+      <td data-k="U">${escapeHtml(r.U==null?'':String(r.U))}</td>
+      <td data-k="drive">${escapeHtml(r.drive||'')}</td>
+      <td data-k="control">${escapeHtml(r.control||'')}</td>
+      <td data-k="acc">${escapeHtml(r.acc||'')}</td>
+      <td data-k="supplier">${escapeHtml(r.supplier||'')}</td>
+      <td data-k="warranty">${escapeHtml(r.warranty||'')}</td>
+      <td class="num" data-k="price">${escapeHtml(r.price==null?'':String(r.price))}</td>
+      <td data-k="note">${escapeHtml(r.note||'')}</td>
+      <td data-k="lead">${escapeHtml(r.lead||'')}</td>
+      <td data-k="install">${escapeHtml(r.install||'')}</td>
+      <td data-k="link">${escapeHtml(r.link||'')}</td>
+      <td><button class="btn ghost del" data-id="${r.id}" title="Usuń">✕</button></td>
+    `;
+    // inline-edit (dblclick to input)
+    tr.querySelectorAll('td[data-k]').forEach(td=>{
+      td.addEventListener('dblclick', ()=>{
+        if(td.querySelector('input')) return;
+        const key = td.dataset.k;
+        const start = (r[key]==null?'':String(r[key]));
+        const inp = document.createElement('input');
+        inp.value = start; inp.style.width='100%';
+        td.innerHTML = ''; td.appendChild(inp); inp.focus();
+        inp.addEventListener('blur', ()=>{
+          let val = inp.value.trim();
+          if(key==='price' || key==='U'){ val = toNum(val); }
+          r[key] = val;
+          save();
+        });
+        inp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ inp.blur(); } });
+      });
+    });
+    tr.querySelector('.del').addEventListener('click', ()=>{
+      if(confirm('Usunąć pozycję?')){ const i = rows.findIndex(x=>x.id===r.id); if(i>=0){ rows.splice(i,1); save(); } }
+    });
+    tb.appendChild(tr);
+  });
+}
+
+// ===== controls =====
+$('#q').addEventListener('input', e=>{ filter.q=e.target.value.trim(); render(); });
+$('#fType').addEventListener('change', e=>{ filter.type=e.target.value; render(); });
+$('#fBrand').addEventListener('change', e=>{ filter.brand=e.target.value; render(); });
+$('#fIns').addEventListener('change', e=>{ filter.panel=e.target.value; render(); });
+$('#fDrive').addEventListener('change', e=>{ filter.drive=e.target.value; render(); });
+$('#btnClear').addEventListener('click', ()=>{
+  filter={q:'',type:'',brand:'',panel:'',drive:''};
+  $('#q').value=''; $('#fType').value=''; $('#fBrand').value=''; $('#fIns').value=''; $('#fDrive').value='';
+  render();
+});
+
+// add
+$('#btnAdd').addEventListener('click', ()=>{
+  rows.unshift({id:uid(), brand:'', model:'', type:'segmentowa', size:'2500×2125', color:'biały', panel:'40 mm', U:1.3, drive:'bez napędu', control:'', acc:'', supplier:'', warranty:'2 lata', price:0, note:'', lead:'', install:'tak', link:''});
+  save();
+});
+
+// shortcuts
+window.addEventListener('keydown', (e)=>{
+  if(e.key==='/' && !e.metaKey && !e.ctrlKey){ e.preventDefault(); $('#q').focus(); }
+  if(e.altKey && (e.key==='n' || e.key==='N')){ e.preventDefault(); $('#btnAdd').click(); }
+});
+
+// export/import
+function download(name, text, type){
+  const a = document.createElement('a');
+  const blob = new Blob([text], {type});
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+$('#btnJSON').addEventListener('click', ()=>{
+  download('komponenty_bramy.json', JSON.stringify(rows,null,2), 'application/json');
+});
+$('#importJSON').addEventListener('change', async (e)=>{
+  const f=e.target.files[0]; if(!f) return;
+  try{
+    const txt = await f.text();
+    const data = JSON.parse(txt);
+    if(!Array.isArray(data)) throw new Error('Zły format');
+    rows = data.map(x=>({ ...x, id:x.id||uid() }));
+    save(); alert('Zaimportowano '+rows.length+' pozycji.');
+  }catch(err){ alert('Błąd importu: '+err.message); }
+  e.target.value='';
+});
+$('#btnCSV').addEventListener('click', ()=>{
+  const cols = ['brand','model','type','size','color','panel','U','drive','control','acc','supplier','warranty','price','note','lead','install','link'];
+  const head = ['Producent','Model','Typ','Wymiar','Kolor','Panel','U','Napęd','Sterowanie','Akcesoria','Dostawca','Gwarancja','Cena netto','Uwagi','Lead time','Instalacja','Link'];
+  const rowsCsv = [head.join(';')];
+  applyFilters(rows).forEach(r=>{
+    const line = cols.map(k=>{
+      let v = (r[k]==null?'':String(r[k]));
+      if(/[;"\n]/.test(v)) v = '"'+v.replace(/"/g,'""')+'"';
+      return v;
+    }).join(';');
+    rowsCsv.push(line);
+  });
+  download('komponenty_bramy.csv', rowsCsv.join('\n'), 'text/csv;charset=utf-8');
+});
+
+// boot
+render();
+</script>
+</body>
+</html>
