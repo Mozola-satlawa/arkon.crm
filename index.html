@@ -1,0 +1,576 @@
+
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARKON CRM — Pulpit (z logowaniem)</title>
+<meta name="description" content="ARKON CRM — pulpit z logowaniem (hasło: Szybkakasa), szybkie podglądy, kalendarz, lejek, wykres umów, ostatnie rekordy i skróty.">
+<!-- Favicon (zielony listek) -->
+<link rel="icon" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="%230b1020"/><path d="M52 12C36 12 25 22 22 36c-1 6 0 10 4 14 8 8 21 4 26-10 3-8 2-18 0-28z" fill="%2330d158"/><path d="M26 50c6-10 20-22 26-26" stroke="%234cc9f0" stroke-width="2" fill="none"/></svg>'>
+<style>
+  :root{
+    --bg:#0b1020; --grad1:#0a1028; --grad2:#0d1536;
+    --ink:#e8edff; --muted:#aeb8da; --line:#22306a;
+    --card:#0f1636; --chip:#16245a; --accent:#4cc9f0;
+    --ok:#2fbf71; --warn:#ffb84d; --bad:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;font:15px/1.55 system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,var(--grad1),var(--grad2));color:var(--ink)}
+  a{color:#cfe0ff;text-decoration:none}
+  header{padding:16px;border-bottom:1px solid var(--line);background:#0e1534;position:sticky;top:0;z-index:20}
+  header h1{margin:0;font-size:22px}
+  header .muted{color:var(--muted);font-size:13px}
+  nav{display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line);background:#121a44}
+  nav a{padding:8px 12px;border-radius:999px;border:1px solid #2a3a75}
+  nav a:hover{background:#1a2758}
+  .wrap{max-width:1280px;margin:0 auto;padding:16px}
+  .grid{display:grid;gap:14px}
+  @media(min-width:1100px){ .cols-3{grid-template-columns:repeat(3,1fr)} .cols-2{grid-template-columns:2fr 1fr} }
+  .card{background:linear-gradient(180deg,#0f1636,#0f1a42);border:1px solid var(--line);border-radius:14px;padding:14px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
+  .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px dashed #3a4ca3}
+  .btn.bad{background:#3a1f2a;border-color:#7b3341}
+  .btn.ok{background:#194d34;border-color:#2f9762}
+  .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
+  table{width:100%;border-collapse:separate;border-spacing:0}
+  th,td{padding:8px 6px;border-bottom:1px solid #1a244d;text-align:left;vertical-align:top}
+  th{font-size:12px;color:var(--muted)}
+  .small{font-size:12px;color:var(--muted)}
+  .right{display:flex;gap:8px;justify-content:flex-end}
+  .kpi{display:flex;align-items:center;gap:12px}
+  .kpi .n{font-weight:700;font-size:20px}
+  .list-reset{list-style:none;margin:0;padding:0}
+  .status{padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid #2a3a75;background:#0f1a44}
+  .status.lead{background:#19224e}
+  .status.q{background:#21305f}
+  .status.w{background:#24336b}
+  .status.c{background:#1d3d2f}
+  .status.l{background:#4a1d1d}
+  .apps{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+  .app{display:block;padding:14px;border-radius:12px;background:#111a42;border:1px solid #2a3a75}
+  .app b{display:block;margin-bottom:4px}
+  .app:hover{background:#16235a}
+  .tag{display:inline-block;margin:2px 6px 0 0;padding:3px 8px;border:1px solid #3a4ca3;border-radius:999px;font-size:12px}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  @media(max-width:720px){ .grid-2{grid-template-columns:1fr} }
+  .avatar{width:28px;height:28px;border-radius:50%;display:inline-grid;place-items:center;background:#1e2a62;border:1px solid #2a3a75;font-size:13px;color:#cfe0ff}
+  .userbar{display:flex;align-items:center;gap:10px}
+  .dot{width:8px;height:8px;border-radius:50%;background:#2fbf71;box-shadow:0 0 0 2px #0e1534}
+  /* Login overlay */
+  .login-wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#081024,#0a1434);z-index:50}
+  .login-card{width:420px;max-width:92vw;background:linear-gradient(180deg,#0f1638,#0f1a46);border:1px solid #2a3a75;border-radius:14px;padding:16px}
+  .login-card h2{margin:0 0 6px}
+  .login-card input{width:100%;background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:10px;color:#e8edff;margin:6px 0}
+  .login-card label{font-size:13px;color:#aeb8da}
+  .providers{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+  .hint{font-size:12px;color:#aeb8da;margin-top:8px}
+  .lnk{background:transparent;border:1px dashed #3a4ca3;color:#cfe0ff;border-radius:10px;padding:8px 12px;cursor:pointer;width:100%}
+  @media print{ .login-wrap{display:none!important} nav,.btn,.kbd{display:none!important} }
+  /* canvas boxes */
+  .canvas-box{background:#0f1630;border:1px solid #2a3a75;border-radius:12px;padding:8px}
+</style>
+</head>
+<body>
+
+<!-- ======= LOGIN OVERLAY (tylko dla pulpitu) ======= -->
+<div id="login" class="login-wrap" hidden>
+  <div class="login-card">
+    <h2>🔐 ARKON CRM — logowanie</h2>
+    <div class="small">Podaj dane lub zaloguj się przez dostawcę. Hasło lokalne: <b>Szybkakasa</b> (użytkownik: <b>Arkon2</b>).</div>
+    <input id="lg_user" placeholder="Użytkownik (np. Arkon2)" autocomplete="username">
+    <input id="lg_pass" placeholder="Hasło" type="password" autocomplete="current-password">
+    <label><input id="lg_rem" type="checkbox"> Zapamiętaj mnie (nie pytaj na tym komputerze)</label>
+    <div class="row" style="margin-top:10px">
+      <button id="btnLogin" class="btn ok" style="flex:1">Zaloguj</button>
+      <button id="btnForgot" class="btn ghost">Zapomniałeś hasła?</button>
+    </div>
+    <div class="providers">
+      <button id="btnGoogle" class="lnk">Zaloguj przez Google</button>
+      <button id="btnFacebook" class="lnk">Zaloguj przez Facebook</button>
+    </div>
+    <div class="hint">* Logowanie Google/Facebook jest symulowane lokalnie (bez serwera). Do prawdziwego OAuth potrzebny backend.</div>
+  </div>
+</div>
+
+<!-- ======= PULPIT ======= -->
+<header id="hdr" hidden>
+  <div class="row" style="justify-content:space-between">
+    <div>
+      <h1 style="margin:0">Pulpit • ARKON CRM</h1>
+      <div class="small">Wszystkie dane przechowywane lokalnie (LocalStorage/IndexedDB). Eksport/Backup dostępny z modułów.</div>
+    </div>
+    <div class="userbar">
+      <span id="dot" class="dot" title="Online"></span>
+      <span id="userName" class="small">—</span>
+      <span id="avatar" class="avatar">A</span>
+      <button id="btnLock" class="btn ghost">Zablokuj</button>
+      <button id="btnLogout" class="btn bad">Wyloguj</button>
+    </div>
+  </div>
+</header>
+
+<nav id="nav" aria-label="Nawigacja główna" hidden>
+  <a href="index.html" aria-current="page">🏠 Pulpit</a>
+  <a href="klienci.html">👥 Klienci</a>
+  <a href="lidy.html">🧲 Lidy</a>
+  <a href="komponenty.html">🧩 Komponenty</a>
+  <a href="upload.html">📤 Przesył plików</a>
+  <a href="dokumenty.html">📄 Dokumenty</a>
+  <a href="chat.html">💬 Komunikator</a>
+  <a href="ustawienia.html">⚙️ Ustawienia</a>
+  <a href="kalkulator.html" target="_blank" rel="noopener">🧮 Kalkulator ↗️</a>
+  <a href="baza.html">🗃️ Baza (storage)</a>
+</nav>
+
+<div id="app" class="wrap grid cols-2" hidden>
+  <!-- LEWA KOLUMNA -->
+  <section class="grid">
+    <!-- KPI -->
+    <div class="grid cols-3">
+      <div class="card">
+        <div class="kpi"><div>👥</div><div><div class="small">Klienci</div><div id="kpiClients" class="n">0</div></div></div>
+      </div>
+      <div class="card">
+        <div class="kpi"><div>🧲</div><div><div class="small">Lidy</div><div id="kpiLeads" class="n">0</div></div></div>
+      </div>
+      <div class="card">
+        <div class="kpi"><div>🧩</div><div><div class="small">Komponenty</div><div id="kpiComp" class="n">0</div></div></div>
+      </div>
+    </div>
+
+    <!-- Skróty / Quick actions -->
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <div><b>Skróty</b></div>
+        <div class="small">Tip: <span class="kbd">/</span> — szukaj klienta • <span class="kbd">Alt+N</span> — nowy klient</div>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <a class="btn ok" href="klienci.html">+ Nowy klient</a>
+        <a class="btn" href="lidy.html">+ Nowy lead</a>
+        <a class="btn ghost" href="komponenty.html">Dodaj komponent</a>
+        <a class="btn ghost" href="upload.html">Wyślij pliki</a>
+        <a class="btn" href="kalkulator.html" target="_blank" rel="noopener">Kalkulator ↗️</a>
+      </div>
+    </div>
+
+    <!-- Ostatni klienci -->
+    <div class="card">
+      <div class="row" style="justify-content:space-between"><b>Ostatnio dodani klienci</b><a class="small" href="klienci.html">Zobacz wszystkich →</a></div>
+      <div style="overflow:auto;margin-top:6px">
+        <table id="tblClients">
+          <thead><tr><th>Nazwa</th><th>Status</th><th>Kontakt</th><th>Tagi</th><th>Dodano</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Ostatnie lidy -->
+    <div class="card">
+      <div class="row" style="justify-content:space-between"><b>Ostatnie lidy</b><a class="small" href="lidy.html">Zobacz wszystkie →</a></div>
+      <div style="overflow:auto;margin-top:6px">
+        <table id="tblLeads">
+          <thead><tr><th>Tytuł</th><th>Źródło</th><th>Status</th><th>Data</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Lejek + Wykres umów -->
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <b>Lejek sprzedażowy & Wykres umów podpisanych</b>
+        <span class="small">Dane z localStorage</span>
+      </div>
+      <div class="grid-2" style="margin-top:8px">
+        <div class="canvas-box"><canvas id="cnvFunnel" width="560" height="300"></canvas></div>
+        <div class="canvas-box"><canvas id="cnvContracts" width="560" height="300"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRAWA KOLUMNA -->
+  <aside class="grid">
+    <!-- Aplikacje / Moduły -->
+    <div class="card">
+      <b>Moduły</b>
+      <div class="apps" style="margin-top:8px">
+        <a class="app" href="klienci.html"><b>Klienci</b><span class="small">Lista, edycja, projekty, dokumenty, pola własne.</span></a>
+        <a class="app" href="lidy.html"><b>Lidy</b><span class="small">Zbieranie i kwalifikacja leadów.</span></a>
+        <a class="app" href="komponenty.html"><b>Komponenty</b><span class="small">Pompy, piece, PV, ocieplenie, bramy.</span></a>
+        <a class="app" href="upload.html"><b>Przesył plików</b><span class="small">Pliki w IndexedDB, przypisania do klienta i kategorii.</span></a>
+        <a class="app" href="dokumenty.html"><b>Dokumenty</b><span class="small">Wzory umów, pełnomocnictwa, oświadczenia.</span></a>
+        <a class="app" href="chat.html"><b>Komunikator</b><span class="small">Lokalny czat + załączniki.</span></a>
+        <a class="app" href="ustawienia.html"><b>Ustawienia</b><span class="small">Preferencje, wydruk do PDF.</span></a>
+        <a class="app" href="baza.html"><b>Baza</b><span class="small">Podgląd i czyszczenie pamięci lokalnej.</span></a>
+        <a class="app" href="kalkulator.html" target="_blank" rel="noopener"><b>Kalkulator</b><span class="small">Symulacje i kosztorysy (otwiera nowe okno).</span></a>
+      </div>
+    </div>
+
+    <!-- Kalendarz / nadchodzące -->
+    <div class="card">
+      <b>Kalendarz (mini) i nadchodzące</b>
+      <div class="canvas-box"><canvas id="cnvCalendar" width="560" height="240"></canvas></div>
+      <ul id="upcoming" class="list-reset small" style="margin-top:6px"></ul>
+    </div>
+
+    <!-- Notatki / log -->
+    <div class="card">
+      <b>Szybka notatka</b>
+      <textarea id="note" placeholder="Twoja notatka (zapisuje się lokalnie)" style="width:100%;min-height:100px;margin-top:8px"></textarea>
+      <div class="right" style="margin-top:8px">
+        <button id="btnClearNote" class="btn ghost">Wyczyść</button>
+      </div>
+      <div class="small" style="margin-top:6px">Przechowywane w <code>localStorage</code> (klucz: <code>arkon_note</code>).</div>
+    </div>
+  </aside>
+</div>
+
+<script>
+'use strict';
+
+/* ===== auth / login ===== */
+const AUTH_KEY = 'arkon_auth_token_v1';     // 'ok' or session token
+const AUTH_USER = 'arkon_auth_user_v1';     // {name, provider, remember}
+const LOCAL_USER = { name:'Arkon2', pass:'Szybkakasa' };
+
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+
+function showApp(show){
+  $('#login').hidden = show;
+  $('#hdr').hidden = !show;
+  $('#nav').hidden = !show;
+  $('#app').hidden = !show;
+}
+function setUserBadge(name){
+  $('#userName').textContent = name || '—';
+  const init = (name||'A').trim().slice(0,2).toUpperCase();
+  $('#avatar').textContent = init;
+}
+
+function authBoot(){
+  const tok = localStorage.getItem(AUTH_KEY) || sessionStorage.getItem(AUTH_KEY);
+  const usr = JSON.parse(localStorage.getItem(AUTH_USER) || sessionStorage.getItem(AUTH_USER) || 'null');
+  if(tok === 'ok' && usr){
+    setUserBadge(usr.name);
+    showApp(true);
+  }else{
+    // prefill user
+    $('#lg_user').value = LOCAL_USER.name;
+    showApp(false);
+  }
+}
+
+$('#btnLogin').addEventListener('click', ()=>{
+  const u = $('#lg_user').value.trim();
+  const p = $('#lg_pass').value;
+  const remember = $('#lg_rem').checked;
+  if(u === LOCAL_USER.name && p === LOCAL_USER.pass){
+    const store = remember ? localStorage : sessionStorage;
+    store.setItem(AUTH_KEY, 'ok');
+    store.setItem(AUTH_USER, JSON.stringify({name:u, provider:'local', remember}));
+    setUserBadge(u);
+    showApp(true);
+  }else{
+    alert('❌ Błędne dane. Użyj: Arkon2 / Szybkakasa');
+  }
+});
+
+$('#btnGoogle').addEventListener('click', ()=>{
+  const remember = $('#lg_rem').checked;
+  const store = remember ? localStorage : sessionStorage;
+  store.setItem(AUTH_KEY, 'ok');
+  store.setItem(AUTH_USER, JSON.stringify({name:'Użytkownik Google', provider:'google', remember}));
+  setUserBadge('Użytkownik Google');
+  showApp(true);
+});
+
+$('#btnFacebook').addEventListener('click', ()=>{
+  const remember = $('#lg_rem').checked;
+  const store = remember ? localStorage : sessionStorage;
+  store.setItem(AUTH_KEY, 'ok');
+  store.setItem(AUTH_USER, JSON.stringify({name:'Użytkownik Facebook', provider:'facebook', remember}));
+  setUserBadge('Użytkownik Facebook');
+  showApp(true);
+});
+
+$('#btnForgot').addEventListener('click', ()=>{
+  alert('Reset hasła jest lokalny — ustawione hasło to: "Szybkakasa". W wersji produkcyjnej wymagany backend dla resetu e-mail.');
+});
+
+$('#btnLogout').addEventListener('click', ()=>{
+  localStorage.removeItem(AUTH_KEY);
+  localStorage.removeItem(AUTH_USER);
+  sessionStorage.removeItem(AUTH_KEY);
+  sessionStorage.removeItem(AUTH_USER);
+  location.reload();
+});
+$('#btnLock').addEventListener('click', ()=>{
+  // blokada bieżącej sesji (bez kasowania "remember me")
+  sessionStorage.removeItem(AUTH_KEY);
+  sessionStorage.removeItem(AUTH_USER);
+  showApp(false);
+});
+
+/* ===== helpers ===== */
+const INT = new Intl.NumberFormat('pl-PL',{maximumFractionDigits:0});
+const fmt = n => INT.format(Math.round(Number(n)||0));
+const fmtDate = ts => new Date(ts||Date.now()).toLocaleString('pl-PL');
+
+const LS = {
+  clients: 'arkon_clients_v1',
+  leads:   'arkon_leads_v1',
+  cmp: {
+    pumps:  'arkon_cmp_pumps_v1',
+    boilers:'arkon_cmp_boilers_v1',
+    pv:     'arkon_cmp_pv_v1',
+    insul:  'arkon_cmp_insul_v1',
+    garage: 'arkon_cmp_garage_v1'
+  },
+  note: 'arkon_note'
+};
+
+function load(key, fallback){
+  try{ return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }catch{ return fallback; }
+}
+function escapeHtml(s){ return (s==null?'':String(s)).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function statusClass(s){
+  switch((s||'').toUpperCase()){
+    case 'LEAD': return 'lead';
+    case 'ZAPYTANIE': return 'q';
+    case 'W TOKU': return 'w';
+    case 'KLIENT': return 'c';
+    case 'UTRACONY': return 'l';
+    default: return '';
+  }
+}
+
+/* ===== KPI ===== */
+function refreshKPI(){
+  const clients = load(LS.clients, []);
+  const leads   = load(LS.leads,   []);
+  const cmpSum =
+    ['pumps','boilers','pv','insul','garage']
+      .map(k => load(LS.cmp[k], []).length)
+      .reduce((a,b)=>a+b,0);
+  $('#kpiClients').textContent = clients.length;
+  $('#kpiLeads').textContent   = leads.length;
+  $('#kpiComp').textContent    = cmpSum;
+
+  // listy
+  renderRecentClients();
+  renderRecentLeads();
+
+  // wizualizacje
+  drawFunnel(leads);
+  drawContractsByMonth(clients);
+  drawMiniCalendar();
+  listUpcoming(clients, leads);
+}
+
+/* ===== Recent Clients ===== */
+function renderRecentClients(){
+  const tb = $('#tblClients tbody'); tb.innerHTML = '';
+  const clients = load(LS.clients, [])
+    .slice().sort((a,b)=>(b.created||0)-(a.created||0)).slice(0,8);
+  if(!clients.length){
+    tb.innerHTML = '<tr><td colspan="5" class="small">Brak danych. Dodaj pierwszego klienta w module „Klienci”.</td></tr>';
+    return;
+  }
+  clients.forEach(c=>{
+    const tr = document.createElement('tr');
+    const tags = (c.tags||[]).slice(0,3).map(t=>'<span class="tag">'+escapeHtml(t)+'</span>').join('');
+    tr.innerHTML = `
+      <td><a href="klienci.html" title="Otwórz w Klienci"><b>${escapeHtml(c.name||'—')}</b></a></td>
+      <td><span class="status ${statusClass(c.status)}">${escapeHtml(c.status||'—')}</span></td>
+      <td>${escapeHtml(c.email||'')}<div class="small">${escapeHtml(c.phone||'')}</div></td>
+      <td>${tags}</td>
+      <td>${fmtDate(c.created)}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+/* ===== Recent Leads ===== */
+function renderRecentLeads(){
+  const tb = $('#tblLeads tbody'); tb.innerHTML = '';
+  const leads = load(LS.leads, [])
+    .slice().sort((a,b)=>(b.created||0)-(a.created||0)).slice(0,8);
+  if(!leads.length){
+    tb.innerHTML = '<tr><td colspan="4" class="small">Brak leadów. Dodaj w module „Lidy”.</td></tr>';
+    return;
+  }
+  leads.forEach(l=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><a href="lidy.html"><b>${escapeHtml(l.title||'Lead')}</b></a></td>
+      <td>${escapeHtml(l.source||'')}</td>
+      <td>${escapeHtml(l.status||'NOWY')}</td>
+      <td>${fmtDate(l.created)}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+/* ===== Notatka ===== */
+function initNote(){
+  const el = $('#note');
+  el.value = localStorage.getItem(LS.note) || '';
+  el.addEventListener('input', ()=> localStorage.setItem(LS.note, el.value));
+  $('#btnClearNote').addEventListener('click', ()=>{
+    if(confirm('Wyczyścić notatkę?')){ el.value=''; localStorage.removeItem(LS.note); }
+  });
+}
+
+/* ===== keyboard shortcuts ===== */
+window.addEventListener('keydown', (e)=>{
+  if($('#login') && !$('#login').hidden){ return; } // w trybie logowania ignoruj skróty pulpitu
+  // / -> przejście do Klienci
+  if(e.key === '/'){
+    e.preventDefault();
+    location.href = 'klienci.html';
+  }
+  // Alt+N -> Nowy klient
+  if(e.altKey && (e.key==='n' || e.key==='N')){
+    e.preventDefault();
+    location.href = 'klienci.html#new';
+  }
+});
+
+/* ===== Wizualizacje (bez bibliotek) ===== */
+function drawFunnel(leads){
+  const ctx = $('#cnvFunnel').getContext('2d');
+  // policz wg statusów
+  const order = ['NOWY','KONTAKT','QUALIFIED','OFERTA','WYGRANY','PRZEGRANY'];
+  const counts = Object.fromEntries(order.map(s=>[s,0]));
+  (leads||[]).forEach(l=>{ const s=(l.status||'').toUpperCase(); if(counts[s]!=null) counts[s]++; });
+  // rysuj trapezy
+  const W=ctx.canvas.width, H=ctx.canvas.height; ctx.clearRect(0,0,W,H);
+  const max = Math.max(1, ...Object.values(counts));
+  const levels = order.map((s,i)=>({label:s, val:counts[s], w: (W*0.9) * (0.3 + 0.7*(counts[s]/max)), color:['#3751ff','#2bb673','#ffa900','#00bcd4','#8bc34a','#ff6b6b'][i]}));
+  let y=20, h=(H-40)/levels.length - 6;
+  ctx.textBaseline='middle'; ctx.font='13px system-ui';
+  levels.forEach(l=>{
+    const x=(W-l.w)/2;
+    ctx.fillStyle=l.color; roundedRect(ctx, x,y,l.w,h,10); ctx.fill();
+    ctx.fillStyle='#e8edff'; ctx.fillText(l.label+': '+l.val, 16, y+h/2);
+    y+=h+6;
+  });
+  // legenda mini
+  ctx.fillStyle='#aeb8da'; ctx.fillText('Lejek leadów', W-140, 14);
+}
+function roundedRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+
+function drawContractsByMonth(clients){
+  const ctx = $('#cnvContracts').getContext('2d');
+  const W=ctx.canvas.width, H=ctx.canvas.height; ctx.clearRect(0,0,W,H);
+  // zbierz kontrakty "podpisana" z klientów.projects[].contracts[]
+  const now = new Date();
+  const buckets = Array.from({length:12}, (_,i)=>{
+    const d = new Date(now.getFullYear(), now.getMonth()-11+i, 1);
+    return { key: d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'), label: d.toLocaleString('pl-PL',{month:'short'}), val:0 };
+  });
+  const map = Object.fromEntries(buckets.map(b=>[b.key,b]));
+  (clients||[]).forEach(c=>{
+    (c.projects||[]).forEach(p=>{
+      (p.contracts||[]).forEach(u=>{
+        if((u.status||'').toLowerCase()==='podpisana'){
+          // jeśli brak daty w umowie, użyj created klienta
+          const dt = new Date(u.date || c.created || Date.now());
+          const key = dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
+          if(map[key]) map[key].val++;
+        }
+      });
+    });
+  });
+  const vals = buckets.map(b=>b.val);
+  const max = Math.max(1, ...vals);
+  const padL=34, padB=28, padT=16, padR=8;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  // osie
+  ctx.strokeStyle='#2a3a75'; ctx.lineWidth=1; ctx.beginPath();
+  ctx.moveTo(padL, padT); ctx.lineTo(padL, padT+plotH); ctx.lineTo(padL+plotW, padT+plotH); ctx.stroke();
+  // słupki
+  const barW = plotW / buckets.length * 0.7;
+  buckets.forEach((b,i)=>{
+    const x = padL + i*(plotW/buckets.length) + (plotW/buckets.length - barW)/2;
+    const h = (b.val/max) * (plotH-6);
+    const y = padT + plotH - h;
+    ctx.fillStyle='#4cc9f0'; ctx.fillRect(x,y,barW,h);
+    // etykiety X
+    ctx.fillStyle='#aeb8da'; ctx.font='11px system-ui'; ctx.textAlign='center';
+    ctx.fillText(b.label, x+barW/2, padT+plotH+14);
+  });
+  // etykieta Y (maks)
+  ctx.fillStyle='#aeb8da'; ctx.textAlign='right'; ctx.fillText(String(max), padL-6, padT+6);
+  ctx.textAlign='left'; ctx.fillText('Podpisane umowy (12 m-cy)', padL, 12);
+}
+
+/* ===== Kalendarz (mini) ===== */
+function drawMiniCalendar(){
+  const ctx = $('#cnvCalendar').getContext('2d');
+  const W=ctx.canvas.width, H=ctx.canvas.height; ctx.clearRect(0,0,W,H);
+  const d = new Date();
+  const ym = new Date(d.getFullYear(), d.getMonth(), 1);
+  const startDay = (ym.getDay()+6)%7; // pon=0
+  const daysInMonth = new Date(d.getFullYear(), d.getMonth()+1,0).getDate();
+  const cols=7, rows=6, cw=W/cols, ch=H/rows;
+
+  ctx.fillStyle='#aeb8da'; ctx.font='12px system-ui';
+  ['Pn','Wt','Śr','Cz','Pt','So','Nd'].forEach((w,i)=>{
+    ctx.fillText(w, i*cw+6, 14);
+  });
+
+  let day=1;
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const x=c*cw, y=r*ch+18;
+      ctx.strokeStyle='#2a3a75'; ctx.strokeRect(x+0.5,y+0.5,cw-1,ch-1);
+      const idx=r*cols+c;
+      if(idx>=startDay && day<=daysInMonth){
+        ctx.fillStyle='#e8edff'; ctx.fillText(String(day), x+6, y+16);
+        // zaznacz dziś
+        if(day===d.getDate()){
+          ctx.strokeStyle='#4cc9f0'; ctx.lineWidth=2;
+          ctx.strokeRect(x+2,y+2,cw-4,ch-4);
+          ctx.lineWidth=1;
+        }
+        day++;
+      }
+    }
+  }
+}
+
+/* ===== Nadchodzące (z klientów i leadów) ===== */
+function listUpcoming(clients, leads){
+  const box = $('#upcoming'); box.innerHTML='';
+  const items = [];
+  (clients||[]).forEach(c=>{
+    (c.projects||[]).forEach(p=>{
+      if(p.deadline){ items.push({ t: new Date(p.deadline).getTime(), txt: `Projekt: ${p.name} • ${c.name}` }); }
+      (p.contracts||[]).forEach(u=>{
+        if(u.signBy){ items.push({ t: new Date(u.signBy).getTime(), txt: `Termin podpisania umowy ${u.no||''} • ${c.name}` }); }
+      });
+    });
+  });
+  (leads||[]).forEach(l=>{
+    if(l.followUp){ items.push({ t: new Date(l.followUp).getTime(), txt: `Follow-up: ${l.title}` }); }
+  });
+  items.sort((a,b)=>a.t-b.t);
+  if(!items.length){ box.innerHTML='<li class="small">Brak nadchodzących terminów.</li>'; return; }
+  items.slice(0,8).forEach(it=>{
+    const li=document.createElement('li'); li.textContent = new Date(it.t).toLocaleString('pl-PL')+' — '+it.txt; box.appendChild(li);
+  });
+}
+
+/* ===== init ===== */
+authBoot();
+if(!$('#login').hidden){ /* login visible */ } else {
+  refreshKPI();
+  initNote();
+}
+</script>
+</body>
+</html>
