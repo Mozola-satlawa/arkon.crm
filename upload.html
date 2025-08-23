@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="pl">
 <head>
@@ -222,10 +223,9 @@
 
 <script>
   // ===== SUPABASE: konfiguracja uploadu umów =====
-  const {SUPA_URL = 'https://phxxjirqlktzcwnygaha.supabase.co', SUPA_KEY = 'sb_publishable_iOXdu9fUGGko3MqPmltAag_ZbPUxp4r'} = window;
+  const {SUPA_URL= 'https://phxxjirqlktzcwnygaha.supabase.co', SUPA_KEY = 'sb_publishable_iOXdu9fUGGko3MqPmltAag_ZbPUxp4r'} = window;
   const supa = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 
-</script>
 
 const BUCKET = 'umowy'; // utwórz w Storage
 // opcjonalny identyfikator „konta” (żeby rozdzielać pliki między arkon-crm / pawel itd.)
@@ -303,8 +303,9 @@ async function uploadToSupabase({file, clientId, clientName, category, tags}){
 
   return { path, file_url };
 }
-</script>
-'use strict';
+</cript>
+
+`use strict`;
 
 /* ===== helpers ===== */
 const $=s=>document.querySelector(s);
@@ -394,7 +395,6 @@ async function handleFiles(files){
   }
   renderFiles();
 }
-<script>
 // ===== SUPABASE: konfiguracja uploadu umów =====
 const SUPA_URL = 'https://phxxjirqlktzcwnygaha.supabase.co';
 const SUPA_KEY = 'sb_publishable_iOXdu9fUGGko3MqPmltAag_ZbPUxp4r'; // PUBLISHABLE (anon) key
@@ -475,8 +475,7 @@ async function uploadToSupabase({file, clientId, clientName, category, tags}){
   }
 
   return { path, file_url };
-}
-</script>
+</>
 /* ===== OFFERS UI ===== */
 let offers = loadOffers();
 let curItems = []; // editor working items
