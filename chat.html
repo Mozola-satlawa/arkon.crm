@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Komunikator ARKON</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  body{margin:0;font-family:system-ui,Arial;background:#0d1117;color:#eee;display:flex;height:100vh}
+  aside{width:220px;background:#161b22;padding:10px;display:flex;flex-direction:column}
+  aside h2{margin:0 0 10px;font-size:16px}
+  aside button{margin:4px 0;padding:6px;border:0;border-radius:6px;background:#238636;color:#fff;cursor:pointer}
+  aside button:hover{background:#2ea043}
+  #rooms{flex:1;overflow:auto}
+  #rooms div{padding:6px;border-radius:4px;cursor:pointer}
+  #rooms div.active{background:#30363d}
+  main{flex:1;display:flex;flex-direction:column}
+  header{padding:8px;background:#161b22;display:flex;align-items:center;gap:8px}
+  header input{flex:1;padding:6px;border-radius:6px;border:1px solid #30363d;background:#0d1117;color:#eee}
+  #messages{flex:1;overflow:auto;padding:10px}
+  .msg{margin-bottom:10px}
+  .meta{font-size:12px;color:#8b949e}
+  .reads{font-size:11px;color:#58a6ff}
+  footer{padding:8px;background:#161b22;display:flex;align-items:center;gap:6px}
+  footer textarea{flex:1;padding:6px;border-radius:6px;border:1px solid #30363d;background:#0d1117;color:#eee;resize:none;height:40px}
+  .emoji-panel{position:absolute;bottom:60px;left:240px;background:#161b22;border:1px solid #30363d;padding:6px;display:none;flex-wrap:wrap;max-width:300px}
+  .emoji-panel span{cursor:pointer;padding:4px}
+</style>
+</head>
+<body>
+<aside>
+  <h2>📂 Pokoje</h2>
+  <div id="rooms"></div>
+  <button id="newRoom">+ Nowy pokój</button>
+</aside>
+<main>
+  <header>
+    <input id="username" placeholder="Twoja nazwa">
+    <button id="btnEmoji">😀</button>
+    <button id="btnFile">📎</button>
+    <input type="file" id="fileInput" hidden>
+  </header>
+  <div id="messages"></div>
+  <footer>
+    <textarea id="msgBox" placeholder="Napisz wiadomość..."></textarea>
+    <button id="sendBtn">➡️</button>
+  </footer>
+  <div class="emoji-panel" id="emojiPanel"></div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script>
+// KONFIGURACJA SUPABASE (uzupełnij swoimi danymi)
+const SUPABASE_URL = 'https://TWÓJ-PROJEKT.supabase.co';
+const SUPABASE_KEY = 'TWÓJ-ANON-KEY';
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentRoom = 'global';
+let username = localStorage.getItem('chat_username')||'';
+document.getElementById('username').value=username;
+
+document.getElementById('username').addEventListener('input',e=>{
+  username=e.target.value;
+  localStorage.setItem('chat_username',username);
+});
+
+// Emoji panel
+const emojiList = ["😀","😁","😂","🤣","😅","😊","😍","😘","😎","😢","😭","😡","👍","👎","🙏","💡","🔥","🌞","🌙","⭐","⚡","💧","🌍","🏠","📞","💬"];
+const emojiPanel=document.getElementById('emojiPanel');
+emojiList.forEach(em=>{
+  const s=document.createElement('span');
+  s.textContent=em;
+  s.onclick=()=>{msgBox.value+=em;emojiPanel.style.display='none'};
+  emojiPanel.appendChild(s);
+});
+document.getElementById('btnEmoji').onclick=()=>{
+  emojiPanel.style.display=emojiPanel.style.display==='flex'?'none':'flex';
+};
+
+// Ładowanie pokoi
+async function loadRooms(){
+  const {data,error}=await supabase.from('rooms').select('*');
+  const cont=document.getElementById('rooms'); cont.innerHTML='';
+  data.forEach(r=>{
+    const d=document.createElement('div');
+    d.textContent=r.label; d.onclick=()=>{currentRoom=r.id;loadMessages();};
+    if(r.id===currentRoom) d.classList.add('active');
+    cont.appendChild(d);
+  });
+}
+loadRooms();
+
+// Obsługa wiadomości
+async function loadMessages(){
+  const {data,error}=await supabase.from('messages').select('*').eq('room_id',currentRoom).order('created_at');
+  const cont=document.getElementById('messages'); cont.innerHTML='';
+  data.forEach(m=>{
+    const d=document.createElement('div'); d.className='msg';
+    d.innerHTML=`<b>${m.sender}</b>: ${m.content}<div class='meta'>${m.created_at}</div><div class='reads'>Odczytano przez: ${m.read_by||''}</div>`;
+    cont.appendChild(d);
+  });
+  cont.scrollTop=cont.scrollHeight;
+}
+loadMessages();
+
+// Subskrypcja realtime
+supabase.channel('room-messages').on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},payload=>{
+  if(payload.new.room_id===currentRoom){ loadMessages(); }
+}).subscribe();
+
+// Wysyłanie wiadomości
+document.getElementById('sendBtn').onclick=async()=>{
+  if(!username){alert('Podaj nazwę!');return;}
+  const content=document.getElementById('msgBox').value.trim();
+  if(!content) return;
+  await supabase.from('messages').insert({room_id:currentRoom,sender:username,content});
+  document.getElementById('msgBox').value='';
+};
+
+// Załączniki
+document.getElementById('btnFile').onclick=()=>fileInput.click();
+fileInput.onchange=async e=>{
+  const file=e.target.files[0]; if(!file) return;
+  const path=Date.now()+'_'+file.name;
+  const {error}=await supabase.storage.from('chat-uploads').upload(path,file);
+  if(!error){
+    const {data}=supabase.storage.from('chat-uploads').getPublicUrl(path);
+    await supabase.from('messages').insert({room_id:currentRoom,sender:username,content:'📎 '+data.publicUrl});
+  }
+};
+</script>
+</body>
+</html>
