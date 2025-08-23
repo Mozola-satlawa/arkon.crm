@@ -488,7 +488,63 @@ function suggestMentions(){
   renderScheduled();
   markReadForViewer();
 })();
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <title>Komunikator</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>💬 Komunikator</h1>
 
+  <!-- okno czatu -->
+  <div id="chatBox" style="border:1px solid #ccc;height:300px;overflow:auto;padding:10px;"></div>
+
+  <!-- formularz wysyłania -->
+  <input id="user" type="text" placeholder="Twoje imię">
+  <input id="msg" type="text" placeholder="Wpisz wiadomość">
+  <button id="sendBtn">Wyślij</button>
+
+  <!-- 📌 tu wklejasz Supabase JS -->
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+    const SUPABASE_URL = "https://TWOJ-PROJECT.supabase.co"; // 🔑 z ustawień Supabase
+    const SUPABASE_KEY = "TWÓJ-ANON-KEY"; // 🔑 anon key
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const ACCOUNT_ID = "arkon-crm";
+    const ROOM_ID = "global";
+
+    // nasłuch w czasie rzeczywistym
+    supabase
+      .channel('chat')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+        addMessage(payload.new);
+      })
+      .subscribe();
+
+    // wysyłanie wiadomości
+    document.getElementById("sendBtn").addEventListener("click", async () => {
+      const user = document.getElementById("user").value || "Anon";
+      const text = document.getElementById("msg").value;
+      if(!text) return;
+      await supabase.from("messages").insert([{ account_id: ACCOUNT_ID, room_id: ROOM_ID, user, text }]);
+      document.getElementById("msg").value = "";
+    });
+
+    // render
+    function addMessage(msg) {
+      const box = document.getElementById("chatBox");
+      const div = document.createElement("div");
+      div.textContent = [${msg.user}] ${msg.text};
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
+  </script>
+</body>
+</html>
 </script>
 </body>
 </html>
