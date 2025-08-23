@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARKON — Komponenty (hub)</title>
+<meta name="description" content="Szybki dostęp do kategorii komponentów: Pompy, Piece, Fotowoltaika, Ocieplenie, Stolarka, Hydraulika.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f1533'/%3E%3Ctext x='50%25' y='56%25' text-anchor='middle' font-size='40' fill='%234cc9f0' font-family='Segoe UI,Arial,sans-serif'%3EH%3C/text%3E%3C/svg%3E">
+<style>
+  :root{ --bg:#0b1020; --p1:#121a34; --p2:#172142; --ink:#e8edff; --muted:#aeb8da; --accent:#4cc9f0; --grid:#243059; --card:#0f1533; --line:#1c2750;}
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#0a0f1e,#0c1230 60%,#0a0f1e);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
+  header{padding:16px;background:#11183a;border-bottom:1px solid var(--line)}
+  header h1{margin:0;font-size:22px}
+  nav{background:#172142;display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line)}
+  nav a{color:#cfe1ff;text-decoration:none;padding:8px 12px;border-radius:999px;border:1px solid #2a3a75}
+  nav a:hover{background:#223160}
+  .wrap{max-width:1200px;margin:auto;padding:16px}
+  .grid{display:grid;gap:14px}
+  @media(min-width:900px){ .cols-3{grid-template-columns:repeat(3,1fr)}}
+  .card{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;padding:14px}
+  .tile{display:block;padding:16px;border:1px solid #2b3a77;border-radius:12px;text-decoration:none;color:#e8edff;background:#0d1530;transition:.15s}
+  .tile h3{margin:0 0 6px}
+  .tile:hover{transform:translateY(-2px);box-shadow:0 6px 18px #0006;background:#0f1b46}
+  .muted{color:var(--muted);font-size:13px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+</style>
+</head>
+<body>
+<header>
+  <h1>Komponenty • Hub</h1>
+  <div class="muted">Wybierz kategorię. Dane każdej kategorii zapisują się lokalnie w przeglądarce i mają własny import/eksport.</div>
+</header>
+<nav>
+  <a href="index.html">Pulpit</a>
+  <a href="kalkulator.html">Kalkulator</a>
+  <a href="komponenty.html" style="background:#223160">Komponenty</a>
+  <a href="komponenty-pompy.html">Pompy</a>
+  <a href="komponenty-piece.html">Piece</a>
+  <a href="komponenty-fotowoltaika.html">Fotowoltaika</a>
+  <a href="komponenty-ocieplenie.html">Ocieplenie</a>
+  <a href="komponenty-stolarka.html">Stolarka</a>
+  <a href="komponenty-hydraulika.html">Hydraulika</a>
+</nav>
+
+<div class="wrap">
+  <div class="grid cols-3">
+    <a class="tile" href="komponenty-pompy.html">
+      <h3>Pompy ciepła</h3>
+      <div class="muted">Moc, SCOP, typ, cena</div>
+    </a>
+    <a class="tile" href="komponenty-piece.html">
+      <h3>Piece / Kotły</h3>
+      <div class="muted">Pellet, gaz, elektryczne, drewno</div>
+    </a>
+    <a class="tile" href="komponenty-fotowoltaika.html">
+      <h3>Fotowoltaika</h3>
+      <div class="muted">Moduły, inwertery, zestawy</div>
+    </a>
+    <a class="tile" href="komponenty-ocieplenie.html">
+      <h3>Ocieplenie</h3>
+      <div class="muted">Materiał, λ, grubość, cena/m²</div>
+    </a>
+    <a class="tile" href="komponenty-stolarka.html">
+      <h3>Stolarka</h3>
+      <div class="muted">Okna, drzwi, bramy, rolety</div>
+    </a>
+    <a class="tile" href="komponenty-hydraulika.html">
+      <h3>Hydraulika</h3>
+      <div class="muted">Rury/kształtki, zawory, filtry, pompy, grupy, rozdzielacze</div>
+    </a>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="row">
+      <div class="muted">Tip: Jeżeli dodałeś już plik <code>komponenty-hydraulika.html</code>, powyższa karta otworzy rozbudowany moduł Hydraulika (z edycją, filtrowaniem, koszykiem i eksportem CSV/JSON).</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
