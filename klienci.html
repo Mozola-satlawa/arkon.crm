@@ -1,0 +1,857 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARKON — Klienci (CRM) • super-rozbudowane</title>
+<meta name="description" content="ARKON CRM — rozbudowany moduł Klienci: lista, edycja, tagi, statusy, projekty/umowy/dokumenty, wyszukiwarka, import/eksport, własna struktura pól, linki do szablonów umów.">
+<style>
+  :root{
+    --bg:#0b1020; --p1:#101736; --p2:#0f1a44; --ink:#e8edff; --muted:#aeb8da; --accent:#4cc9f0;
+    --ok:#2b8a57; --bad:#ff6b6b; --warn:#ffb84d; --line:#253166; --chip:#162357;
+    --btn:#243468; --btnb:#3950a5; --grid:#243059; --card:#0f1533;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:linear-gradient(180deg,#0a0f1e,#0c1230 55%,#0a0f1e);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
+  a{color:#cfe1ff;text-decoration:none}
+  header{padding:16px;background:#11183a;border-bottom:1px solid var(--line)}
+  header h1{margin:0;font-size:22px}
+  .small{font-size:12px;color:#aeb8da}
+  nav{background:#172142;display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:15}
+  nav a{color:#cfe1ff;text-decoration:none;padding:8px 12px;border-radius:999px;border:1px solid #2a3a75}
+  nav a:hover{background:#223160}
+  .wrap{max-width:1360px;margin:auto;padding:16px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+  .btn{background:var(--btn);border:1px solid var(--btnb);color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px dashed var(--btnb)}
+  .btn.bad{background:#3a1f2a;border-color:#7b3341}
+  .btn.ok{background:#194d34;border-color:var(--ok)}
+  .btn.warn{background:#593d12;border-color:#b37a1a}
+  input,select,textarea{background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:8px 10px;color:var(--ink);font:inherit}
+  textarea{min-height:80px;resize:vertical}
+  input::placeholder{color:#aeb8da99}
+  table{width:100%;border-collapse:separate;border-spacing:0}
+  th,td{padding:10px;border-bottom:1px solid var(--grid);text-align:left;vertical-align:top}
+  th{font-size:13px;color:var(--muted);white-space:nowrap}
+  tr.sel{outline:2px solid #67a1ff44}
+  .grid{display:grid;gap:12px}
+  @media(min-width:1200px){ .cols-2{grid-template-columns:2fr 1fr} .cols-3{grid-template-columns:2fr 1fr 1fr} }
+  .card{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;padding:14px}
+  .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
+  .tag{display:inline-block;margin:2px 6px 0 0;padding:3px 8px;border:1px solid #3a4ca3;border-radius:999px;font-size:12px}
+  .status{padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid #2a3a75;background:#0f1a44}
+  .status.lead{background:#19224e}
+  .status.q{background:#21305f}
+  .status.w{background:#24336b}
+  .status.c{background:#1d3d2f}
+  .status.l{background:#4a1d1d}
+  .right{display:flex;gap:8px;justify-content:flex-end}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .muted{color:var(--muted);font-size:13px}
+  .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
+  /* Drawer */
+  .drawer{position:fixed;right:0;top:0;height:100%;width:560px;max-width:100%;background:linear-gradient(180deg,#0e1433,#0e173d);border-left:1px solid #2b3a77;box-shadow:-20px 0 60px #0008;transform:translateX(100%);transition:.25s;z-index:50;overflow:auto}
+  .drawer.open{transform:none}
+  .drawer .hd{position:sticky;top:0;background:#101a45;border-bottom:1px solid #2b3a77;padding:12px}
+  .drawer .bd{padding:12px}
+  .drawer h3{margin:0 0 6px 0}
+  .kv{display:grid;grid-template-columns:160px 1fr;gap:10px;align-items:center}
+  .kv label{font-size:13px;color:#aeb8da}
+  .kv input,.kv select,.kv textarea{width:100%}
+  .list-reset{list-style:none;margin:0;padding:0}
+  .doc{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px dashed #28356c}
+  .doc:last-child{border-bottom:0}
+  /* Modal */
+  .modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:60}
+  .modal.open{display:flex}
+  .modal .box{width:920px;max-width:95vw;background:linear-gradient(180deg,#10173c,#111b48);border:1px solid #2b3a77;border-radius:12px;padding:14px}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  /* Sticky helpers */
+  .sticky-note{background:#11204a;border:1px dashed #3453aa;border-radius:10px;padding:10px}
+  @media print{ nav,.toolbar,.drawer,.modal{display:none!important} }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Klienci • ARKON CRM</h1>
+  <div class="muted">Lista klientów, statusy, tagi, projekty, umowy i dokumenty. Własne kolumny, import/eksport, skróty: <span class="kbd">/</span> wyszukaj • <span class="kbd">Alt+N</span> nowy • <span class="kbd">Alt+E</span> eksport CSV • <span class="kbd">Alt+J</span> eksport JSON • <span class="kbd">Alt+S</span> struktura pól.</div>
+</header>
+
+<nav>
+  <a href="index.html">Pulpit</a>
+  <a href="klienci.html" aria-current="page">Klienci</a>
+  <a href="komponenty-pompy.html">Pompy</a>
+  <a href="komponenty-piece.html">Piece</a>
+  <a href="komponenty-fotowoltaika.html">Fotowoltaika</a>
+  <a href="komponenty-ocieplenie.html">Ocieplenie</a>
+  <a href="komponenty-stolarka.html">Stolarka</a>
+  <a href="lidy.html">Lidy</a>
+  <a href="upload.html">Przesył plików</a>
+  <a href="chat.html">Komunikator</a>
+  <a href="ustawienia.html">Ustawienia</a>
+</nav>
+
+<div class="wrap">
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <button id="btnAdd" class="btn ok">+ Nowy klient</button>
+    <button id="btnSchema" class="btn">⚙ Struktura pól</button>
+    <button id="btnExportJSON" class="btn ghost">Eksport JSON</button>
+    <label class="btn ghost">Import JSON<input id="importJSON" type="file" accept="application/json" hidden></label>
+    <button id="btnCSV" class="btn ghost">CSV</button>
+    <button id="btnBulk" class="btn warn" title="Wkrótce: akcje na zaznaczonych">Operacje masowe</button>
+    <span class="pill">Łącznie: <b id="countAll">0</b></span>
+    <span class="pill">Widocznych: <b id="countVis">0</b></span>
+    <span class="pill">Wybranych: <b id="countSel">0</b></span>
+    <span class="pill">Autosave <b id="as" style="color:#8ae3b1">ON</b></span>
+  </div>
+
+  <!-- FILTRY -->
+  <div class="card">
+    <div class="row">
+      <input id="q" placeholder="🔎 Szukaj: nazwa, e-mail, telefon, tag…" style="min-width:260px">
+      <select id="fStatus">
+        <option value="">Status (wszystkie)</option>
+        <option value="LEAD">LEAD</option>
+        <option value="ZAPYTANIE">ZAPYTANIE</option>
+        <option value="W TOKU">W TOKU</option>
+        <option value="KLIENT">KLIENT</option>
+        <option value="UTRACONY">UTRACONY</option>
+      </select>
+      <select id="sort">
+        <option value="name.asc">Sort: Nazwa ↑</option>
+        <option value="name.desc">Sort: Nazwa ↓</option>
+        <option value="created.desc">Sort: Najnowsze</option>
+        <option value="created.asc">Sort: Najstarsze</option>
+      </select>
+      <input id="fTag" placeholder="Tag (np. pompa, fotowoltaika)">
+      <select id="fField" title="Filtruj po wybranym polu własnym"></select>
+      <input id="fFieldVal" placeholder="= wartość pola">
+      <button id="btnClearFilters" class="btn ghost">Wyczyść filtry</button>
+      <span class="pill">Widok: <select id="viewMode"><option value="table">Tabela</option><option value="cards">Karty</option></select></span>
+    </div>
+  </div>
+
+  <div class="grid cols-2">
+    <!-- LISTA KLIENTÓW -->
+    <div class="card">
+      <div class="muted" style="margin-bottom:6px">Kliknij wiersz, aby edytować w panelu po prawej. Zaznacz kilka (Ctrl/⌘) — przygotowane pod akcje masowe.</div>
+      <div id="listWrap" style="overflow:auto">
+        <table id="tbl" role="grid" aria-label="Tabela klientów">
+          <thead id="thead">
+            <tr>
+              <th>▶️</th>
+              <th>Nazwa</th>
+              <th>Status</th>
+              <th>Kontakt</th>
+              <th>Adres</th>
+              <th>Tagi</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+        <div id="cards" hidden></div>
+      </div>
+    </div>
+
+    <!-- DRAWER — EDYCJA -->
+    <aside id="drawer" class="drawer" aria-label="Edycja klienta">
+      <div class="hd">
+        <div class="row">
+          <h3 style="margin:0">Edycja klienta</h3>
+          <div class="right">
+            <button id="btnClose" class="btn ghost" type="button">Zamknij</button>
+            <button id="btnDel" class="btn bad" type="button">Usuń</button>
+            <button id="btnDup" class="btn" type="button">Duplikuj</button>
+          </div>
+        </div>
+      </div>
+      <div class="bd">
+        <div class="kv">
+          <label>Nazwa</label><input id="e_name" placeholder="np. Jan Kowalski / Firma XYZ">
+          <label>Status</label>
+          <select id="e_status">
+            <option>LEAD</option><option>ZAPYTANIE</option><option>W TOKU</option><option>KLIENT</option><option>UTRACONY</option>
+          </select>
+          <label>E-mail</label><input id="e_email" placeholder="email@domena.pl">
+          <label>Telefon</label><input id="e_phone" placeholder="+48 …">
+          <label>Adres</label><input id="e_addr" placeholder="ulica, miasto">
+          <label>Tagi (po przecinku)</label><input id="e_tags" placeholder="pompa, fotowoltaika">
+          <label>Notatki</label><textarea id="e_notes" placeholder="Ważne uzgodnienia, terminy, itp."></textarea>
+        </div>
+
+        <!-- POWIĄZANIA I SZYBKIE LINKI -->
+        <h4 style="margin:14px 0 6px">Powiązania i szybkie linki</h4>
+        <div class="kv">
+          <label>Lead (z Lidy)</label>
+          <select id="e_lead"><option value="">— brak —</option></select>
+          <label>Folder/Token upload</label>
+          <input id="e_folder" placeholder="np. CLNT-2025-0001 (tworzy się w upload.html)">
+          <label>Szybkie akcje</label>
+          <div class="row">
+            <a id="linkCalc" class="btn ghost" href="#" target="_blank" rel="noopener">Kalkulator</a>
+            <a id="linkUpload" class="btn ghost" href="#" target="_blank" rel="noopener">Przesył plików</a>
+            <a id="linkDocs" class="btn ghost" href="dokumenty.html" target="_blank" rel="noopener">Dokumenty</a>
+          </div>
+        </div>
+
+        <!-- UMOWY / SZABLONY (w tym umowa.html i umowa2.html) -->
+        <h4 style="margin:14px 0 6px">Umowy / Szablony</h4>
+        <div class="small muted">Generuj/edytuj umowę na podstawie danych klienta.</div>
+        <div class="row" id="contractsLinks" style="margin-top:8px;flex-wrap:wrap;gap:8px">
+          <!-- Linki wypełniane w JS (dynamiczny clientId) -->
+        </div>
+
+        <!-- Pola własne -->
+        <h4 style="margin:14px 0 6px">Pola własne</h4>
+        <div id="customFields" class="grid"></div>
+
+        <!-- Projekty / umowy / dokumenty -->
+        <div class="sticky-note">
+          <h4 style="margin:0 0 6px">Projekty</h4>
+          <div class="small muted" style="margin-bottom:6px">Każdy projekt może mieć umowy i dokumenty (linki/nazwy plików). Do faktycznego uploadu użyj strony „Przesył plików”.</div>
+          <div id="projList"></div>
+          <div class="right" style="margin-top:8px">
+            <button id="btnAddProject" class="btn ok" type="button">+ Dodaj projekt</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- DOK przypięte -->
+  <div class="grid cols-3" style="margin-top:12px">
+    <div class="card">
+      <h3 style="margin:0 0 6px">Szablony wydruków (globalne)</h3>
+      <div class="row">
+        <a class="btn ghost" href="umowa.html" target="_blank" rel="noopener">📄 Umowa</a>
+        <a class="btn ghost" href="umowa2.html" target="_blank" rel="noopener">📄 Umowa 2</a>
+        <a class="btn ghost" href="umowy.html" target="_blank" rel="noopener">📝 Edytor umów</a>
+      </div>
+      <div class="small muted" style="margin-top:6px">W edycji klienta linki otwierają się z parametrem <code>?clientId=...</code>.</div>
+    </div>
+    <div class="card">
+      <h3 style="margin:0 0 6px">Eksport/Import</h3>
+      <div class="row">
+        <button id="btnExportJSON2" class="btn">Eksport JSON</button>
+        <label class="btn ghost">Import JSON<input id="importJSON2" type="file" accept="application/json" hidden></label>
+        <button id="btnCSV2" class="btn ghost">Eksport CSV</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3 style="margin:0 0 6px">Podpowiedzi</h3>
+      <ul class="small">
+        <li><span class="kbd">/</span> przenosi kursor do wyszukiwarki.</li>
+        <li><span class="kbd">Alt+N</span> dodaje nowego klienta.</li>
+        <li><span class="kbd">Alt+S</span> otwiera edytor struktury pól.</li>
+        <li>Widok „Karty” — lepszy do szybkiego przeglądu.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL STRUKTURY -->
+<div id="modalSchema" class="modal" role="dialog" aria-modal="true" aria-labelledby="schemaTitle">
+  <div class="box">
+    <div class="row" style="justify-content:space-between">
+      <h3 id="schemaTitle" style="margin:0">Struktura pól (własne kolumny)</h3>
+      <div class="right"><button id="btnCloseSchema" class="btn ghost" type="button">Zamknij</button></div>
+    </div>
+    <div class="muted" style="margin:6px 0 10px">Dodaj swoje pola do klientów (np. „Powierzchnia domu [m²]”, „Źródło leadu”). Typy: text, number, select, date, checkbox.</div>
+    <div class="grid-3">
+      <div><label>Nazwa etykiety</label><input id="s_label" placeholder="np. Powierzchnia [m²]"></div>
+      <div><label>Klucz (bez spacji)</label><input id="s_key" placeholder="np. powierzchnia_m2"></div>
+      <div><label>Typ</label>
+        <select id="s_type">
+          <option value="text">text</option>
+          <option value="number">number</option>
+          <option value="select">select</option>
+          <option value="date">date</option>
+          <option value="checkbox">checkbox</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top:8px">
+      <label>Opcje (dla „select”) — rozdzielone przecinkami</label>
+      <input id="s_opts" placeholder="np. A,B,C">
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button id="btnAddField" class="btn ok" type="button">+ Dodaj pole</button>
+      <button id="btnClearFields" class="btn bad" type="button">Wyczyść wszystko</button>
+    </div>
+
+    <h4 style="margin:12px 0 6px">Aktywne pola</h4>
+    <div id="schemaList"></div>
+    <div class="right" style="margin-top:10px"><button id="btnSaveSchema" class="btn" type="button">Zapisz schemat</button></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===== helpers ===== */
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const INT = new Intl.NumberFormat('pl-PL');
+const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
+const fmtDate = ts => new Date(ts).toLocaleString('pl-PL');
+function escapeHtml(s){ return (s==null?'':String(s)).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function textMatches(haystack, needle){ if(!needle) return true; haystack=(haystack||'').toString().toLowerCase(); return haystack.includes(needle.toLowerCase()); }
+function kbdFocus(e, key, cb){ if(e.altKey && e.key.toLowerCase()===key){ e.preventDefault(); cb(); }}
+function csvEsc(v){ let s=(v==null?'':String(v)); if(/[;\n"]/g.test(s)) s='"'+s.replace(/"/g,'""')+'"'; return s; }
+
+/* ===== storage keys ===== */
+const LS = {
+  clients: 'arkon_clients_v2',
+  schema:  'arkon_clients_schema_v1',
+  leads:   'arkon_leads_v1'
+};
+
+/* ===== state ===== */
+let clients = load(LS.clients, []);
+let schema  = load(LS.schema,  []);
+let leads   = load(LS.leads,   []);
+let selectedIds = new Set();
+let filter = { q:'', status:'', tag:'', sort:'name.asc', fKey:'', fVal:'' };
+let openId = null;
+let viewMode = 'table';
+
+/* ===== load/save ===== */
+function load(key, fallback){
+  try{ return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }catch{ return fallback; }
+}
+function saveClients(){ localStorage.setItem(LS.clients, JSON.stringify(clients)); renderTable(); renderCards(); }
+function saveSchema(){ localStorage.setItem(LS.schema,  JSON.stringify(schema)); renderTableHead(); renderTable(); renderCards(); fillFieldFilter(); }
+
+/* ===== seed (gdy pusto) ===== */
+if(!clients.length){
+  clients = [
+    { id:uid(), created:Date.now()-86400000*3, name:'Jan Kowalski', status:'LEAD', email:'jan@kowalski.pl', phone:'+48 500 000 111', address:'Przemków', tags:['pompa'], notes:'Preferuje kontakt rano.', leadId:'', folder:'', custom:{}, projects:[
+      { id:uid(), name:'Pompa ciepła 12 kW', stage:'OFERTA', contracts:[{no:'U-2025/01',value:43000,status:'podpisana'}], docs:[{name:'Mapa do celów projektowych.pdf',size:120000}] }
+    ]},
+    { id:uid(), created:Date.now()-86400000*2, name:'Firma XYZ Sp. z o.o.', status:'W TOKU', email:'biuro@xyz.pl', phone:'+48 600 100 200', address:'Legnica', tags:['fotowoltaika','serwis'], notes:'Serwis falownika Fronius.', leadId:'', folder:'', custom:{}, projects:[]},
+    { id:uid(), created:Date.now()-86400000, name:'Teresa Siek', status:'KLIENT', email:'teresa.siek@mail.com', phone:'+48 502 222 333', address:'Głogów', tags:['ocieplenie'], notes:'CP — ocieplenie + stolarka.', leadId:'', folder:'', custom:{}, projects:[]}
+  ];
+  saveClients();
+}
+
+/* ===== filtr/sort ===== */
+$('#q').addEventListener('input', e=>{ filter.q = e.target.value.trim(); renderTable(); renderCards(); });
+$('#fStatus').addEventListener('change', e=>{ filter.status = e.target.value; renderTable(); renderCards(); });
+$('#fTag').addEventListener('input', e=>{ filter.tag = e.target.value.trim(); renderTable(); renderCards(); });
+$('#sort').addEventListener('change', e=>{ filter.sort = e.target.value; renderTable(); renderCards(); });
+$('#btnClearFilters').addEventListener('click', ()=>{ filter={q:'',status:'',tag:'',sort:'name.asc',fKey:'',fVal:''}; $('#q').value=''; $('#fStatus').value=''; $('#fTag').value=''; $('#sort').value='name.asc'; $('#fField').value=''; $('#fFieldVal').value=''; renderTable(); renderCards(); });
+$('#fField').addEventListener('change', e=>{ filter.fKey=e.target.value; renderTable(); renderCards(); });
+$('#fFieldVal').addEventListener('input', e=>{ filter.fVal=e.target.value.trim(); renderTable(); renderCards(); });
+$('#viewMode').addEventListener('change', e=>{ viewMode=e.target.value; toggleView(); });
+
+/* ===== toolbar ===== */
+$('#btnAdd').addEventListener('click', ()=>createClient());
+$('#btnExportJSON').addEventListener('click', ()=>exportJSON());
+$('#importJSON').addEventListener('change', e=>{ const f=e.target.files[0]; if(f) importJSON(f); e.target.value=''; });
+$('#btnCSV').addEventListener('click', ()=>exportCSV());
+$('#btnExportJSON2').addEventListener('click', ()=>exportJSON());
+$('#importJSON2').addEventListener('change', e=>{ const f=e.target.files[0]; if(f) importJSON(f); e.target.value=''; });
+$('#btnCSV2').addEventListener('click', ()=>exportCSV());
+
+/* ===== keyboard shortcuts ===== */
+window.addEventListener('keydown', (e)=>{
+  if(e.key==='/' && !e.metaKey && !e.ctrlKey){ e.preventDefault(); $('#q').focus(); }
+  kbdFocus(e,'n',()=>createClient());
+  kbdFocus(e,'e',()=>exportCSV());
+  kbdFocus(e,'j',()=>exportJSON());
+  kbdFocus(e,'s',()=>openSchemaModal());
+});
+
+/* ===== schema modal ===== */
+$('#btnSchema').addEventListener('click', openSchemaModal);
+$('#btnCloseSchema').addEventListener('click', closeSchemaModal);
+$('#btnAddField').addEventListener('click', addSchemaField);
+$('#btnClearFields').addEventListener('click', ()=>{ if(confirm('Usunąć wszystkie pola własne?')){ schema=[]; drawSchemaList(); }});
+$('#btnSaveSchema').addEventListener('click', ()=>{ saveSchema(); alert('Zapisano schemat. Kolumny odświeżone.'); });
+
+function openSchemaModal(){ $('#modalSchema').classList.add('open'); drawSchemaList(); }
+function closeSchemaModal(){ $('#modalSchema').classList.remove('open'); }
+function addSchemaField(){
+  const label = $('#s_label').value.trim();
+  const key   = ($('#s_key').value||'').trim();
+  const type  = $('#s_type').value;
+  const opts  = $('#s_opts').value.trim();
+  if(!label || !key) return alert('Podaj etykietę i unikalny klucz.');
+  if(schema.some(f=>f.key===key)) return alert('Klucz już istnieje.');
+  const field = {label,key,type};
+  if(type==='select') field.opts = opts.split(',').map(s=>s.trim()).filter(Boolean);
+  schema.push(field);
+  $('#s_label').value=''; $('#s_key').value=''; $('#s_opts').value='';
+  drawSchemaList(); fillFieldFilter();
+}
+function drawSchemaList(){
+  const box = $('#schemaList'); box.innerHTML='';
+  if(!schema.length){ box.innerHTML='<div class="muted">Brak dodatkowych pól. Dodaj powyżej.</div>'; return; }
+  schema.forEach((f,i)=>{
+    const row = document.createElement('div');
+    row.className='row';
+    row.style.margin='6px 0';
+    row.innerHTML = `
+      <span class="pill">${escapeHtml(f.label)}</span>
+      <span class="small">(${escapeHtml(f.key)} • ${escapeHtml(f.type)}${f.opts? ' • '+f.opts.map(escapeHtml).join('/') : ''})</span>
+      <span class="right" style="flex:1"></span>
+      <button data-i="${i}" class="btn ghost s-up" type="button">↑</button>
+      <button data-i="${i}" class="btn ghost s-down" type="button">↓</button>
+      <button data-i="${i}" class="btn bad s-del" type="button">Usuń</button>`;
+    box.appendChild(row);
+  });
+  box.querySelectorAll('.s-del').forEach(b=>b.addEventListener('click',()=>{ const i=+b.dataset.i; schema.splice(i,1); drawSchemaList(); fillFieldFilter(); }));
+  box.querySelectorAll('.s-up').forEach(b=>b.addEventListener('click',()=>{ const i=+b.dataset.i; if(i>0){ [schema[i-1],schema[i]]=[schema[i],schema[i-1]]; drawSchemaList(); }}));
+  box.querySelectorAll('.s-down').forEach(b=>b.addEventListener('click',()=>{ const i=+b.dataset.i; if(i<schema.length-1){ [schema[i+1],schema[i]]=[schema[i],schema[i+1]]; drawSchemaList(); }}));
+}
+function fillFieldFilter(){
+  const sel=$('#fField'); sel.innerHTML='<option value="">(pole własne)</option>';
+  schema.forEach(f=>{ const o=document.createElement('option'); o.value=f.key; o.textContent=f.label; sel.appendChild(o); });
+}
+
+/* ===== table head ===== */
+function renderTableHead(){
+  const tr = $('#thead tr');
+  while(tr.children.length > 6) tr.removeChild(tr.lastElementChild);
+  schema.forEach(f=>{ const th=document.createElement('th'); th.textContent=f.label; tr.appendChild(th); });
+}
+renderTableHead();
+
+/* ===== render — tabela i karty ===== */
+function applyFilters(rows){
+  if(filter.q){
+    const q = filter.q.toLowerCase();
+    rows = rows.filter(c =>
+      textMatches(c.name,q) || textMatches(c.email,q) || textMatches(c.phone,q) ||
+      (c.tags||[]).some(t=>textMatches(t,q)) || textMatches(c.address,q) ||
+      schema.some(f=> textMatches((c.custom||{})[f.key], q) )
+    );
+  }
+  if(filter.status){ rows = rows.filter(c=>c.status===filter.status); }
+  if(filter.tag){ const t=filter.tag.toLowerCase(); rows = rows.filter(c=> (c.tags||[]).some(x=>x.toLowerCase().includes(t))); }
+  if(filter.fKey && filter.fVal){ rows = rows.filter(c=> textMatches(((c.custom||{})[filter.fKey]||''), filter.fVal)); }
+  rows.sort((a,b)=>{
+    switch(filter.sort){
+      case 'name.asc':  return a.name.localeCompare(b.name,'pl',{sensitivity:'base'});
+      case 'name.desc': return b.name.localeCompare(a.name,'pl',{sensitivity:'base'}) * -1;
+      case 'created.desc': return (b.created||0)-(a.created||0);
+      case 'created.asc':  return (a.created||0)-(b.created||0);
+      default: return 0;
+    }
+  });
+  return rows;
+}
+
+function renderTable(){
+  let rows = applyFilters(clients.slice());
+  $('#countAll').textContent = clients.length;
+  $('#countVis').textContent = rows.length;
+  $('#countSel').textContent = selectedIds.size;
+
+  const tb = $('#tbody'); tb.innerHTML='';
+  rows.forEach(c=>{
+    const tr = document.createElement('tr');
+    if(selectedIds.has(c.id)) tr.classList.add('sel');
+
+    const tagsHtml = (c.tags||[]).map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('');
+
+    tr.innerHTML = `
+      <td><button class="btn ghost open" data-id="${c.id}" title="Otwórz szczegóły" type="button">▶️</button></td>
+      <td><b>${escapeHtml(c.name||'—')}</b><div class="small">${fmtDate(c.created||Date.now())}</div></td>
+      <td><span class="status ${statusClass(c.status)}">${escapeHtml(c.status||'—')}</span></td>
+      <td>${escapeHtml(c.email||'')}<div class="small">${escapeHtml(c.phone||'')}</div></td>
+      <td>${escapeHtml(c.address||'')}</td>
+      <td>${tagsHtml}</td>`;
+    schema.forEach(f=>{
+      const td=document.createElement('td');
+      const v=(c.custom||{})[f.key];
+      td.textContent = f.type==='checkbox' ? (v?'TAK':'NIE') : (v==null?'':v);
+      tr.appendChild(td);
+    });
+
+    tr.addEventListener('click', (e)=>{
+      if(e.metaKey || e.ctrlKey){
+        if(selectedIds.has(c.id)) selectedIds.delete(c.id); else selectedIds.add(c.id);
+        renderTable();
+      }else{
+        openDrawer(c.id);
+      }
+    });
+
+    tb.appendChild(tr);
+  });
+
+  tb.querySelectorAll('.open').forEach(b=>b.addEventListener('click',(e)=>{ e.stopPropagation(); openDrawer(b.dataset.id); }));
+}
+
+function renderCards(){
+  const cont = $('#cards'); cont.innerHTML='';
+  let rows = applyFilters(clients.slice());
+  if(viewMode!=='cards'){ cont.hidden=true; $('#tbl').hidden=false; return; }
+  $('#tbl').hidden=true; cont.hidden=false;
+
+  rows.forEach(c=>{
+    const card = document.createElement('div');
+    card.className='card';
+    card.innerHTML = `
+      <div class="row" style="justify-content:space-between">
+        <div>
+          <b>${escapeHtml(c.name||'—')}</b>
+          <div class="small">${fmtDate(c.created||Date.now())}</div>
+        </div>
+        <div><span class="status ${statusClass(c.status)}">${escapeHtml(c.status||'—')}</span></div>
+      </div>
+      <div class="small" style="margin-top:6px">${escapeHtml(c.email||'')} • ${escapeHtml(c.phone||'')}</div>
+      <div class="small">${escapeHtml(c.address||'')}</div>
+      <div style="margin-top:6px">${(c.tags||[]).map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('')}</div>
+      <div class="right" style="margin-top:8px"><button class="btn open" data-id="${c.id}">Edytuj ▶️</button></div>
+    `;
+    cont.appendChild(card);
+  });
+  cont.querySelectorAll('.open').forEach(b=>b.addEventListener('click',()=>openDrawer(b.dataset.id)));
+}
+function toggleView(){ if(viewMode==='cards') renderCards(); else { $('#tbl').hidden=false; $('#cards').hidden=true; } }
+renderCards();
+
+function statusClass(s){
+  switch((s||'').toUpperCase()){
+    case 'LEAD': return 'lead';
+    case 'ZAPYTANIE': return 'q';
+    case 'W TOKU': return 'w';
+    case 'KLIENT': return 'c';
+    case 'UTRACONY': return 'l';
+    default: return '';
+  }
+}
+
+/* ===== CRUD ===== */
+function createClient(){
+  const c = { id:uid(), created:Date.now(), name:'Nowy klient', status:'LEAD', email:'', phone:'', address:'', tags:[], notes:'', leadId:'', folder:'', custom:{}, projects:[] };
+  clients.unshift(c); saveClients(); openDrawer(c.id);
+}
+function deleteClient(id){
+  const i = clients.findIndex(x=>x.id===id);
+  if(i>=0){ clients.splice(i,1); saveClients(); if(openId===id) closeDrawer(); }
+}
+function duplicateClient(id){
+  const src = clients.find(x=>x.id===id); if(!src) return;
+  const copy = JSON.parse(JSON.stringify(src));
+  copy.id = uid();
+  copy.name = (src.name||'') + ' (kopia)';
+  copy.created = Date.now();
+  clients.unshift(copy);
+  saveClients();
+  openDrawer(copy.id);
+}
+
+/* ===== drawer (edycja) ===== */
+const drawer = $('#drawer');
+$('#btnClose').addEventListener('click', closeDrawer);
+$('#btnDel').addEventListener('click', ()=>{ if(openId && confirm('Usunąć klienta?')) deleteClient(openId); });
+$('#btnDup').addEventListener('click', ()=>{ if(openId) duplicateClient(openId); });
+
+function openDrawer(id){
+  openId = id;
+  const c = clients.find(x=>x.id===id); if(!c) return;
+  drawer.classList.add('open');
+
+  $('#e_name').value  = c.name||'';
+  $('#e_status').value = c.status||'LEAD';
+  $('#e_email').value = c.email||'';
+  $('#e_phone').value = c.phone||'';
+  $('#e_addr').value  = c.address||'';
+  $('#e_tags').value  = (c.tags||[]).join(', ');
+  $('#e_notes').value = c.notes||'';
+
+  fillLeadsSelect(c.leadId||'');
+  $('#e_folder').value = c.folder||'';
+  updateQuickLinks();
+  renderContractLinks(id);
+
+  renderCustomFields(c);
+  renderProjects(c);
+  bindEditorHandlers();
+}
+function closeDrawer(){ drawer.classList.remove('open'); openId=null; }
+
+function bindEditorHandlers(){
+  ['#e_name','#e_email','#e_phone','#e_addr','#e_tags','#e_notes','#e_folder'].forEach(sel=>{ $(sel).oninput = debounce(saveEditor, 160); });
+  $('#e_status').onchange = saveEditor;
+  $('#e_lead').onchange = saveEditor;
+}
+function saveEditor(){
+  if(!openId) return;
+  const c = clients.find(x=>x.id===openId); if(!c) return;
+  c.name   = $('#e_name').value.trim();
+  c.status = $('#e_status').value;
+  c.email  = $('#e_email').value.trim();
+  c.phone  = $('#e_phone').value.trim();
+  c.address= $('#e_addr').value.trim();
+  c.tags   = $('#e_tags').value.split(',').map(s=>s.trim()).filter(Boolean);
+  c.notes  = $('#e_notes').value;
+  c.leadId = $('#e_lead').value || '';
+  c.folder = $('#e_folder').value.trim();
+  // custom
+  c.custom = c.custom||{};
+  schema.forEach(f=>{
+    const el = document.getElementById('cf_'+f.key);
+    if(!el) return;
+    let v;
+    if(f.type==='checkbox') v = !!el.checked;
+    else v = el.value;
+    c.custom[f.key] = v;
+  });
+  saveClients();
+  updateQuickLinks();
+  renderCards();
+}
+
+function fillLeadsSelect(selected){
+  const sel = $('#e_lead'); sel.innerHTML = '<option value="">— brak —</option>';
+  (leads||[]).forEach(ld=>{
+    const opt = document.createElement('option');
+    opt.value = ld.id; opt.textContent = (ld.title||'Lead') + (ld.source? ' • '+ld.source : '');
+    if(selected && selected===ld.id) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+function updateQuickLinks(){
+  if(!openId) return;
+  $('#linkCalc').href   = 'kalkulator.html?clientId=' + encodeURIComponent(openId);
+  $('#linkUpload').href = 'upload.html?clientId=' + encodeURIComponent(openId) + ($('#e_folder').value ? '&folder='+encodeURIComponent($('#e_folder').value) : '');
+}
+function renderContractLinks(id){
+  const box = $('#contractsLinks'); box.innerHTML='';
+  const mk = (href, label)=>{
+    const a=document.createElement('a');
+    a.className='btn ghost';
+    a.target='_blank'; a.rel='noopener';
+    a.href=href + (href.includes('?') ? '&' : '?') + 'clientId=' + encodeURIComponent(id);
+    a.textContent=label;
+    return a;
+  };
+  box.appendChild(mk('umowa.html','📄 Umowa'));
+  box.appendChild(mk('umowa2.html','📄 Umowa 2'));
+  box.appendChild(mk('umowy.html','📝 Edytor umów (główny)'));
+  box.appendChild(mk('umowy_ocieplenie.html','🏠 Ocieplenie'));
+  box.appendChild(mk('umowy_pv.html','☀️ Fotowoltaika'));
+  box.appendChild(mk('umowy_stolarka.html','🚪 Stolarka'));
+}
+
+/* ===== custom fields render ===== */
+function renderCustomFields(c){
+  const box = $('#customFields'); box.innerHTML='';
+  if(!schema.length){ box.innerHTML='<div class="muted">Brak pól własnych. Dodaj w „Struktura pól”.</div>'; return; }
+  schema.forEach(f=>{
+    const id='cf_'+f.key;
+    const val = (c.custom||{})[f.key];
+    let inputHtml='';
+    if(f.type==='number') inputHtml = `<input id="${id}" type="number" value="${val??''}">`;
+    else if(f.type==='date') inputHtml = `<input id="${id}" type="date" value="${val??''}">`;
+    else if(f.type==='select') inputHtml = `<select id="${id}">${(f.opts||[]).map(o=>`<option ${val===o?'selected':''}>${escapeHtml(o)}</option>`).join('')}</select>`;
+    else if(f.type==='checkbox') inputHtml = `<input id="${id}" type="checkbox" ${val?'checked':''}>`;
+    else inputHtml = `<input id="${id}" type="text" value="${val??''}">`;
+
+    const row = document.createElement('div');
+    row.className='kv';
+    row.style.margin='6px 0';
+    row.innerHTML = `<label for="${id}">${escapeHtml(f.label)}</label>${inputHtml}`;
+    box.appendChild(row);
+
+    const el = row.querySelector('#'+id);
+    if(f.type==='checkbox'){ el.addEventListener('change', saveEditor); }
+    else { el.addEventListener('input', debounce(saveEditor, 180)); }
+  });
+}
+
+/* ===== projects / contracts / docs ===== */
+$('#btnAddProject').addEventListener('click', ()=>{
+  if(!openId) return;
+  const c = clients.find(x=>x.id===openId); if(!c) return;
+  c.projects = c.projects || [];
+  c.projects.push({ id:uid(), name:'Nowy projekt', stage:'OFERTA', contracts:[], docs:[] });
+  saveClients(); renderProjects(c);
+});
+
+function renderProjects(c){
+  const box = $('#projList'); box.innerHTML = '';
+  (c.projects||[]).forEach((p)=>{
+    const div = document.createElement('div');
+    div.className='doc';
+    const contractsHtml = (p.contracts||[]).map((u,i)=>contractRowHtml(p.id,i,u)).join('');
+    const docsHtml      = (p.docs||[]).map((d,i)=>docRowHtml(p.id,i,d)).join('');
+    div.innerHTML = `
+      <div class="row" style="justify-content:space-between;width:100%">
+        <div class="row">
+          <input data-k="name" data-p="${p.id}" value="${escapeHtml(p.name)}" style="min-width:260px">
+          <select data-k="stage" data-p="${p.id}">
+            ${['OFERTA','AUDYT','W REALIZACJI','ZAKOŃCZONY','WSTRZYMANY'].map(s=>`<option ${p.stage===s?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+        <div class="right">
+          <button class="btn ghost" data-act="up" data-p="${p.id}" type="button">↑</button>
+          <button class="btn ghost" data-act="down" data-p="${p.id}" type="button">↓</button>
+          <button class="btn bad" data-act="del" data-p="${p.id}" type="button">Usuń</button>
+        </div>
+      </div>
+      <div class="grid" style="margin-top:8px">
+        <div>
+          <h5>Umowy</h5>
+          <ul class="list-reset" id="contracts_${p.id}">${contractsHtml}</ul>
+          <div class="row"><button class="btn ok" data-act="addContract" data-p="${p.id}" type="button">+ Umowa</button></div>
+        </div>
+        <div>
+          <h5>Dokumenty (nazwy/linki)</h5>
+          <ul class="list-reset" id="docs_${p.id}">${docsHtml}</ul>
+          <div class="row">
+            <button class="btn ok" data-act="addDoc" data-p="${p.id}" type="button">+ Dokument</button>
+            <span class="small muted">Upload faktycznych plików: <a href="upload.html" target="_blank" rel="noopener">Przesył plików</a>.</span>
+          </div>
+        </div>
+      </div>
+    `;
+    // bindy edycji projektu
+    div.querySelectorAll('input[data-k],select[data-k]').forEach(el=>{
+      el.addEventListener('input', debounce(()=>{ editProject(c.id, p.id, el.dataset.k, el.value); },180));
+      el.addEventListener('change', ()=>{ editProject(c.id, p.id, el.dataset.k, el.value); });
+    });
+    // akcje
+    div.querySelectorAll('[data-act]').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        const act=b.dataset.act, pid=b.dataset.p;
+        switch(act){
+          case 'del': if(confirm('Usunąć projekt?')) removeProject(c.id, pid); break;
+          case 'up': moveProject(c.id, pid,-1); break;
+          case 'down': moveProject(c.id, pid,1); break;
+          case 'addContract': addContract(c.id, pid); break;
+          case 'addDoc': addDoc(c.id, pid); break;
+          case 'c_del': p.contracts.splice(+b.dataset.i,1); saveClients(); renderProjects(c); break;
+          case 'd_del': p.docs.splice(+b.dataset.i,1); saveClients(); renderProjects(c); break;
+        }
+      });
+    });
+
+    // bindy list
+    div.querySelectorAll('#contracts_'+p.id+' [data-act], #docs_'+p.id+' [data-act]').forEach(el=>{
+      el.addEventListener('input', debounce(()=>{ handleProjectListInput(c,p,el); },180));
+      el.addEventListener('change', ()=>{ handleProjectListInput(c,p,el); });
+    });
+
+    box.appendChild(div);
+  });
+}
+function editProject(cid,pid,key,val){
+  const c = clients.find(x=>x.id===cid); if(!c) return;
+  const p = (c.projects||[]).find(x=>x.id===pid); if(!p) return;
+  p[key]=val; saveClients();
+}
+function removeProject(cid,pid){
+  const c = clients.find(x=>x.id===cid); if(!c) return;
+  c.projects = (c.projects||[]).filter(x=>x.id!==pid);
+  saveClients(); renderProjects(c);
+}
+function moveProject(cid,pid,dir){
+  const c = clients.find(x=>x.id===cid); if(!c) return;
+  const arr=c.projects||[]; const i=arr.findIndex(x=>x.id===pid); if(i<0) return;
+  const j=i+dir; if(j<0||j>=arr.length) return;
+  [arr[i],arr[j]]=[arr[j],arr[i]];
+  saveClients(); renderProjects(c);
+}
+function contractRowHtml(pid,i,u){
+  return `<li class="doc">
+    <div class="row">
+      <input data-act="c_no" data-p="${pid}" data-i="${i}" placeholder="Nr umowy" value="${escapeHtml(u.no||'')}">
+      <input data-act="c_val" data-p="${pid}" data-i="${i}" type="number" placeholder="Wartość [zł]" value="${u.value||''}">
+      <select data-act="c_stat" data-p="${pid}" data-i="${i}">
+        ${['podpisana','w toku','anulowana'].map(s=>`<option ${u.status===s?'selected':''}>${s}</option>`).join('')}
+      </select>
+    </div>
+    <div class="right"><button class="btn ghost" data-act="c_del" data-p="${pid}" data-i="${i}" type="button">Usuń</button></div>
+  </li>`;
+}
+function docRowHtml(pid,i,d){
+  return `<li class="doc">
+    <div class="row">
+      <input data-act="d_name" data-p="${pid}" data-i="${i}" placeholder="Nazwa lub link" value="${escapeHtml(d.name||'')}" style="min-width:260px">
+      <input data-act="d_size" data-p="${pid}" data-i="${i}" type="number" placeholder="Rozmiar [B]" value="${d.size||''}">
+    </div>
+    <div class="right"><button class="btn ghost" data-act="d_del" data-p="${pid}" data-i="${i}" type="button">Usuń</button></div>
+  </li>`;
+}
+function addContract(cid,pid){
+  const c = clients.find(x=>x.id===cid); if(!c) return;
+  const p = (c.projects||[]).find(x=>x.id===pid); if(!p) return;
+  p.contracts = p.contracts||[];
+  p.contracts.push({no:'',value:0,status:'w toku'});
+  saveClients(); renderProjects(c);
+}
+function addDoc(cid,pid){
+  const c = clients.find(x=>x.id===cid); if(!c) return;
+  const p = (c.projects||[]).find(x=>x.id===pid); if(!p) return;
+  p.docs = p.docs||[];
+  p.docs.push({name:'',size:0});
+  saveClients(); renderProjects(c);
+}
+function handleProjectListInput(c,p,el){
+  const i = +el.dataset.i;
+  if(el.dataset.act?.startsWith('c_')){
+    const it = p.contracts[i]; if(!it) return;
+    if(el.dataset.act==='c_no') it.no = el.value;
+    if(el.dataset.act==='c_val') it.value = Number(el.value)||0;
+    if(el.dataset.act==='c_stat') it.status = el.value;
+  }else if(el.dataset.act?.startsWith('d_')){
+    const it = p.docs[i]; if(!it) return;
+    if(el.dataset.act==='d_name') it.name = el.value;
+    if(el.dataset.act==='d_size') it.size = Number(el.value)||0;
+  }
+  saveClients();
+}
+
+/* ===== export/import ===== */
+function exportJSON(){
+  const blob = new Blob([JSON.stringify({clients,schema},null,2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'arkon_klienci.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+async function importJSON(file){
+  try{
+    const txt = await file.text();
+    const data = JSON.parse(txt);
+    if(!data || !Array.isArray(data.clients)) throw new Error('Zły format.');
+    clients = data.clients;
+    schema  = Array.isArray(data.schema) ? data.schema : schema;
+    saveSchema(); saveClients();
+    alert('Zaimportowano.');
+  }catch(e){ alert('Błąd importu: '+e.message); }
+}
+function exportCSV(){
+  const cols = ['id','created','name','status','email','phone','address','tags','leadId','folder'].concat(schema.map(f=>f.key));
+  const rows = [cols.join(';')];
+  clients.forEach(c=>{
+    const base = [
+      c.id,
+      new Date(c.created||Date.now()).toISOString(),
+      csvEsc(c.name), csvEsc(c.status), csvEsc(c.email), csvEsc(c.phone), csvEsc(c.address),
+      csvEsc((c.tags||[]).join('|')), csvEsc(c.leadId||''), csvEsc(c.folder||'')
+    ];
+    schema.forEach(f=> base.push(csvEsc((c.custom||{})[f.key])));
+    rows.push(base.join(';'));
+  });
+  const a = document.createElement('a');
+  const blob = new Blob([rows.join('\n')], {type:'text/csv;charset=utf-8'});
+  a.href = URL.createObjectURL(blob);
+  a.download = 'arkon_klienci.csv';
+  a.click(); URL.revokeObjectURL(a.href);
+}
+
+/* ===== debounce ===== */
+function debounce(fn,ms){ let t; return function(){ const a=arguments; clearTimeout(t); t=setTimeout(()=>fn.apply(null,a),ms||180); }; }
+</script>
+</body>
+</html>
