@@ -1,8 +1,7 @@
-import { neon } from '@netlify/neon'
-const sql = neon()
+import { neon } from '@neondatabase/serverless'
+const sql = neon(process.env.NETLIFY_DATABASE_URL)
 
 /**
- * List documents for a given client.
  * GET /.netlify/functions/documents?clientId=<uuid>
  */
 export async function handler(event) {
