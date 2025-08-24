@@ -1,12 +1,10 @@
 [build]
-  publish   = "."
-  functions = "netlify/functions"
+  command = ""
+  publish = "."
 
-# Włącza Netlify Blobs w projekcie
-[[plugins]]
-  package = "@netlify/blobs"
-
-# Na produkcji Netlify wstrzyknie SITE_ID automatycznie.
-# Lokalnie można ustawić env NETLIFY_SITE_ID jeśli używasz netlify-cli.
-[blobs]
-  site_id = ""
+[[headers]]
+  for = "/*"
+  [headers.values]
+  Access-Control-Allow-Origin = "*"
+  Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+  Access-Control-Allow-Headers = "Content-Type, X-Blob-Path, X-Blob-Meta-Client-Id, X-Blob-Meta-Client-Name, X-Blob-Meta-Category, X-Blob-Meta-Tags"
