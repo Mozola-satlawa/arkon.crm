@@ -1,113 +1,197 @@
+
 <!doctype html>
 <html lang="pl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Przesył dokumentów · ARKON (Netlify Blobs)</title>
-<meta name="description" content="Wysyłanie dokumentów do magazynu Netlify Blobs.">
+<title>ARKON — Przesył dokumentów / Oferty / Ulotki (Netlify Blobs)</title>
+<meta name="description" content="Upload plików powiązanych z klientem, baza ofert i ulotek. Integracja z komponentami (pompy, piece, PV, ocieplenie, stolarka).">
+
 <style>
   :root{
-    --bg:#0b1020;--p1:#101735;--p2:#121a38;--ink:#e7ecff;--muted:#aeb8da;--line:#223066;
-    --ok:#2fbf71;--bad:#ff6b6b;--warn:#ffb84d;--chip:#0d1530;--field:#0e1330;--accent:#67a1ff;
+    --bg:#0b1020;--p1:#0f1533;--p2:#121a38;--ink:#e7ecff;--muted:#aeb8da;--line:#223066;
+    --accent:#4cc9f0;--ok:#2fbf71;--bad:#ff6b6b;--warn:#ffb84d;
+    --chip:#0d1530;--chip2:#152056;--field:#0e1330;
   }
-  *{box-sizing:border-box}
-  html,body{margin:0;height:100%}
+  *{box-sizing:border-box} html,body{margin:0;height:100%}
   body{background:linear-gradient(180deg,#0a0f1e,#0c1230 60%,#0a0f1e);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
   a{color:#cfe1ff;text-decoration:none}
-  header{padding:18px 16px;background:#11183a;border-bottom:1px solid var(--line)}
+  header{padding:16px;background:#11183a;border-bottom:1px solid var(--line)}
   header h1{margin:0;font-size:22px}
-  .wrap{max-width:1200px;margin:auto;padding:16px}
-  .card{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 16px}
+  nav{background:#172142;display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line)}
+  nav a{color:#cfe1ff;text-decoration:none;padding:8px 12px;border-radius:999px;border:1px solid #2a3a75}
+  nav a:hover{background:#223160}
+  .wrap{max-width:1280px;margin:auto;padding:16px}
+  .grid{display:grid;gap:12px}
+  @media(min-width:1100px){ .cols-2{grid-template-columns:1.3fr 1fr} .cols-3{grid-template-columns:1fr 1fr 1fr} }
+  .card{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;padding:14px}
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .right{display:flex;gap:8px;justify-content:flex-end}
+  .small{font-size:12px;color:var(--muted)}
+  .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
   .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
   .btn.ghost{background:transparent;border:1px dashed #3a4ca3}
   .btn.ok{background:#194d34;border-color:#2e925e}
-  .pill{display:inline-flex;gap:8px;align-items:center;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
-  input,select{background:var(--field);border:1px solid #28356c;border-radius:10px;padding:8px 10px;color:var(--ink);font:inherit}
+  .btn.bad{background:#3a1f2a;border-color:#7b3341}
+  .btn.warn{background:#4a361e;border-color:#8a6b30}
+  input,select,textarea{background:var(--field);border:1px solid #28356c;border-radius:10px;padding:8px 10px;color:var(--ink);font:inherit}
   input::placeholder{color:#aeb8da99}
+  textarea{min-height:80px;resize:vertical}
   .table{width:100%;border-collapse:separate;border-spacing:0}
   .table th,.table td{padding:9px;border-bottom:1px solid #22325f;text-align:left;vertical-align:top}
-  .small{font-size:12px;color:var(--muted)}
-  .bar{height:8px;border-radius:6px;background:#16224b;overflow:hidden}
-  .bar>i{display:block;height:100%;background:linear-gradient(90deg,#3d67ff,#4effd4)}
-  .tag{display:inline-block;margin:2px 6px 0 0;padding:3px 8px;border:1px solid #3a4ca3;border-radius:999px;font-size:12px}
-  .hl{outline:2px solid #67a1ff55}
+  .scroll{overflow:auto}
+  .status{padding:2px 8px;border-radius:999px;background:#0f1a44;border:1px solid #2a3a75;font-size:12px}
+  .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
+  .drop{border:2px dashed #2a3777;border-radius:10px;padding:14px;text-align:center;cursor:pointer;background:#0c1230}
+  .drop.drag{background:#10183b}
+  .file-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid #2a3777;border-radius:999px;margin:4px 6px 0 0}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px}
+  .tabs .tab{padding:6px 10px;border-radius:999px;border:1px solid #2a3a75;cursor:pointer}
+  .tabs .tab[aria-selected="true"]{background:#1b2550;border-color:#67a1ff}
+  .bar{height:6px;border-radius:999px;background:#12204f;border:1px solid #2b3f86;overflow:hidden}
+  .bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#4583ff,#4cc9f0)}
+  .empty{opacity:.8;border:1px dashed #2b3a77;border-radius:10px;padding:10px;text-align:center}
+  @media print{ nav,.btn,.drop,.tabs,.right{display:none!important} .wrap{padding:0} }
 </style>
 </head>
 <body>
 <header>
-  <h1>Przesył dokumentów · <span style="opacity:.8">ARKON (Netlify Blobs)</span></h1>
-  <div class="small">Pliki → idą do chmury Netlify (foldery <code>upload/&lt;klient&gt;</code>). Bez kluczy, bez konfiguracji serwerów.</div>
+  <h1>Przesył dokumentów • ARKON CRM</h1>
+  <div class="small">Powiąż pliki z klientami, buduj <b>oferty</b>, prowadź bazę <b>ulotek</b>. Integracja z komponentami (Pompy, Piece, PV, Ocieplenie, Stolarka).</div>
 </header>
 
-<div class="wrap">
-  <!-- PANEL WYSYŁKI -->
+<nav>
+  <a href="index.html">Pulpit</a>
+  <a href="klienci.html">Klienci</a>
+  <a href="komponenty-pompy.html">Pompy</a>
+  <a href="komponenty-piece.html">Piece</a>
+  <a href="komponenty-fotowoltaika.html">Fotowoltaika</a>
+  <a href="komponenty-ocieplenie.html">Ocieplenie</a>
+  <a href="komponenty-stolarka.html">Stolarka</a>
+  <a href="chat.html">Komunikator</a>
+  <a href="ustawienia.html">Ustawienia</a>
+</nav>
+
+<div class="wrap grid cols-2">
+  <!-- LEWA: PLIKI -->
   <section class="card">
-    <h2 style="margin:0 0 10px">Wysyłka plików</h2>
-    <div class="row" style="margin-bottom:8px">
-      <select id="selClient" title="Klient" style="min-width:240px"></select>
+    <h2 style="margin:0 0 8px">Pliki klienta (IndexedDB + Netlify Blobs)</h2>
+    <div class="row">
+      <select id="selClient" title="Klient" style="min-width:280px"></select>
       <select id="selCat">
-        <option>Umowa z firmą</option>
-        <option>Audyt</option>
-        <option>Dokument do audytu Czyste Powietrze</option>
-        <option>Audyt rozprowadzenia instalacji</option>
-        <option>Pomiary budynku</option>
-        <option>Rzut budynku</option>
-        <option>Zdjęcia kotłowni</option>
-        <option>Faktura za prąd</option>
-        <option>Zdjęcia falownika</option>
-        <option>Zdjęcia budynku</option>
-        <option>Oferta (PDF)</option>
-        <option>Ulotka</option>
-        <option>Inne</option>
+        <option>Umowa z firmą</option><option>Audyt</option><option>Dokument do audytu Czyste Powietrze</option>
+        <option>Audyt rozprowadzenia instalacji</option><option>Pomiary budynku</option><option>Rzut budynku</option>
+        <option>Zdjęcia kotłowni</option><option>Faktura za prąd</option><option>Zdjęcia falownika</option>
+        <option>Zdjęcia budynku</option><option>Oferta (PDF)</option><option>Ulotka</option><option>Inne</option>
       </select>
-      <input id="tags" placeholder="tagi, przecinkami" style="min-width:220px">
+      <input id="tags" placeholder="tagi, przecinkami">
       <label class="btn">Dodaj pliki… <input id="inFiles" type="file" multiple hidden></label>
-      <button id="btnSend" class="btn ok">Wyślij teraz</button>
-      <span id="cloud" class="pill">Chmura: <b id="cloudState">gotowe</b></span>
+
+      <label class="pill" style="cursor:pointer;margin-left:6px">
+        <input id="toCloud" type="checkbox" checked> Wyślij do chmury (Netlify)
+      </label>
+      <span id="cloudState" class="pill">Chmura: sprawdzanie…</span>
+
+      <button id="btnRefresh" class="btn ghost">Odśwież</button>
     </div>
 
-    <div id="drop" class="card" style="padding:12px;border-style:dashed">
-      Przeciągnij i upuść pliki tutaj lub kliknij „Dodaj pliki…”
-      <div class="small" style="margin-top:6px">Gotowe do wysyłania.</div>
-    </div>
+    <div class="drop" id="drop" style="margin-top:10px">Przeciągnij i upuść pliki tutaj lub kliknij „Dodaj pliki…”</div>
 
-    <div id="prog" class="card" style="display:none">
-      <div class="row"><span class="pill">Trwa wysyłka…</span><span id="pTxt" class="small"></span></div>
-      <div class="bar" style="margin-top:8px"><i id="pBar" style="width:0%"></i></div>
+    <div class="card" style="padding:10px;margin-top:12px">
+      <div class="row" style="margin-bottom:6px">
+        <input id="qFiles" placeholder="🔎 filtr: nazwa/typ/kategoria/tag/klient…" style="min-width:260px">
+        <select id="fCat"><option value="">Kategoria (wszystkie)</option></select>
+        <button id="btnClear" class="btn ghost">Wyczyść filtr</button>
+        <span class="pill">Widocznych: <b id="filesVis">0</b></span>
+      </div>
+      <div class="scroll" style="max-height:360px">
+        <table class="table" id="tblFiles">
+          <thead><tr>
+            <th>Akcje</th><th>Nazwa</th><th>Klient</th><th>Kategoria</th><th>Tagi</th>
+            <th>Typ</th><th>Rozmiar</th><th>Data</th>
+          </tr></thead>
+          <tbody id="tbFiles"></tbody>
+        </table>
+      </div>
     </div>
   </section>
 
-  <!-- PODGLĄD OSTATNIEGO WYSYŁANIA -->
-  <section class="card">
-    <h2 style="margin:0 0 8px">Podgląd ostatniego wysyłania</h2>
-    <div class="small" style="margin:6px 0">Linki publiczne idą przez funkcję, np. <code>/.netlify/functions/upload?get=1&amp;key=...</code></div>
-    <div class="scroll">
-      <table class="table">
-        <thead><tr><th>Plik</th><th>Rozmiar</th><th>Typ</th><th>URL</th></tr></thead>
-        <tbody id="last"></tbody>
-      </table>
-    </div>
-  </section>
+  <!-- PRAWA: OFERTY + ULOTKI (jak było) -->
+  <section class="grid">
+    <div class="card">
+      <h2 style="margin:0 0 8px">Oferty klienta</h2>
+      <div class="row">
+        <select id="offClient" style="min-width:280px"></select>
+        <input id="offTitle" placeholder="Tytuł oferty (np. PV 6 kWp + magazyn 10 kWh)">
+        <button id="offNew" class="btn ok">+ Nowa oferta</button>
+        <button id="offExport" class="btn ghost">Eksport JSON</button>
+        <label class="btn ghost">Import JSON <input id="offImport" type="file" accept="application/json" hidden></label>
+      </div>
 
-  <!-- MAGAZYN: LISTA WSZYSTKICH -->
-  <section class="card">
-    <h2 style="margin:0 0 8px">Magazyn (wszystkie przesłane)</h2>
-    <div class="row" style="margin-bottom:8px">
-      <input id="q" placeholder="🔎 filtr: nazwa/typ/klient/kategoria/tag" style="min-width:280px">
-      <button id="btnReload" class="btn ghost">Odśwież</button>
-      <span class="pill">Widocznych: <b id="vis">0</b></span>
+      <div class="tabs" role="tablist" aria-label="Źródła pozycji">
+        <button class="tab" data-tab="builder" aria-selected="true">🔧 Edytor pozycji</button>
+        <button class="tab" data-tab="components">📦 Komponenty (z innych stron)</button>
+        <button class="tab" data-tab="list">📑 Lista ofert</button>
+      </div>
+
+      <!-- BUILDER -->
+      <div id="tab-builder">
+        <div class="row small"><span class="pill">Pozycje: <b id="cntItems">0</b></span><span class="pill">Suma: <b id="sumItems">0 zł</b></span></div>
+        <div class="scroll" style="max-height:260px">
+          <table class="table">
+            <thead><tr><th>Akcje</th><th>Kategoria</th><th>Marka/Model</th><th>Specyfikacja</th><th>Ilość</th><th>Cena netto [zł]</th><th>Rabat %</th><th>Razem [zł]</th></tr></thead>
+            <tbody id="offBody"></tbody>
+          </table>
+        </div>
+        <div class="right" style="margin-top:6px">
+          <button id="offAddRow" class="btn">+ Pozycja</button>
+          <button id="offSave" class="btn ok">💾 Zapisz ofertę</button>
+        </div>
+      </div>
+
+      <!-- KOMPONENTY -->
+      <div id="tab-components" hidden>
+        <div class="row">
+          <select id="compCat">
+            <option value="pv">Fotowoltaika</option><option value="pumps">Pompy ciepła</option>
+            <option value="boilers">Piece / kotły</option><option value="insul">Ocieplenie</option><option value="windows">Stolarka</option>
+          </select>
+          <input id="compQ" placeholder="🔎 szukaj w komponentach">
+          <button id="compAddSel" class="btn">+ Dodaj zaznaczone do oferty</button>
+          <span class="pill">Widocznych: <b id="compVis">0</b></span>
+        </div>
+        <div class="scroll" style="max-height:260px;margin-top:6px">
+          <table class="table"><thead><tr><th>+</th><th>Marka</th><th>Model</th><th>Spec</th><th>Cena</th></tr></thead><tbody id="compBody"></tbody></table>
+        </div>
+        <div class="small">Źródła danych: LocalStorage z poszczególnych stron komponentów. Obsługiwane klucze: <code>arkon_cmp_*.json</code> lub zgodne.</div>
+      </div>
+
+      <!-- LISTA OFERT -->
+      <div id="tab-list" hidden>
+        <div class="row" style="margin-bottom:6px">
+          <input id="offQ" placeholder="🔎 filtruj po tytule/kliencie">
+          <button id="offClear" class="btn ghost">Wyczyść</button>
+          <span class="pill">Łącznie: <b id="cntOffers">0</b></span>
+        </div>
+        <div class="scroll" style="max-height:240px">
+          <table class="table"><thead><tr><th>Akcje</th><th>Tytuł</th><th>Klient</th><th>Pozycji</th><th>Suma [zł]</th><th>Data</th></tr></thead><tbody id="offList"></tbody></table>
+        </div>
+      </div>
     </div>
-    <div class="scroll" style="max-height:380px">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Plik</th><th>Klient</th><th>Kategoria</th><th>Tagi</th>
-            <th>Typ</th><th>Rozmiar</th><th>Data</th><th>Akcja</th>
-          </tr>
-        </thead>
-        <tbody id="store"></tbody>
-      </table>
+
+    <div class="card">
+      <h2 style="margin:0 0 8px">Ulotki z ofertami</h2>
+      <div class="row">
+        <select id="flyClient" style="min-width:280px"></select>
+        <input id="flyTitle" placeholder="Tytuł ulotki / kampanii">
+        <input id="flySource" placeholder="Kanał (np. FB, Google, druk)">
+        <label class="btn">Dodaj plik ulotki… <input id="flyFile" type="file" accept=".pdf,image/*" hidden></label>
+        <button id="flyAdd" class="btn ok">+ Dodaj ulotkę</button>
+      </div>
+      <div class="small" style="margin:6px 0">Ulotka zapisuje się jako rekord + (opcjonalnie) plik w IndexedDB.</div>
+      <div class="scroll" style="max-height:260px">
+        <table class="table"><thead><tr><th>Akcje</th><th>Tytuł</th><th>Klient</th><th>Kanał</th><th>Plik</th><th>Data</th></tr></thead><tbody id="flyBody"></tbody></table>
+      </div>
     </div>
   </section>
 </div>
@@ -119,171 +203,483 @@
 const $=s=>document.querySelector(s);
 const $$=s=>Array.from(document.querySelectorAll(s));
 const INT0=new Intl.NumberFormat('pl-PL',{maximumFractionDigits:0});
+const fmt=n=>isFinite(n)?INT0.format(Math.round(n)):'—';
 const bytes=n=>n<1024? n+' B' : n<1048576? (n/1024).toFixed(1)+' KB' : n<1073741824? (n/1048576).toFixed(1)+' MB' : (n/1073741824).toFixed(1)+' GB';
-const fmtDate=ms=> new Date(ms).toLocaleString('pl-PL');
-const esc=s=>(s||'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const uid=()=> 'ID_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2);
+function esc(s){return (s||'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function debounce(fn,ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms||180); }; }
 
-/* ===== przykładowi klienci z localStorage (jeśli nie masz strony „klienci.html”) ===== */
+/* ===== clients (compatible with v1 & v2) ===== */
 function loadClients(){
-  try{ const a=JSON.parse(localStorage.getItem('arkon_clients_v2')||'[]'); if(Array.isArray(a)&&a.length) return a; }catch{}
-  try{ const a=JSON.parse(localStorage.getItem('arkon_clients_v1')||'[]'); if(Array.isArray(a)&&a.length) return a; }catch{}
-  // fallback demo:
-  return [
-    {id:'KLIENT_001', name:'Firma Kowalski'},
-    {id:'KLIENT_002', name:'Pani Anna'},
-    {id:'KLIENT_003', name:'Spółka XYZ'}
-  ];
-}
-function fillClients(){
-  const sel=$('#selClient');
-  const list=loadClients();
-  sel.innerHTML = '<option value="">(bez przypisania)</option>' +
-    list.map(c=><option value="${esc(c.id)}">${esc(c.name)}</option>).join('');
-}
-
-/* ===== stan wysyłki ===== */
-let pendingFiles = [];
-
-function setCloudState(txt, ok=null){
-  $('#cloudState').textContent = txt;
-  const pill = $('#cloud');
-  if(ok===true){ pill.style.borderColor='#2e925e'; pill.style.background='#0f2c22'; }
-  else if(ok===false){ pill.style.borderColor='#7b3341'; pill.style.background='#2e1117'; }
-  else { pill.style.borderColor='#2a3a77'; pill.style.background='#0d1530'; }
-}
-function showProg(ratio, txt){
-  $('#prog').style.display='block';
-  $('#pBar').style.width = Math.max(0, Math.min(100, ratio*100)) + '%';
-  $('#pTxt').textContent = txt || '';
-  if(ratio>=1) setTimeout(()=>$('#prog').style.display='none', 600);
-}
-
-/* ===== upload jednego pliku ===== */
-async function uploadOne(file,{clientId,clientName,category,tags}){
-  const res = await fetch('/.netlify/functions/upload', {
-    method:'POST',
-    headers:{
-      'Content-Type': file.type || 'application/octet-stream',
-      'x-file-name': encodeURIComponent(file.name),
-      'x-client-id': encodeURIComponent(clientId||''),
-      'x-client-name': encodeURIComponent(clientName||''),
-      'x-category': encodeURIComponent(category||''),
-      'x-tags': encodeURIComponent(tags||'')
-    },
-    body:file
-  });
-  if(!res.ok){
-    const t = await res.text().catch(()=>res.statusText);
-    throw new Error('Upload HTTP '+res.status+': '+t);
+  let a=[];
+  try{ a = JSON.parse(localStorage.getItem('arkon_clients_v1')||'[]'); }catch{}
+  if(!Array.isArray(a) || !a.length){
+    try{ a = JSON.parse(localStorage.getItem('arkon_clients_v2')||'[]'); }catch{}
   }
-  return await res.json();
+  return Array.isArray(a)?a:[];
 }
 
-/* ===== wysyłka wielu plików ===== */
-async function sendAll(){
-  const clientId = $('#selClient').value || '';
+/* ===== components sources ===== */
+const CMP_KEYS = {
+  pv:['arkon_cmp_pv_v1','cmp_pv','arkon_components_pv'],
+  pumps:['arkon_cmp_pumps_v1','cmp_pumps','arkon_components_pumps'],
+  boilers:['arkon_cmp_boilers_v1','cmp_boilers','arkon_components_boilers','cmp_piece'],
+  insul:['arkon_cmp_insul_v1','cmp_insul','arkon_components_insul','cmp_ocieplenie'],
+  windows:['arkon_cmp_windows_v1','cmp_windows','arkon_components_windows','cmp_stolarka']
+};
+function loadComponents(cat){
+  const keys = CMP_KEYS[cat]||[];
+  for(const k of keys){
+    try{ const v = JSON.parse(localStorage.getItem(k)||'[]'); if(Array.isArray(v) && v.length) return v; }catch{}
+  }
+  return [];
+}
+
+/* ===== IndexedDB: files ===== */
+let db;
+function dbOpen(){
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open('arkonCRM_local',2);
+    r.onupgradeneeded=()=>{const d=r.result; if(!d.objectStoreNames.contains('files')) d.createObjectStore('files',{keyPath:'id'});};
+    r.onsuccess=()=>{db=r.result; res();};
+    r.onerror=()=>rej(r.error);
+  });
+}
+function dbPut(o){return new Promise((res,rej)=>{const tx=db.transaction('files','readwrite'); tx.objectStore('files').put(o); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error);});}
+function dbGet(id){return new Promise((res,rej)=>{const tx=db.transaction('files','readonly'); const rq=tx.objectStore('files').get(id); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error);});}
+function dbAll(){return new Promise((res,rej)=>{const tx=db.transaction('files','readonly'); const rq=tx.objectStore('files').getAll(); rq.onsuccess=()=>res(rq.result||[]); rq.onerror=()=>rej(rq.error);});}
+function dbDel(id){return new Promise((res,rej)=>{const tx=db.transaction('files','readwrite'); tx.objectStore('files').delete(id); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error);});}
+
+/* ===== Netlify Blobs: browser upload ===== */
+/* Wymagania:
+   - Netlify plan wspierający Blobs (włączone w Dashboard → Storage → Blobs).
+   - Nie wymaga kluczy – endpoint jest pod /.netlify/blobs
+*/
+const BLOBS_OK = { ok:false, msg:'Chmura: sprawdzanie…' };
+
+function setCloudState(txt, ok){
+  const el = $('#cloudState');
+  if(!el) return;
+  el.textContent = txt;
+  el.style.borderColor = ok ? '#2e925e' : '#7b3341';
+  el.style.background = ok ? '#0f2c22' : '#2e1117';
+}
+
+async function netlifyPing(){
+  try{
+    // „ping” – HEAD/GET nie jest obsługiwany, więc robimy tanią próbę OPTIONS/POST bez body.
+    // Jeśli przeglądarka zablokuje CORS, przechwycimy i pokażemy błąd.
+    const ctrl = new AbortController();
+    const t = setTimeout(()=>ctrl.abort(), 2500);
+    const r = await fetch('/.netlify/blobs', { method:'OPTIONS', signal: ctrl.signal });
+    clearTimeout(t);
+    BLOBS_OK.ok = r.ok || r.status===204 || r.status===200;
+    BLOBS_OK.msg = BLOBS_OK.ok ? 'Chmura: gotowe ✓ (Netlify Blobs)' : 'Chmura: niedostępna';
+  }catch(e){
+    BLOBS_OK.ok=false; BLOBS_OK.msg='Chmura: niedostępna (Blobs wyłączone?)';
+  }
+  setCloudState(BLOBS_OK.msg, BLOBS_OK.ok);
+}
+
+function safeName(name){
+  return String(name||'plik')
+    .normalize('NFKD')
+    .replace(/[^\w.\-]+/g,'_')
+    .replace(/+/g,'')
+    .toLowerCase();
+}
+function buildRemotePath({clientId, file}){
+  const who = (clientId||'bez-klienta').toLowerCase();
+  const ts  = new Date().toISOString().replace(/[:.]/g,'-');
+  return upload/${who}/${ts}_${safeName(file.name)};
+}
+
+/** Upload jednego pliku do Netlify Blobs (public) */
+async function uploadToNetlifyBlob({file, clientId, clientName, category, tags, onProgress}){
+  // Netlify Blobs przyjmuje body=plik i pozwala na własny path poprzez nagłówki lub query (?path=)
+  // Tu stosujemy nagłówek X-Blob-Path oraz metadane X-Blob-Meta-*
+  const path = buildRemotePath({clientId, file});
+  const url  = '/.netlify/blobs';
+
+  // progress (czytelny z xhr)
+  const xhr = new XMLHttpRequest();
+  const done = new Promise((resolve,reject)=>{
+    xhr.upload.onprogress = e=>{
+      if(onProgress && e.lengthComputable){
+        const p = Math.round((e.loaded/e.total)*100);
+        onProgress(p);
+      }
+    };
+    xhr.onload = ()=>{
+      try{
+        const data = JSON.parse(xhr.responseText||'{}');
+        if(xhr.status>=200 && xhr.status<300){
+          resolve({ path, url: data?.url || data?.pathname || '' });
+        }else{
+          reject(new Error(data?.error || HTTP ${xhr.status}));
+        }
+      }catch(err){ reject(err); }
+    };
+    xhr.onerror = ()=>reject(new Error('Network error'));
+    xhr.open('POST', url, true);
+    xhr.setRequestHeader('X-Blob-Path', path);
+    xhr.setRequestHeader('X-Blob-Meta-client-id', clientId||'');
+    xhr.setRequestHeader('X-Blob-Meta-client-name', clientName||'');
+    xhr.setRequestHeader('X-Blob-Meta-category', category||'');
+    xhr.setRequestHeader('X-Blob-Meta-tags', tags||'');
+    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+    xhr.send(file);
+  });
+  return done;
+}
+
+/* ===== UI: wysyłka ===== */
+let fileFilter={q:'',cat:''};
+
+async function handleFiles(files){
+  const clientId   = $('#selClient').value || '';
   const clientName = clientId ? (loadClients().find(c=>c.id===clientId)?.name||'') : '';
-  const category = $('#selCat').value || 'Inne';
-  const tags = $('#tags').value || '';
+  const category   = $('#selCat').value || 'Inne';
+  const tags       = $('#tags').value || '';
+  const toCloud    = !!$('#toCloud')?.checked;
 
-  if(!pendingFiles.length){ alert('Najpierw dodaj pliki.'); return; }
+  for(const f of Array.from(files||[])){
+    const id=uid();
+    // 1) zapis lokalny
+    await dbPut({ id, name:f.name, type:f.type||'application/octet-stream', size:f.size, blob:f, at:Date.now(),
+      category, clientId, clientName, origin:'upload', tags });
 
-  setCloudState('wysyłanie…');
-  let done=0, okCount=0, lastRows=[];
-  for(const f of pendingFiles){
-    try{
-      const out = await uploadOne(f,{clientId,clientName,category,tags});
-      okCount++;
-      lastRows.push(out);
-      done++;
-      showProg(done/pendingFiles.length, Wysłano ${done}/${pendingFiles.length}…);
-    }catch(e){
-      console.error('Błąd wysyłki:', e);
-      done++;
-      showProg(done/pendingFiles.length, Błąd: ${e.message});
-      setCloudState('błąd', false);
+    // 2) upload do Netlify (jeśli włączone)
+    if(toCloud && BLOBS_OK.ok){
+      // Pasek postępu (tymczasowy)
+      const row = document.createElement('div');
+      row.className='row';
+      row.innerHTML = `<span class="pill" style="min-width:200px">${esc(f.name)}</span>
+                       <div class="bar" style="flex:1;min-width:200px"><i></i></div>
+                       <span class="small" id="pct">0%</span>`;
+      $('#drop').insertAdjacentElement('afterend', row);
+      const bar = row.querySelector('i'); const pct=row.querySelector('#pct');
+
+      try{
+        const up = await uploadToNetlifyBlob({
+          file:f, clientId, clientName, category, tags,
+          onProgress:(p)=>{ bar.style.width=p+'%'; pct.textContent=p+'%'; }
+        });
+        bar.style.width='100%'; pct.textContent='100%';
+        row.insertAdjacentHTML('beforeend', <span class="pill" style="background:#0f2c22;border-color:#2e925e">OK</span>);
+        console.log('Uploaded:', up);
+      }catch(e){
+        row.insertAdjacentHTML('beforeend', <span class="pill" style="background:#2e1117;border-color:#7b3341">Błąd</span>);
+        console.warn('Upload error:', e);
+      }
     }
   }
-  setCloudState(okCount ? 'gotowe ✓' : 'błąd', !!okCount);
-  renderLast(lastRows);
-  pendingFiles = [];
-  $('#inFiles').value='';
+  renderFiles();
 }
 
-/* ===== render tabeli „ostatnie wysyłanie” ===== */
-function renderLast(rows){
-  const tb=$('#last'); tb.innerHTML='';
-  if(!rows?.length){
-    tb.innerHTML = <tr><td colspan="4" class="small">Brak (jeszcze nic nie wysłano)</td></tr>;
-    return;
-  }
-  rows.forEach(r=>{
-    const a = document.createElement('tr');
-    a.innerHTML = `
-      <td>${esc(r.key.split('/').slice(-1)[0])}</td>
-      <td>${bytes(r.size||0)}</td>
-      <td>${esc(r.contentType||'')}</td>
-      <td><a href="${esc(r.viewUrl)}" target="_blank" rel="noopener">otwórz</a></td>`;
-    tb.appendChild(a);
-  });
-}
-
-/* ===== „magazyn” – lista z indexu ===== */
-async function reloadStore(){
-  const res = await fetch('/.netlify/functions/upload?list=1');
-  const js = await res.json();
-  const list = Array.isArray(js.rows)? js.rows : [];
-  const q = ($('#q').value||'').toLowerCase();
-  const tb=$('#store'); tb.innerHTML='';
+async function renderFiles(){
+  const list = await dbAll();
+  const q=(fileFilter.q||'').toLowerCase();
+  const cat = fileFilter.cat||'';
+  const tb = $('#tbFiles'); tb.innerHTML='';
+  const cats = new Set();
+  list.sort((a,b)=>(b.at||0)-(a.at||0)).forEach(rec=>cats.add(rec.category||''));
+  $('#fCat').innerHTML = '<option value="">Kategoria (wszystkie)</option>' + Array.from(cats).filter(Boolean).map(c=><option ${cat===c?'selected':''}>${esc(c)}</option>).join('');
   let vis=0;
-  list.forEach(r=>{
-    const hay = [r.key, r.clientName, r.category, r.tags, r.contentType].join(' ').toLowerCase();
-    if(q && !hay.includes(q)) return;
+  list.filter(x=>{
+    if(cat && (x.category||'')!==cat) return false;
+    const hay=[x.name,x.clientName,x.category,x.type,x.tags].join(' ').toLowerCase();
+    return !q || hay.includes(q);
+  }).forEach(rec=>{
     vis++;
-    const name = r.key.split('/').slice(-1)[0];
-    const tr = document.createElement('tr');
+    const tr=document.createElement('tr');
+    const when=rec.at? new Date(rec.at).toLocaleString('pl-PL'):'';
     tr.innerHTML = `
-      <td>${esc(name)}</td>
-      <td>${esc(r.clientName||'')}</td>
-      <td>${esc(r.category||'')}</td>
-      <td>${(r.tags||'').split(',').filter(Boolean).map(t=><span class="tag">${esc(t.trim())}</span>).join('')}</td>
-      <td>${esc(r.contentType||'')}</td>
-      <td>${bytes(r.size||0)}</td>
-      <td>${fmtDate(r.at||Date.now())}</td>
-      <td><a href="/.netlify/functions/upload?get=1&key=${encodeURIComponent(r.key)}" target="_blank" rel="noopener">otwórz</a></td>`;
+      <td class="row">
+        <button class="btn ghost" data-dl="${rec.id}">Pobierz</button>
+        <button class="btn" data-edit="${rec.id}">Edytuj</button>
+        <button class="btn bad" data-del="${rec.id}">Usuń</button>
+      </td>
+      <td>${esc(rec.name)}</td>
+      <td>${esc(rec.clientName||'')}</td>
+      <td>${esc(rec.category||'')}</td>
+      <td>${esc(rec.tags||'')}</td>
+      <td>${esc(rec.type||'')}</td>
+      <td>${bytes(rec.size||0)}</td>
+      <td>${when}</td>`;
     tb.appendChild(tr);
   });
-  $('#vis').textContent = vis;
+  $('#filesVis').textContent = vis;
+
+  tb.querySelectorAll('[data-dl]').forEach(b=>b.addEventListener('click', async ()=>{
+    const rec=await dbGet(b.dataset.dl); if(!rec){ alert('Plik niedostępny.'); return; }
+    const url=URL.createObjectURL(rec.blob); const a=document.createElement('a'); a.href=url; a.download=rec.name; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1500);
+  }));
+  tb.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', async ()=>{
+    if(!confirm('Usunąć plik?')) return; await dbDel(b.dataset.del); renderFiles();
+  }));
+  tb.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click', async ()=>{
+    const rec=await dbGet(b.dataset.edit); if(!rec){ alert('Brak pliku.'); return; }
+    const newName = prompt('Nowa nazwa pliku', rec.name) || rec.name;
+    const newCat = prompt('Kategoria', rec.category||'') || rec.category||'';
+    const newTags = prompt('Tagi (przecinkami)', rec.tags||'') || rec.tags||'';
+    const clientId = prompt('ID klienta (puste = bez przypisania)', rec.clientId||'') || '';
+    const clientName = clientId ? (loadClients().find(c=>c.id===clientId)?.name||'') : '';
+    await dbPut({...rec, name:newName, category:newCat, tags:newTags, clientId, clientName });
+    renderFiles();
+  }));
 }
 
-/* ===== init ===== */
-(function init(){
-  fillClients();
+/* ===== OFFERS ===== */
+const LS_OFFERS = 'arkon_offers_v1';
+function loadOffers(){ try{ return JSON.parse(localStorage.getItem(LS_OFFERS)||'[]'); }catch{ return []; } }
+function saveOffers(list){ localStorage.setItem(LS_OFFERS, JSON.stringify(list)); }
 
-  $('#inFiles').addEventListener('change', e=>{
-    pendingFiles = Array.from(e.target.files||[]);
-    $('#drop').classList.add('hl');
-    setTimeout(()=>$('#drop').classList.remove('hl'),400);
+let offers = loadOffers();
+let curItems = [];
+let curOfferId = null;
+
+function offerSum(items){ return items.reduce((a,it)=> a + ((+it.price||0) * (+it.qty||0) * (1 - (+it.disc||0)/100)), 0); }
+function refreshOfferCounters(){ $('#cntItems').textContent = curItems.length; $('#sumItems').textContent = fmt(offerSum(curItems))+' zł'; }
+
+function renderOfferEditor(){
+  const tb = $('#offBody'); tb.innerHTML='';
+  curItems.forEach((it,i)=>{
+    const lineTotal = ( (+it.price||0) * (+it.qty||0) * (1-(+it.disc||0)/100) );
+    const tr=document.createElement('tr');
+    tr.innerHTML = `
+      <td class="row">
+        <button class="btn ghost" data-up="${i}">↑</button>
+        <button class="btn ghost" data-down="${i}">↓</button>
+        <button class="btn bad" data-del="${i}">Usuń</button>
+      </td>
+      <td><select data-k="cat" data-i="${i}">
+        ${['PV','Pompa','Piec','Ocieplenie','Stolarka','Inne'].map(x=><option ${it.cat===x?'selected':''}>${x}</option>).join('')}
+      </select></td>
+      <td><input data-k="mm" data-i="${i}" placeholder="Marka/Model" value="${esc(it.mm||'')}"></td>
+      <td><input data-k="spec" data-i="${i}" placeholder="Specyfikacja" value="${esc(it.spec||'')}"></td>
+      <td><input data-k="qty" data-i="${i}" type="number" step="1" min="0" value="${it.qty||1}"></td>
+      <td><input data-k="price" data-i="${i}" type="number" step="1" min="0" value="${it.price||0}"></td>
+      <td><input data-k="disc" data-i="${i}" type="number" step="0.1" min="0" value="${it.disc||0}"></td>
+      <td>${fmt(lineTotal)} zł</td>`;
+    tb.appendChild(tr);
   });
-  $('#btnSend').addEventListener('click', sendAll);
+  refreshOfferCounters();
+  tb.querySelectorAll('input,select').forEach(el=>{
+    const i=+el.dataset.i, k=el.dataset.k;
+    el.addEventListener('input', debounce(()=>{
+      let v=el.value; if(['qty','price','disc'].includes(k)) v=Number(v)||0;
+      if(k==='mm'){ curItems[i].mm=v; }
+      else if(k==='spec'){ curItems[i].spec=v; }
+      else curItems[i][k]=v;
+      renderOfferEditor();
+    },120));
+  });
+  tb.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{ curItems.splice(+b.dataset.del,1); renderOfferEditor(); }));
+  tb.querySelectorAll('[data-up]').forEach(b=>b.addEventListener('click',()=>{ const i=+b.dataset.up; if(i>0){[curItems[i-1],curItems[i]]=[curItems[i],curItems[i-1]]; renderOfferEditor(); }}));
+  tb.querySelectorAll('[data-down]').forEach(b=>b.addEventListener('click',()=>{ const i=+b.dataset.down; if(i<curItems.length-1){[curItems[i+1],curItems[i]]=[curItems[i],curItems[i+1]]; renderOfferEditor(); }}));
+}
+function newOffer(){ curOfferId = null; curItems = []; $('#offTitle').value = $('#offTitle').value || 'Oferta'; renderOfferEditor(); }
+function saveOffer(){
+  const clientId = $('#offClient').value || '';
+  const title = $('#offTitle').value.trim() || 'Oferta';
+  if(!clientId){ alert('Wybierz klienta.'); return; }
+  const rec = { id: curOfferId || uid(), clientId, title, at: Date.now(), items: curItems.slice() };
+  const i = offers.findIndex(o=>o.id===rec.id);
+  if(i>=0) offers[i]=rec; else offers.unshift(rec);
+  saveOffers(offers);
+  curOfferId = rec.id;
+  renderOfferList();
+  alert('Zapisano ofertę.');
+}
+function renderOfferList(){
+  const q=($('#offQ')?.value||'').toLowerCase();
+  const tb=$('#offList'); if(!tb) return; tb.innerHTML='';
+  const clients=loadClients();
+  const clientName = id => clients.find(c=>c.id===id)?.name||'';
+  const rows = offers.filter(o=> !q || (o.title||'').toLowerCase().includes(q) || clientName(o.clientId).toLowerCase().includes(q) );
+  $('#cntOffers').textContent = offers.length;
+  rows.sort((a,b)=>(b.at||0)-(a.at||0)).forEach(o=>{
+    const sum = offerSum(o.items||[]);
+    const tr=document.createElement('tr');
+    tr.innerHTML = `
+      <td class="row">
+        <button class="btn" data-open="${o.id}">Otwórz</button>
+        <button class="btn ghost" data-json="${o.id}">JSON</button>
+        <button class="btn bad" data-del="${o.id}">Usuń</button>
+      </td>
+      <td>${esc(o.title||'Oferta')}</td>
+      <td>${esc(clientName(o.clientId))}</td>
+      <td>${(o.items||[]).length}</td>
+      <td>${fmt(sum)} zł</td>
+      <td>${new Date(o.at||Date.now()).toLocaleString('pl-PL')}</td>`;
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',()=>{
+    const o=offers.find(x=>x.id===b.dataset.open); if(!o) return;
+    curOfferId=o.id; $('#offClient').value=o.clientId; $('#offTitle').value=o.title||'Oferta'; curItems = (o.items||[]).map(x=>({...x})); selectTab('builder'); renderOfferEditor();
+  }));
+  tb.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{
+    if(!confirm('Usunąć ofertę?')) return; offers=offers.filter(x=>x.id!==b.dataset.del); saveOffers(offers); renderOfferList();
+  }));
+  tb.querySelectorAll('[data-json]').forEach(b=>b.addEventListener('click',()=>{
+    const o=offers.find(x=>x.id===b.dataset.json); if(!o) return;
+    const a=document.createElement('a'); const blob=new Blob([JSON.stringify(o,null,2)],{type:'application/json'});
+    a.href=URL.createObjectURL(blob); a.download=(o.title||'oferta')+'.json'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1200);
+  }));
+}
 
-  // Drag & Drop
-  const box = $('#drop');
-  ;['dragenter','dragover'].forEach(ev=> box.addEventListener(ev, e=>{ e.preventDefault(); box.classList.add('hl'); }));
-  ;['dragleave','drop'].forEach(ev=> box.addEventListener(ev, e=>{ e.preventDefault(); box.classList.remove('hl'); }));
-  box.addEventListener('drop', e=>{
-    const files = Array.from(e.dataTransfer?.files||[]);
-    pendingFiles = pendingFiles.concat(files);
+/* ===== Components picker ===== */
+let compState={cat:'pv',q:''};
+function renderComponents(){
+  const list = loadComponents(compState.cat);
+  const q=(compState.q||'').toLowerCase();
+  const tb=$('#compBody'); if(!tb) return; tb.innerHTML='';
+  let vis=0;
+  list.filter(r=> JSON.stringify(r).toLowerCase().includes(q) ).forEach((r,i)=>{
+    vis++;
+    const brand = r.brand||r.marka||'';
+    const model = r.model||'';
+    const spec = r.spec || r.power || r.watt || r.size || r.tech || r.note || '';
+    const price = Number(r.price || r.cena || r.price_m2 || 0) || 0;
+    const tr=document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="checkbox" data-i="${i}"></td>
+      <td>${esc(brand)}</td>
+      <td>${esc(model)}</td>
+      <td>${esc(spec)}</td>
+      <td>${fmt(price)} zł</td>`;
+    tb.appendChild(tr);
+  });
+  $('#compVis').textContent=vis;
+}
+$('#compCat')?.addEventListener('change',e=>{ compState.cat=e.target.value; renderComponents(); });
+$('#compQ')?.addEventListener('input',e=>{ compState.q=e.target.value.trim(); renderComponents(); });
+$('#compAddSel')?.addEventListener('click',()=>{
+  const list = loadComponents(compState.cat);
+  $$('#compBody input[type="checkbox"]:checked').forEach(ch=>{
+    const r=list[+ch.dataset.i]; if(!r) return;
+    const brand=r.brand||r.marka||''; const model=r.model||'';
+    const spec=r.spec||r.power||r.watt||r.size||r.tech||r.note||'';
+    const price=Number(r.price||r.cena||r.price_m2||0)||0;
+    const catMap={pv:'PV',pumps:'Pompa',boilers:'Piec',insul:'Ocieplenie',windows:'Stolarka'};
+    curItems.push({cat:catMap[compState.cat]||'Inne', mm:(brand+' '+model).trim(), spec:String(spec), qty:1, price, disc:0});
+  });
+  selectTab('builder'); renderOfferEditor();
+});
+
+/* ===== Tabs ===== */
+function selectTab(key){
+  $$('.tabs .tab').forEach(b=>b.setAttribute('aria-selected','false'));
+  const t=document.querySelector(.tabs .tab[data-tab="${key}"]); if(t) t.setAttribute('aria-selected','true');
+  ['builder','components','list'].forEach(id=>{ const el=document.getElementById(tab-${id}); if(el) el.hidden = id!==key; });
+}
+$$('.tabs .tab').forEach(b=>b.addEventListener('click',()=>selectTab(b.dataset.tab)));
+
+/* ===== Flyers ===== */
+const LS_FLY = 'arkon_flyers_v1';
+function loadFlyers(){ try{ return JSON.parse(localStorage.getItem(LS_FLY)||'[]'); }catch{ return []; } }
+function saveFlyers(list){ localStorage.setItem(LS_FLY, JSON.stringify(list)); }
+
+let flyers = loadFlyers();
+let flyerPendingFile = null;
+$('#flyFile')?.addEventListener('change',e=>{
+  const f=e.target.files[0]; flyerPendingFile = f || null;
+});
+async function addFlyer(){
+  const clientId = $('#flyClient').value || '';
+  const title = $('#flyTitle').value.trim() || 'Ulotka';
+  const source = $('#flySource').value.trim() || '';
+  let fileId='', fileName='';
+  if(flyerPendingFile){
+    fileId = uid();
+    fileName = flyerPendingFile.name;
+    await dbPut({ id:fileId, name:fileName, type: flyerPendingFile.type||'application/octet-stream', size: flyerPendingFile.size, blob: flyerPendingFile, at: Date.now(), category:'Ulotka', clientId, clientName: clientId? (loadClients().find(c=>c.id===clientId)?.name||'') : '', origin:'flyer', tags:'ulotka' });
+    flyerPendingFile = null; $('#flyFile').value='';
+  }
+  const rec = { id:uid(), clientId, title, source, at:Date.now(), fileId, fileName };
+  flyers.unshift(rec); saveFlyers(flyers); renderFlyers();
+  $('#flyTitle').value=''; $('#flySource').value='';
+}
+function renderFlyers(){
+  const tb=$('#flyBody'); if(!tb) return; tb.innerHTML='';
+  const clients=loadClients();
+  const name=id=> clients.find(c=>c.id===id)?.name||'';
+  flyers.forEach(f=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML = `
+      <td class="row">
+        <button class="btn" data-open="${f.id}">Edytuj</button>
+        <button class="btn ghost" data-dl="${f.fileId||''}" ${f.fileId?'':'disabled'}>Pobierz plik</button>
+        <button class="btn bad" data-del="${f.id}">Usuń</button>
+      </td>
+      <td>${esc(f.title)}</td>
+      <td>${esc(name(f.clientId))}</td>
+      <td>${esc(f.source||'')}</td>
+      <td>${esc(f.fileName||'—')}</td>
+      <td>${new Date(f.at||Date.now()).toLocaleString('pl-PL')}</td>`;
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{
+    if(!confirm('Usunąć ulotkę?')) return;
+    flyers = flyers.filter(x=>x.id!==b.dataset.del);
+    saveFlyers(flyers); renderFlyers();
+  }));
+  tb.querySelectorAll('[data-dl]').forEach(b=>b.addEventListener('click', async ()=>{
+    const id=b.dataset.dl; if(!id) return;
+    const rec=await dbGet(id); if(!rec){ alert('Plik niedostępny.'); return; }
+    const url=URL.createObjectURL(rec.blob); const a=document.createElement('a'); a.href=url; a.download=rec.name; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1500);
+  }));
+  tb.querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',()=>{
+    const f=flyers.find(x=>x.id===b.dataset.open); if(!f) return;
+    const title=prompt('Tytuł', f.title)||f.title;
+    const source=prompt('Kanał', f.source||'')||f.source||'';
+    const clientId=prompt('ID klienta (puste = bez przypisania)', f.clientId||'')||'';
+    flyers = flyers.map(x=> x.id===f.id ? {...x, title, source, clientId} : x);
+    saveFlyers(flyers); renderFlyers();
+  }));
+}
+$('#flyAdd')?.addEventListener('click', addFlyer);
+
+/* ===== INIT ===== */
+(async function init(){
+  await dbOpen();
+  // klienci do selectów
+  const clients = loadClients();
+  ['selClient','offClient','flyClient'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.innerHTML = '<option value="">(bez przypisania)</option>' + clients.map(c=><option value="${c.id}">${esc(c.name||'')}</option>).join('');
   });
 
-  $('#btnReload').addEventListener('click', reloadStore);
-  $('#q').addEventListener('input', ()=>reloadStore());
+  // drag&drop
+  const dz = $('#drop');
+  dz.addEventListener('click',()=>$('#inFiles').click());
+  dz.addEventListener('dragover',e=>{e.preventDefault(); dz.classList.add('drag');});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+  dz.addEventListener('drop',e=>{e.preventDefault(); dz.classList.remove('drag'); handleFiles(e.dataTransfer.files);});
 
-  // test funkcji (opcjonalnie)
-  fetch('/.netlify/functions/upload?ping=1').then(r=>r.ok? setCloudState('gotowe') : setCloudState('błąd',false)).catch(()=>setCloudState('błąd',false));
+  // inputs
+  $('#inFiles')?.addEventListener('change',e=>{ handleFiles(e.target.files); e.target.value=''; });
+  $('#btnRefresh')?.addEventListener('click',renderFiles);
+  $('#qFiles')?.addEventListener('input', e=>{ fileFilter.q=e.target.value.trim(); renderFiles(); });
+  $('#btnClear')?.addEventListener('click',()=>{ fileFilter={q:'',cat:''}; $('#qFiles').value=''; $('#fCat').value=''; renderFiles(); });
+  $('#fCat')?.addEventListener('change', e=>{ fileFilter.cat=e.target.value||''; renderFiles(); });
 
-  renderLast([]); // pusty start
-  reloadStore();
+  // oferty / komponenty
+  newOffer(); renderOfferList(); renderComponents();
+
+  // skróty
+  document.addEventListener('keydown',e=>{
+    if(e.key==='/' && !/input|textarea|select/i.test(e.target.tagName)){ e.preventDefault(); $('#qFiles')?.focus(); }
+    if(e.altKey && e.key.toLowerCase()==='n'){ e.preventDefault(); newOffer(); }
+    if(e.altKey && e.key.toLowerCase()==='s'){ e.preventDefault(); saveOffer(); }
+  });
+
+  // ping chmury
+  await netlifyPing();
+
+  renderFiles();
 })();
 </script>
 </body>
