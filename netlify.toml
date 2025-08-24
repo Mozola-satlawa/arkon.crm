@@ -1,8 +1,12 @@
 [build]
-  command = "npm install"
-  publish = "."
+  publish   = "."
+  functions = "netlify/functions"
 
-[functions]
-  directory = "netlify/functions"
-  node_bundler = "esbuild"
-  external_node_modules = ["busboy", "@netlify/blobs"]
+# Włącza Netlify Blobs w projekcie
+[[plugins]]
+  package = "@netlify/blobs"
+
+# Na produkcji Netlify wstrzyknie SITE_ID automatycznie.
+# Lokalnie można ustawić env NETLIFY_SITE_ID jeśli używasz netlify-cli.
+[blobs]
+  site_id = ""
