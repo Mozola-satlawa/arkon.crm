@@ -6,7 +6,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ARKON — Przesył dokumentów / Oferty / Ulotki (Netlify Blobs)</title>
 <meta name="description" content="Upload plików powiązanych z klientem, baza ofert i ulotek. Integracja z komponentami (pompy, piece, PV, ocieplenie, stolarka).">
-
 <style>
   :root{
     --bg:#0b1020;--p1:#0f1533;--p2:#121a38;--ink:#e7ecff;--muted:#aeb8da;--line:#223066;
@@ -196,8 +195,15 @@
   </section>
 </div>
 
+<!-- Supabase UMD -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
 'use strict';
+
+/* ===== SUPABASE: ustaw swoje dane ===== */
+const SB_URL = 'https://phxxjirqlktzcwnygaha.supabase.co';           // <--- PODMIEŃ jeśli trzeba
+const SB_KEY = 'sb_publishable_iOXdu9fUGGko3MqPmltAag_ZbPUxp4r';     // <--- PODMIEŃ jeśli trzeba
+const supa = supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession:false } });
 
 /* ===== helpers ===== */
 const $=s=>document.querySelector(s);
@@ -250,12 +256,9 @@ function dbGet(id){return new Promise((res,rej)=>{const tx=db.transaction('files
 function dbAll(){return new Promise((res,rej)=>{const tx=db.transaction('files','readonly'); const rq=tx.objectStore('files').getAll(); rq.onsuccess=()=>res(rq.result||[]); rq.onerror=()=>rej(rq.error);});}
 function dbDel(id){return new Promise((res,rej)=>{const tx=db.transaction('files','readwrite'); tx.objectStore('files').delete(id); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error);});}
 
-/* ===== Netlify Blobs: browser upload ===== */
-/* Wymagania:
-   - Netlify plan wspierający Blobs (włączone w Dashboard → Storage → Blobs).
-   - Nie wymaga kluczy – endpoint jest pod /.netlify/blobs
-*/
-const BLOBS_OK = { ok:false, msg:'Chmura: sprawdzanie…' };
+/* ===== Supabase Storage (zamiast Netlify Blobs) ===== */
+/* Bucket: "crm" (public) */
+const CLOUD = { ok:false, msg:'Chmura: sprawdzanie…', bucket:'crm' };
 
 function setCloudState(txt, ok){
   const el = $('#cloudState');
@@ -265,72 +268,78 @@ function setCloudState(txt, ok){
   el.style.background = ok ? '#0f2c22' : '#2e1117';
 }
 
-async function netlifyPing(){
+/* Prosty ping — spróbuj listować root bucket */
+async function supaPing(){
   try{
-    // „ping” – HEAD/GET nie jest obsługiwany, więc robimy tanią próbę OPTIONS/POST bez body.
-    // Jeśli przeglądarka zablokuje CORS, przechwycimy i pokażemy błąd.
-    const ctrl = new AbortController();
-    const t = setTimeout(()=>ctrl.abort(), 2500);
-    const r = await fetch('/.netlify/blobs', { method:'OPTIONS', signal: ctrl.signal });
-    clearTimeout(t);
-    BLOBS_OK.ok = r.ok || r.status===204 || r.status===200;
-    BLOBS_OK.msg = BLOBS_OK.ok ? 'Chmura: gotowe ✓ (Netlify Blobs)' : 'Chmura: niedostępna';
+    const { data, error } = await supa.storage.from(CLOUD.bucket).list('', { limit: 1 });
+    if(error) throw error;
+    CLOUD.ok = true; CLOUD.msg = 'Chmura: gotowe ✓ (Supabase Storage)';
   }catch(e){
-    BLOBS_OK.ok=false; BLOBS_OK.msg='Chmura: niedostępna (Blobs wyłączone?)';
+    CLOUD.ok = false; CLOUD.msg = 'Chmura: bucket "crm" niedostępny';
   }
-  setCloudState(BLOBS_OK.msg, BLOBS_OK.ok);
+  setCloudState(CLOUD.msg, CLOUD.ok);
 }
 
-function safeName(name){
-  return String(name||'plik')
-    .normalize('NFKD')
-    .replace(/[^\w.\-]+/g,'_')
-    .replace(/+/g,'')
-    .toLowerCase();
+const safeName = (name='plik') =>
+  String(name).normalize('NFKD').replace(/[^\w.\-]+/g,'_').toLowerCase();
+
+function ymPrefix(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  return ${y}-${m};
 }
+
 function buildRemotePath({clientId, file}){
   const who = (clientId||'bez-klienta').toLowerCase();
   const ts  = new Date().toISOString().replace(/[:.]/g,'-');
-  return upload/${who}/${ts}_${safeName(file.name)};
+  return clients/${who}/${ymPrefix()}/${ts}_${safeName(file.name)};
 }
 
-/** Upload jednego pliku do Netlify Blobs (public) */
-async function uploadToNetlifyBlob({file, clientId, clientName, category, tags, onProgress}){
-  // Netlify Blobs przyjmuje body=plik i pozwala na własny path poprzez nagłówki lub query (?path=)
-  // Tu stosujemy nagłówek X-Blob-Path oraz metadane X-Blob-Meta-*
-  const path = buildRemotePath({clientId, file});
-  const url  = '/.netlify/blobs';
-
-  // progress (czytelny z xhr)
-  const xhr = new XMLHttpRequest();
-  const done = new Promise((resolve,reject)=>{
-    xhr.upload.onprogress = e=>{
-      if(onProgress && e.lengthComputable){
-        const p = Math.round((e.loaded/e.total)*100);
-        onProgress(p);
-      }
-    };
-    xhr.onload = ()=>{
-      try{
-        const data = JSON.parse(xhr.responseText||'{}');
-        if(xhr.status>=200 && xhr.status<300){
-          resolve({ path, url: data?.url || data?.pathname || '' });
-        }else{
-          reject(new Error(data?.error || HTTP ${xhr.status}));
-        }
-      }catch(err){ reject(err); }
-    };
-    xhr.onerror = ()=>reject(new Error('Network error'));
-    xhr.open('POST', url, true);
-    xhr.setRequestHeader('X-Blob-Path', path);
-    xhr.setRequestHeader('X-Blob-Meta-client-id', clientId||'');
-    xhr.setRequestHeader('X-Blob-Meta-client-name', clientName||'');
-    xhr.setRequestHeader('X-Blob-Meta-category', category||'');
-    xhr.setRequestHeader('X-Blob-Meta-tags', tags||'');
-    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
-    xhr.send(file);
+/* Upload standardowy (małe/średnie pliki) */
+async function supaUploadDirect(path, file, meta){
+  return supa.storage.from(CLOUD.bucket).upload(path, file, {
+    upsert: false,
+    contentType: file.type || 'application/octet-stream',
+    cacheControl: '3600',
+    metadata: meta||{}
   });
-  return done;
+}
+
+/* Upload „większych” plików — Signed URL (stabilniejsze dla >50-100MB) */
+async function supaUploadSigned(path, file, meta){
+  const { data:sign, error:err1 } = await supa.storage.from(CLOUD.bucket).createSignedUploadUrl(path, {
+    contentType: file.type || 'application/octet-stream',
+    upsert: false
+  });
+  if(err1) throw err1;
+  const { data, error } = await supa.storage.from(CLOUD.bucket)
+    .uploadToSignedUrl(path, sign.token, file, { metadata: meta||{} });
+  if(error) throw error;
+  return { data };
+}
+
+/** Upload jednego pliku do Supabase. Dla plików > 50MB używa signed-upload. */
+async function uploadToSupabase({file, clientId, clientName, category, tags, onProgress}){
+  const path = buildRemotePath({clientId, file});
+  const meta = { 'client-id':clientId||'', 'client-name':clientName||'', category:category||'', tags:tags||'' };
+
+  // Spróbuj Signed (lepsze dla dużych). Jeśli się nie powiedzie – fallback na direct.
+  try{
+    // Prosty progres: dla fetch nie mamy natywnego progressu – pokazujemy „etapy”
+    if(onProgress) onProgress(5);
+    await supaUploadSigned(path, file, meta);
+    if(onProgress) onProgress(100);
+  }catch(e1){
+    // Fallback:
+    if(onProgress) onProgress(10);
+    const up = await supaUploadDirect(path, file, meta);
+    if(up.error) throw up.error;
+    if(onProgress) onProgress(100);
+  }
+
+  const pub = supa.storage.from(CLOUD.bucket).getPublicUrl(path);
+  return { path, url: pub.data.publicUrl };
 }
 
 /* ===== UI: wysyłka ===== */
@@ -349,9 +358,9 @@ async function handleFiles(files){
     await dbPut({ id, name:f.name, type:f.type||'application/octet-stream', size:f.size, blob:f, at:Date.now(),
       category, clientId, clientName, origin:'upload', tags });
 
-    // 2) upload do Netlify (jeśli włączone)
-    if(toCloud && BLOBS_OK.ok){
-      // Pasek postępu (tymczasowy)
+    // 2) upload do Supabase (jeśli włączone)
+    if(toCloud && CLOUD.ok){
+      // Pasek postępu (statusowy)
       const row = document.createElement('div');
       row.className='row';
       row.innerHTML = `<span class="pill" style="min-width:200px">${esc(f.name)}</span>
@@ -361,13 +370,15 @@ async function handleFiles(files){
       const bar = row.querySelector('i'); const pct=row.querySelector('#pct');
 
       try{
-        const up = await uploadToNetlifyBlob({
+        const up = await uploadToSupabase({
           file:f, clientId, clientName, category, tags,
           onProgress:(p)=>{ bar.style.width=p+'%'; pct.textContent=p+'%'; }
         });
         bar.style.width='100%'; pct.textContent='100%';
         row.insertAdjacentHTML('beforeend', <span class="pill" style="background:#0f2c22;border-color:#2e925e">OK</span>);
-        console.log('Uploaded:', up);
+        // dopisz url chmurowy do rekordu lokalnego
+        const rec = await dbGet(id);
+        await dbPut({...rec, cloudUrl: up.url, cloudPath: up.path});
       }catch(e){
         row.insertAdjacentHTML('beforeend', <span class="pill" style="background:#2e1117;border-color:#7b3341">Błąd</span>);
         console.warn('Upload error:', e);
@@ -394,9 +405,11 @@ async function renderFiles(){
     vis++;
     const tr=document.createElement('tr');
     const when=rec.at? new Date(rec.at).toLocaleString('pl-PL'):'';
+    const cloudBtn = rec.cloudUrl ? <a class="btn ghost" href="${rec.cloudUrl}" target="_blank" rel="noopener">Link</a> : '';
     tr.innerHTML = `
       <td class="row">
         <button class="btn ghost" data-dl="${rec.id}">Pobierz</button>
+        ${cloudBtn}
         <button class="btn" data-edit="${rec.id}">Edytuj</button>
         <button class="btn bad" data-del="${rec.id}">Usuń</button>
       </td>
@@ -667,7 +680,22 @@ $('#flyAdd')?.addEventListener('click', addFlyer);
   $('#fCat')?.addEventListener('change', e=>{ fileFilter.cat=e.target.value||''; renderFiles(); });
 
   // oferty / komponenty
-  newOffer(); renderOfferList(); renderComponents();
+  $('#offAddRow')?.addEventListener('click', ()=>{ curItems.push({cat:'Inne',mm:'',spec:'',qty:1,price:0,disc:0}); renderOfferEditor(); });
+  $('#offSave')?.addEventListener('click', saveOffer);
+  $('#offNew')?.addEventListener('click', newOffer);
+  $('#offExport')?.addEventListener('click', ()=>{
+    const a=document.createElement('a'); const blob=new Blob([JSON.stringify(offers,null,2)],{type:'application/json'});
+    a.href=URL.createObjectURL(blob); a.download='offers.json'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1200);
+  });
+  $('#offImport')?.addEventListener('change', async (e)=>{
+    const f=e.target.files[0]; if(!f) return; const txt=await f.text();
+    try{ const arr=JSON.parse(txt); if(Array.isArray(arr)){ offers=arr; saveOffers(offers); renderOfferList(); } }catch{}
+    e.target.value='';
+  });
+
+  renderOfferEditor();
+  renderOfferList();
+  renderComponents();
 
   // skróty
   document.addEventListener('keydown',e=>{
@@ -676,8 +704,8 @@ $('#flyAdd')?.addEventListener('click', addFlyer);
     if(e.altKey && e.key.toLowerCase()==='s'){ e.preventDefault(); saveOffer(); }
   });
 
-  // ping chmury
-  await netlifyPing();
+  // ping chmury (Supabase)
+  await supaPing();
 
   renderFiles();
 })();
