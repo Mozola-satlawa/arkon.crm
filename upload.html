@@ -1,11 +1,10 @@
-
 <!doctype html>
 <html lang="pl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ARKON — Upload plików (Cloudinary) • Pliki / Oferty / Ulotki</title>
-<meta name="description" content="Przesył plików klientów do chmury (Cloudinary), zapis metadanych w IndexedDB, oferty i ulotki.">
+<title>Przesył dokumentów • ARKON CRM (Cloudinary)</title>
+<meta name="description" content="Wysyłanie dokumentów do chmury Cloudinary (unsigned preset) + lokalna lista w IndexedDB.">
 <style>
   :root{
     --bg:#0b1020;--p1:#0f1533;--p2:#121a38;--ink:#e7ecff;--muted:#aeb8da;--line:#223066;
@@ -23,506 +22,372 @@
   nav a:hover{background:#223160}
   .wrap{max-width:1280px;margin:auto;padding:16px}
   .grid{display:grid;gap:12px}
-  @media(min-width:1100px){ .cols-2{grid-template-columns:1.25fr 0.75fr} }
+  @media(min-width:1100px){ .cols-2{grid-template-columns:1.3fr 1fr} }
   .card{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;padding:14px}
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
   .right{display:flex;gap:8px;justify-content:flex-end}
   .small{font-size:12px;color:var(--muted)}
-  .pill{display:inline-flex;align-items:center;gap:6px;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
+  .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
   .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
   .btn.ghost{background:transparent;border:1px dashed #3a4ca3}
   .btn.ok{background:#194d34;border-color:#2e925e}
   .btn.bad{background:#3a1f2a;border-color:#7b3341}
-  .btn.warn{background:#4a361e;border-color:#8a6b30}
   input,select,textarea{background:var(--field);border:1px solid #28356c;border-radius:10px;padding:8px 10px;color:var(--ink);font:inherit}
   input::placeholder{color:#aeb8da99}
-  textarea{min-height:80px;resize:vertical}
   .table{width:100%;border-collapse:separate;border-spacing:0}
   .table th,.table td{padding:9px;border-bottom:1px solid #22325f;text-align:left;vertical-align:top}
   .scroll{overflow:auto}
-  .status{padding:2px 8px;border-radius:999px;background:#0f1a44;border:1px solid #2a3a75;font-size:12px}
-  .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
-  .drop{border:2px dashed #2a3777;border-radius:10px;padding:20px;text-align:center;cursor:pointer;background:#0c1230}
+  .drop{border:2px dashed #2a3777;border-radius:10px;padding:18px;text-align:center;cursor:pointer;background:#0c1230}
   .drop.drag{background:#10183b}
-  .progress{height:8px;background:#13204c;border-radius:6px;overflow:hidden}
-  .bar{height:8px;background:linear-gradient(90deg,#67a1ff,#4cc9f0);width:0%}
-  .chips{display:flex;gap:6px;flex-wrap:wrap}
-  .tag{display:inline-block;margin:2px 6px 0 0;padding:3px 8px;border:1px solid #3a4ca3;border-radius:999px;font-size:12px}
-  .sticky{position:sticky;top:0;background:linear-gradient(180deg,var(--p1),var(--p2));padding:8px;border:1px solid var(--line);border-radius:10px;margin-bottom:10px}
-  .muted{opacity:.7}
-  @media print{ nav,.btn,.drop,.tabs,.right,.sticky{display:none!important} .wrap{padding:0} }
+  .progress{height:8px;background:#0f1a44;border:1px solid #2a3a75;border-radius:6px;overflow:hidden}
+  .bar{height:100%;width:0%;background:#4d79ff;transition:width .15s linear}
+  .bar.ok{background:#2fbf71}
+  .bar.bad{background:#ff6b6b}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #2a3777;border-radius:999px;background:#0d1530;color:#cfe0ff}
+  @media print{ nav,.btn,.drop,.right{display:none!important} .wrap{padding:0} }
 </style>
 </head>
 <body>
 <header>
-  <h1>Przesył dokumentów • ARKON CRM (Cloudinary)</h1>
-  <div class="small">Wysyłka do <b>Cloudinary</b> (unsigned preset), zapis metadanych w <b>IndexedDB</b>. Zostawiamy układ ARKON i dokładamy solidny upload z paskami postępu.</div>
+  <h1>Przesył dokumentów • ARKON CRM</h1>
+  <div class="small">Wysyłka do chmury <b>Cloudinary</b> (unsigned preset, folder: <b>upload</b>) + lokalna lista w IndexedDB.</div>
 </header>
 
 <nav>
-  <a href="index.html">Pulpit</a>
-  <a href="klienci.html">Klienci</a>
-  <a href="komponenty-pompy.html">Pompy</a>
-  <a href="komponenty-piece.html">Piece</a>
-  <a href="komponenty-fotowoltaika.html">Fotowoltaika</a>
-  <a href="komponenty-ocieplenie.html">Ocieplenie</a>
-  <a href="komponenty-stolarka.html">Stolarka</a>
-  <a href="chat.html">Komunikator</a>
-  <a href="ustawienia.html">Ustawienia</a>
+  <a href="/">Pulpit</a>
+  <a href="/upload.html">Przesył dokumentów</a>
 </nav>
 
 <div class="wrap grid cols-2">
-  <!-- LEWA: PLIKI -->
+  <!-- LEWA: Przesył + lista -->
   <section class="card">
-    <div class="sticky">
-      <div class="row">
-        <select id="selClient" title="Klient" style="min-width:280px"></select>
-        <select id="selCat" title="Kategoria">
-          <option>Umowa z firmą</option>
-          <option>Audyt</option>
-          <option>Dokument do audytu Czyste Powietrze</option>
-          <option>Audyt rozprowadzenia instalacji</option>
-          <option>Pomiary budynku</option>
-          <option>Rzut budynku</option>
-          <option>Zdjęcia kotłowni</option>
-          <option>Faktura za prąd</option>
-          <option>Zdjęcia falownika</option>
-          <option>Zdjęcia budynku</option>
-          <option>Oferta (PDF)</option>
-          <option>Ulotka</option>
-          <option>Inne</option>
-        </select>
-        <input id="tags" placeholder="tagi, przecinkami" style="min-width:220px">
-        <label class="btn">Dodaj pliki… <input id="inFiles" type="file" multiple hidden></label>
-        <button id="btnRefresh" class="btn ghost">Odśwież</button>
-      </div>
-      <div class="row">
-        <label class="pill"><input id="storeBlob" type="checkbox"> Zapisz kopię pliku w przeglądarce (offline)</label>
-        <label class="pill"><input id="autoOpen" type="checkbox" checked> Po wysyłce pokaż link</label>
-        <span id="cloudState" class="pill">Chmura: nie sprawdzono</span>
-      </div>
-      <div class="row">
-        <div id="drop" class="drop" tabindex="0">Przeciągnij i upuść pliki tutaj lub kliknij „Dodaj pliki…”</div>
-      </div>
-      <div id="live" class="small muted">Gotowe do wysyłania.</div>
+    <h2 style="margin:0 0 8px">Wysyłka</h2>
+    <div class="row" style="margin-bottom:6px">
+      <select id="selCat" title="Kategoria">
+        <option>Umowa z firmą</option>
+        <option>Audyt</option>
+        <option>Dokument do audytu Czyste Powietrze</option>
+        <option>Audyt rozprowadzenia instalacji</option>
+        <option>Pomiary budynku</option>
+        <option>Rzut budynku</option>
+        <option>Zdjęcia kotłowni</option>
+        <option>Faktura za prąd</option>
+        <option>Zdjęcia falownika</option>
+        <option>Zdjęcia budynku</option>
+        <option>Oferta (PDF)</option>
+        <option>Ulotka</option>
+        <option>Inne</option>
+      </select>
+      <input id="tags" placeholder="tagi, przecinkami">
+      <label class="btn">Dodaj pliki… <input id="inFiles" type="file" multiple hidden></label>
+      <label class="pill" style="cursor:pointer"><input id="keepLocal" type="checkbox" checked> Zapisz kopię lokalnie</label>
+      <label class="pill" style="cursor:pointer"><input id="showLink" type="checkbox"> Po wysyłce pokaż link</label>
+      <span id="cloudState" class="pill">Chmura: sprawdzanie…</span>
+      <button id="btnRefresh" class="btn ghost">Odśwież</button>
     </div>
 
-    <h2 style="margin:8px 0 8px">Pliki (IndexedDB + Cloudinary)</h2>
-    <div class="card" style="padding:10px;margin-top:8px">
+    <div id="drop" class="drop">Przeciągnij i upuść pliki tutaj lub kliknij „Dodaj pliki…”</div>
+
+    <div class="card" style="padding:10px;margin-top:12px">
       <div class="row" style="margin-bottom:6px">
-        <input id="qFiles" placeholder="🔎 filtr: nazwa/typ/kategoria/tag/klient…" style="min-width:260px">
+        <input id="qFiles" placeholder="🔎 filtr: nazwa/typ/kategoria/tag" style="min-width:260px">
         <select id="fCat"><option value="">Kategoria (wszystkie)</option></select>
         <button id="btnClear" class="btn ghost">Wyczyść filtr</button>
         <span class="pill">Widocznych: <b id="filesVis">0</b></span>
         <button id="btnExport" class="btn ghost">Eksport JSON</button>
-        <label class="btn ghost">Import JSON <input id="inImport" type="file" accept="application/json" hidden></label>
+        <label class="btn ghost">Import JSON <input id="btnImport" type="file" accept="application/json" hidden></label>
       </div>
-      <div class="scroll" style="max-height:420px">
-        <table class="table" id="tblFiles">
-          <thead>
-            <tr>
-              <th>Akcje</th><th>Nazwa</th><th>Klient</th><th>Kategoria</th><th>Tagi</th><th>Typ</th><th>Rozmiar</th><th>Data</th>
-            </tr>
-          </thead>
+      <div class="scroll" style="max-height:360px">
+        <table class="table">
+          <thead><tr>
+            <th>Akcje</th><th>Nazwa</th><th>Kategoria</th><th>Tagi</th><th>Typ</th><th>Rozmiar</th><th>Data</th>
+          </tr></thead>
           <tbody id="tbFiles"></tbody>
         </table>
       </div>
     </div>
   </section>
 
-  <!-- PRAWA: USTAWIENIA + POMOC -->
-  <aside class="grid">
+  <!-- PRAWA: Ustawienia + postęp -->
+  <section class="grid">
     <div class="card">
       <h2 style="margin:0 0 8px">Ustawienia Cloudinary</h2>
       <div class="row">
-        <label class="pill">Cloud name <input id="cloudName" placeholder="np. drht5dh6y"></label>
-        <label class="pill">Upload preset (unsigned) <input id="uploadPreset" placeholder="np. arkon_unsigned"></label>
+        <span class="pill">Cloud name: <b id="cn">(brak)</b></span>
+        <span class="pill">Upload preset: <b id="pr">(brak)</b></span>
+        <span class="pill">Folder: <b id="fo">upload</b></span>
+        <button id="btnTest" class="btn">Test połączenia</button>
+        <button id="btnOpenLib" class="btn ghost">Otwórz Media Library</button>
       </div>
-      <div class="row">
-        <label class="pill">Folder <input id="cloudFolder" placeholder="umowy" value="umowy"></label>
-        <button id="btnSaveCfg" class="btn ok">💾 Zapisz</button>
-        <button id="btnPing" class="btn">Test połączenia</button>
-      </div>
-      <div class="small" style="margin-top:6px">
-        <b>Jak ustawić?</b> W Cloudinary → <i>Settings → Upload → Upload presets</i> dodaj preset z opcją <b>Unsigned</b> ✅ i (opcjonalnie) folderem <code>umowy</code>.
-        Na froncie używamy tylko <b>cloud name</b> i <b>upload preset</b> (bez sekretu!).
-      </div>
+      <div id="testArea" class="small" style="margin-top:6px">Kliknij „Test połączenia”, aby sprawdzić preset i endpoint.</div>
     </div>
 
     <div class="card">
       <h2 style="margin:0 0 8px">Postęp bieżącej wysyłki</h2>
-      <div id="progressList"></div>
+      <div id="jobs" class="grid" style="gap:8px"></div>
+      <div class="small" style="margin-top:8px">
+        Wskazówki: <span class="pill">/</span> – fokus na filtr, <span class="pill">Alt+S</span> – zapis oferty (kompat),  
+        zaznacz „Zapisz kopię lokalnie”, jeśli chcesz ponawiać wysyłkę bez ponownego wyboru.
+      </div>
     </div>
-
-    <div class="card">
-      <h2 style="margin:0 0 8px">Skróty i tipy</h2>
-      <ul class="small" style="margin:0 0 0 16px; padding:0 0 0 6px">
-        <li><span class="kbd">/</span> – fokus na filtr plików</li>
-        <li><span class="kbd">Alt</span> + <span class="kbd">S</span> – zapisz ofertę (sekcja ofert; zostawiona kompatybilność)</li>
-        <li>Zaznacz <b>„Zapisz kopię pliku”</b>, jeśli chcesz ponawiać wysyłkę bez ponownego wyboru.</li>
-      </ul>
-    </div>
-  </aside>
+  </section>
 </div>
+
+<!-- === KONFIG – USTAW TUTAJ === -->
+<script>
+  // Ustaw swój cloud name i preset (unsigned)
+  window.CLOUDINARY_CLOUD_NAME = "drht5dh6y";   // <- zmień na swój (jeśli inny)
+  window.CLOUDINARY_UPLOAD_PRESET = "arkon_crm"; // <- dokładnie jak w Cloudinary
+  window.CLOUDINARY_FOLDER = "upload";          // docelowy folder
+</script>
 
 <script>
 'use strict';
 
-/* ===== helpers ===== */
+/* ======= KONFIG (z okienka powyżej) ======= */
+const CLOUD = String(window.CLOUDINARY_CLOUD_NAME || '').trim();
+const PRESET = String(window.CLOUDINARY_UPLOAD_PRESET || '').trim();
+const FOLDER = String(window.CLOUDINARY_FOLDER || 'upload').trim();
+const ENDPOINT = CLOUD ? https://api.cloudinary.com/v1_1/${encodeURIComponent(CLOUD)}/auto/upload : '';
+
+/* ======= Helpers ======= */
 const $=s=>document.querySelector(s);
 const $$=s=>Array.from(document.querySelectorAll(s));
-const INT0=new Intl.NumberFormat('pl-PL',{maximumFractionDigits:0});
-const fmt=n=>isFinite(n)?INT0.format(Math.round(n)):'—';
-const bytes=n=>n<1024? n+' B' : n<1048576? (n/1024).toFixed(1)+' KB' : n<1073741824? (n/1048576).toFixed(1)+' MB' : (n/1073741824).toFixed(1)+' GB';
+const fmtBytes=n=>n<1024? n+' B' : n<1048576? (n/1024).toFixed(1)+' KB'
+  : n<1073741824? (n/1048576).toFixed(1)+' MB' : (n/1073741824).toFixed(1)+' GB';
 const uid=()=> 'ID_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2);
-function esc(s){return (s||'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
-function debounce(fn,ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms||180); }; }
 
-/* ===== clients (kompatybilność z Twoją bazą) ===== */
-function loadClients(){
-  let a=[];
-  try{ a = JSON.parse(localStorage.getItem('arkon_clients_v1')||'[]'); }catch{}
-  if(!Array.isArray(a) || !a.length){
-    try{ a = JSON.parse(localStorage.getItem('arkon_clients_v2')||'[]'); }catch{}
-  }
-  return Array.isArray(a)?a:[];
-}
-function fillClients(selIds){
-  const clients = loadClients();
-  selIds.forEach(id=>{
-    const el = document.getElementById(id);
-    if(!el) return;
-    el.innerHTML = '<option value="">(bez przypisania)</option>' + clients.map(c=><option value="${c.id}">${esc(c.name||'')}</option>).join('');
-  });
-}
-
-/* ===== IndexedDB ===== */
+/* ======= IndexedDB (kopia lokalna – opcjonalna) ======= */
 let db;
 function dbOpen(){
   return new Promise((res,rej)=>{
-    const r=indexedDB.open('arkonCRM_local',3);
-    r.onupgradeneeded=()=>{const d=r.result;
-      if(!d.objectStoreNames.contains('files')) d.createObjectStore('files',{keyPath:'id'});
-    };
+    const r=indexedDB.open('arkonCRM_local',2);
+    r.onupgradeneeded=()=>{const d=r.result; if(!d.objectStoreNames.contains('files')) d.createObjectStore('files',{keyPath:'id'});};
     r.onsuccess=()=>{db=r.result; res();};
     r.onerror=()=>rej(r.error);
   });
 }
 function dbPut(o){return new Promise((res,rej)=>{const tx=db.transaction('files','readwrite'); tx.objectStore('files').put(o); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error);});}
-function dbGet(id){return new Promise((res,rej)=>{const tx=db.transaction('files','readonly'); const rq=tx.objectStore('files').get(id); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error);});}
 function dbAll(){return new Promise((res,rej)=>{const tx=db.transaction('files','readonly'); const rq=tx.objectStore('files').getAll(); rq.onsuccess=()=>res(rq.result||[]); rq.onerror=()=>rej(rq.error);});}
 function dbDel(id){return new Promise((res,rej)=>{const tx=db.transaction('files','readwrite'); tx.objectStore('files').delete(id); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error);});}
 
-/* ===== Konfiguracja Cloudinary (przechowywana w localStorage) ===== */
-const CFG_KEY='arkon_cloudinary_cfg';
-const cfg = {
-  cloud_name: '',
-  upload_preset: '',
-  folder: 'umowy'
-};
-function loadCfg(){
-  try{ Object.assign(cfg, JSON.parse(localStorage.getItem(CFG_KEY)||'{}')); }catch{}
-  // Wpisz domyślne jeśli puste – możesz zmienić poniżej:
-  if(!cfg.cloud_name) cfg.cloud_name = 'drht5dh6y'; // <— z Twojego CLOUDINARY_URL
-  if(!cfg.upload_preset) cfg.upload_preset = 'arkon_unsigned'; // <— stwórz unsigned preset w panelu
-}
-function saveCfg(){
-  cfg.cloud_name = $('#cloudName').value.trim();
-  cfg.upload_preset = $('#uploadPreset').value.trim();
-  cfg.folder = $('#cloudFolder').value.trim() || 'umowy';
-  localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
-  setCloudState('Zapisano ustawienia.', true);
-}
-
-/* ===== UI: status chmury, paski postępu ===== */
-function setCloudState(txt, ok){
-  const el = $('#cloudState');
-  if(!el) return;
-  el.textContent = txt;
+/* ======= UI ======= */
+function setCloudState(text, ok){
+  const el = $('#cloudState'); if(!el) return;
+  el.textContent = text;
   el.style.borderColor = ok ? '#2e925e' : '#7b3341';
   el.style.background = ok ? '#0f2c22' : '#2e1117';
 }
-function addProgressRow(name){
-  const box = document.createElement('div');
-  box.style.margin = '8px 0';
-  box.innerHTML = `
-    <div class="row" style="justify-content:space-between">
-      <div class="small">${esc(name)}</div>
-      <div class="small muted" data-lbl>0%</div>
-    </div>
-    <div class="progress"><div class="bar" data-bar></div></div>
-  `;
-  $('#progressList').prepend(box);
-  return {
-    set(p){ const bar = box.querySelector('[data-bar]'); const lbl=box.querySelector('[data-lbl]'); bar.style.width = (p||0)+'%'; lbl.textContent = Math.round(p||0)+'%'; },
-    done(){ this.set(100); }
-  };
+function addJobRow(name){
+  const host = $('#jobs');
+  const id = uid();
+  const row = document.createElement('div');
+  row.className='row';
+  row.innerHTML = `
+    <span class="chip" style="min-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</span>
+    <div class="progress" style="flex:1;min-width:180px"><div class="bar" id="bar_${id}"></div></div>
+    <span class="pill" id="stat_${id}">0%</span>`;
+  host.prepend(row);
+  return id;
+}
+function jobProgress(id, pct, ok){
+  const bar = document.getElementById('bar_'+id);
+  const st = document.getElementById('stat_'+id);
+  if(bar){ bar.style.width=Math.max(0, Math.min(100, pct))+'%'; bar.className='bar '+(ok===false?'bad':'ok'); }
+  if(st){ st.textContent = (pct|0)+'%'; }
+}
+function jobDone(id, url){
+  const st = document.getElementById('stat_'+id);
+  if(st){ st.innerHTML = url ? <a href="${url}" target="_blank">otwórz</a> : 'OK'; }
 }
 
-/* ===== Cloudinary upload (XMLHttpRequest dla progress) ===== */
-function safeName(name){
-  return String(name||'plik').normalize('NFKD').replace(/[^\w.\-]+/g,'').replace(/+/g,'_').toLowerCase();
-}
-function buildPublicId({clientId, file}){
-  const who=(clientId||'bez-klienta').toLowerCase();
-  const ts=new Date().toISOString().replace(/[:.]/g,'-');
-  return ${cfg.folder}/${who}/${ts}_${safeName(file.name)}; // public_id bez rozszerzenia też zadziała
-}
-function uploadToCloudinaryXHR(file, meta){
-  return new Promise((resolve,reject)=>{
-    const url = https://api.cloudinary.com/v1_1/${encodeURIComponent(cfg.cloud_name)}/auto/upload;
-    const fd = new FormData();
-    fd.append('file', file);
-    fd.append('upload_preset', cfg.upload_preset);
-    fd.append('public_id', buildPublicId({clientId:meta.clientId, file}));
-    // dodatkowe konteksty do podglądu w Cloudinary
-    const ctx = [client=${meta.clientId||''},category=${meta.category||''},tags=${meta.tags||''}].join('|');
-    fd.append('context', ctx);
-    // folder nadpisujemy przez public_id; można też użyć "folder"
-    // fd.append('folder', cfg.folder);
-
+/* ======= Upload do Cloudinary (XHR z postępem) ======= */
+function uploadToCloudinary(file, extra){
+  return new Promise((resolve, reject)=>{
+    if(!ENDPOINT) return reject(new Error('Brak Cloud Name / endpointu.'));
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', url, true);
+    xhr.open('POST', ENDPOINT);
 
-    const pr = addProgressRow(file.name);
     xhr.upload.onprogress = (e)=>{
-      if(e.lengthComputable){
-        const pct = (e.loaded/e.total)*100;
-        pr.set(pct);
+      if(e.lengthComputable && extra?.onProgress){
+        extra.onProgress( Math.round((e.loaded/e.total)*100) );
       }
     };
-    xhr.onreadystatechange=()=>{
-      if(xhr.readyState===4){
+
+    xhr.onload = ()=>{
+      try{
+        const data = JSON.parse(xhr.responseText);
         if(xhr.status>=200 && xhr.status<300){
-          pr.done();
-          try{ resolve(JSON.parse(xhr.responseText)); }catch(err){ resolve({}); }
+          resolve(data);
         }else{
-          reject(new Error(Cloudinary HTTP ${xhr.status} – ${xhr.responseText||''}));
+          reject(new Error(data?.error?.message || 'Upload error'));
         }
+      }catch(err){
+        reject(new Error('Zła odpowiedź serwera (endpoint/preset?).'));
       }
     };
-    xhr.onerror=()=>reject(new Error('Błąd sieci podczas wysyłki.'));
-    xhr.send(fd);
+    xhr.onerror = ()=> reject(new Error('Błąd sieci podczas uploadu'));
+
+    const form = new FormData();
+    form.append('file', file);
+    form.append('upload_preset', PRESET);
+    if(FOLDER) form.append('folder', FOLDER);
+    if(extra?.tags) form.append('tags', extra.tags);
+    if(extra?.context){
+      Object.entries(extra.context).forEach(([k,v])=>{
+        form.append('context', ${k}=${v});
+      });
+    }
+    xhr.send(form);
   });
 }
 
-/* ===== Pliki: upload + lista ===== */
-let fileFilter={q:'',cat:''};
-
-async function handleFiles(files){
-  const storeBlob = !!$('#storeBlob')?.checked;
-  const autoOpen  = !!$('#autoOpen')?.checked;
-  const clientId   = $('#selClient').value || '';
-  const clientName = clientId ? (loadClients().find(c=>c.id===clientId)?.name||'') : '';
-  const category   = $('#selCat').value || 'Inne';
-  const tags       = $('#tags').value || '';
-
-  if(!cfg.cloud_name || !cfg.upload_preset){
-    setCloudState('Uzupełnij Cloud name i Upload preset (unsigned).', false);
-    alert('Najpierw uzupełnij ustawienia Cloudinary (cloud name + unsigned upload preset).');
-    return;
-  }
-
-  for(const f of Array.from(files||[])){
-    // 1) natychmiast pokaż w UI i (opcjonalnie) zapisz blob lokalnie
-    const id = uid();
-    const localRec = {
-      id, name:f.name, type:f.type||'application/octet-stream', size:f.size, at:Date.now(),
-      category, clientId, clientName, origin:'upload', tags,
-      cloud: null
-    };
-    if(storeBlob){ localRec.blob = f; }
-    await dbPut(localRec);
-
-    // 2) upload do Cloudinary
-    try{
-      $('#live').textContent = ⏫ Wysyłanie: ${f.name};
-      const result = await uploadToCloudinaryXHR(f, {clientId, category, tags});
-      const file_url = result.secure_url || result.url || null;
-
-      const cloudInfo = {
-        provider:'cloudinary',
-        url:file_url,
-        public_id: result.public_id || null,
-        version: result.version || null,
-        format: result.format || null,
-        bytes: result.bytes || null,
-        width: result.width || null,
-        height: result.height || null,
-        created_at: result.created_at || new Date().toISOString()
-      };
-
-      await dbPut({...localRec, cloud: cloudInfo}); // nadpisz rekord metadanymi chmury
-      setCloudState('Chmura: połączono ✓', true);
-      if(autoOpen && file_url){ window.open(file_url,'_blank'); }
-    }catch(e){
-      console.error('Cloud upload error:', e);
-      setCloudState('Chmura: błąd wysyłki (sprawdź preset/plan/limit).', false);
-      // dopisz błąd do rekordu (bez kasowania)
-      await dbPut({...localRec, cloud:{error: String(e&&e.message||e)}});
-    }
-  }
-  $('#live').textContent = '✅ Zakończono przetwarzanie plików.';
-  renderFiles();
-}
-
+/* ======= Lista lokalna ======= */
+let filter={q:'',cat:''};
 async function renderFiles(){
   const list = await dbAll();
-  const q=(fileFilter.q||'').toLowerCase();
-  const cat = fileFilter.cat||'';
-  const tb = $('#tbFiles'); tb.innerHTML='';
-  const cats = new Set();
-  list.sort((a,b)=>(b.at||0)-(a.at||0)).forEach(rec=>cats.add(rec.category||''));
-  // fill category filter
-  $('#fCat').innerHTML = '<option value="">Kategoria (wszystkie)</option>' + Array.from(cats).filter(Boolean).map(c=><option ${cat===c?'selected':''}>${esc(c)}</option>).join('');
+  const q=(filter.q||'').toLowerCase(); const cat=filter.cat||'';
+  const tb=$('#tbFiles'); tb.innerHTML='';
+  const cats=new Set(); list.forEach(r=>cats.add(r.category||''));
+  $('#fCat').innerHTML='<option value="">Kategoria (wszystkie)</option>' + Array.from(cats).filter(Boolean).map(c=><option ${cat===c?'selected':''}>${c}</option>).join('');
   let vis=0;
-  list.filter(x=>{
-    if(cat && (x.category||'')!==cat) return false;
-    const hay=[x.name,x.clientName,x.category,x.type,x.tags,(x.cloud?.url||''),(x.cloud?.public_id||''),(x.cloud?.error||'')].join(' ').toLowerCase();
-    return !q || hay.includes(q);
-  }).forEach(rec=>{
+  list.sort((a,b)=>(b.at||0)-(a.at||0)).forEach(rec=>{
+    if(cat && (rec.category||'')!==cat) return;
+    const hay=[rec.name,rec.category,rec.tags,rec.type].join(' ').toLowerCase();
+    if(q && !hay.includes(q)) return;
     vis++;
-    const when=rec.at? new Date(rec.at).toLocaleString('pl-PL'):'';
-    const url = rec.cloud?.url || '';
-    const err = rec.cloud?.error;
     const tr=document.createElement('tr');
     tr.innerHTML = `
       <td class="row">
-        <button class="btn ghost" data-dl="${rec.id}">Pobierz</button>
-        <button class="btn" data-edit="${rec.id}">Edytuj</button>
-        <button class="btn warn" data-reup="${rec.id}">Wyślij ponownie</button>
+        <button class="btn ghost" data-open="${rec.url||''}" ${rec.url?'':'disabled'}>Link</button>
         <button class="btn bad" data-del="${rec.id}">Usuń</button>
       </td>
-      <td>
-        ${esc(rec.name)}
-        ${ url ? <div class="small"><a href="${esc(url)}" target="_blank" rel="noopener">🔗 Link</a> <button class="btn ghost" data-copy="${rec.id}">Kopiuj</button></div> : '' }
-        ${ err ? <div class="small" style="color:#ffb8b8">Błąd chmury: ${esc(err)}</div> : '' }
-      </td>
-      <td>${esc(rec.clientName||'')}</td>
-      <td>${esc(rec.category||'')}</td>
-      <td>${esc(rec.tags||'')}</td>
-      <td>${esc(rec.type||'')}</td>
-      <td>${bytes(rec.size||0)}</td>
-      <td>${when}</td>`;
+      <td>${rec.name}</td>
+      <td>${rec.category||''}</td>
+      <td>${rec.tags||''}</td>
+      <td>${rec.type||''}</td>
+      <td>${fmtBytes(rec.size||0)}</td>
+      <td>${new Date(rec.at||Date.now()).toLocaleString('pl-PL')}</td>`;
     tb.appendChild(tr);
   });
-  $('#filesVis').textContent = vis;
+  $('#filesVis').textContent=vis;
 
-  // binds
-  tb.querySelectorAll('[data-dl]').forEach(b=>b.addEventListener('click', async ()=>{
-    const rec=await dbGet(b.dataset.dl); if(!rec){ alert('Plik niedostępny.'); return; }
-    // jeśli mamy blob — pobieramy lokalnie; jeśli nie — otwieramy URL z chmury
-    if(rec.blob){
-      const url=URL.createObjectURL(rec.blob); const a=document.createElement('a'); a.href=url; a.download=rec.name; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1500);
-    }else if(rec.cloud?.url){
-      window.open(rec.cloud.url,'_blank');
-    }else{
-      alert('Brak danych pliku ani linku w chmurze.');
-    }
+  tb.querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',()=>{
+    const u=b.dataset.open; if(u) window.open(u,'_blank');
   }));
   tb.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', async ()=>{
-    if(!confirm('Usunąć rekord? (Nie usuwa z chmury)')) return;
+    if(!confirm('Usunąć wpis lokalny?')) return;
     await dbDel(b.dataset.del); renderFiles();
   }));
-  tb.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click', async ()=>{
-    const rec=await dbGet(b.dataset.edit); if(!rec){ alert('Brak pliku.'); return; }
-    const newName = prompt('Nowa nazwa pliku (lokalnie, nie zmienia w chmurze)', rec.name) || rec.name;
-    const newCat = prompt('Kategoria', rec.category||'') || rec.category||'';
-    const newTags = prompt('Tagi (przecinkami)', rec.tags||'') || rec.tags||'';
-    const clientId = prompt('ID klienta (puste = bez przypisania)', rec.clientId||'') || '';
-    const clientName = clientId ? (loadClients().find(c=>c.id===clientId)?.name||'') : '';
-    await dbPut({...rec, name:newName, category:newCat, tags:newTags, clientId, clientName });
-    renderFiles();
-  }));
-  tb.querySelectorAll('[data-reup]').forEach(b=>b.addEventListener('click', async ()=>{
-    const rec=await dbGet(b.dataset.reup); if(!rec){ alert('Brak pliku.'); return; }
-    if(!rec.blob){ alert('Brak lokalnej kopii. Zaznacz „Zapisz kopię pliku” przed wysyłką lub wybierz plik ponownie.'); return; }
+}
+
+/* ======= Obsługa plików ======= */
+async function handleFiles(files){
+  if(!CLOUD || !PRESET){ alert('Brak CLOUD NAME lub UPLOAD PRESET. Uzupełnij w sekcji KONFIG.'); return; }
+  const category = $('#selCat').value || 'Inne';
+  const tags = ($('#tags').value||'').trim();
+  const keepLocal = !!$('#keepLocal')?.checked;
+
+  for(const f of Array.from(files||[])){
+    const jobId = addJobRow(f.name);
     try{
-      setCloudState('Ponawianie wysyłki…', true);
-      const result = await uploadToCloudinaryXHR(rec.blob, {clientId:rec.clientId, category:rec.category, tags:rec.tags});
-      const file_url = result.secure_url || result.url || null;
-      await dbPut({...rec, cloud:{provider:'cloudinary', url:file_url, public_id:result.public_id||null, version:result.version||null, format:result.format||null, bytes:result.bytes||null, width:result.width||null, height:result.height||null, created_at:result.created_at||new Date().toISOString()}});
-      renderFiles();
-    }catch(e){
-      setCloudState('Chmura: błąd ponowienia.', false);
-      alert('Błąd ponowienia: '+(e&&e.message||e));
+      const res = await uploadToCloudinary(f, {
+        tags,
+        context: { category },
+        onProgress: (p)=> jobProgress(jobId, p, true)
+      });
+      const publicUrl = res.secure_url || res.url || '';
+      jobDone(jobId, publicUrl);
+      setCloudState('Chmura: połączono ✓', true);
+
+      if(keepLocal){
+        await dbPut({
+          id: uid(),
+          name: f.name,
+          size: f.size,
+          type: f.type || 'application/octet-stream',
+          at: Date.now(),
+          category, tags,
+          url: publicUrl
+        });
+        renderFiles();
+      }
+      if($('#showLink')?.checked && publicUrl) window.open(publicUrl,'_blank');
+    }catch(err){
+      console.error('Upload error:', err);
+      jobProgress(jobId, 100, false);
+      setCloudState('Chmura: błąd uploadu', false);
+      alert(Błąd uploadu dla "${f.name}": ${err.message||err});
     }
-  }));
-  tb.querySelectorAll('[data-copy]').forEach(b=>b.addEventListener('click', async ()=>{
-    const rec=await dbGet(b.dataset.copy); if(rec?.cloud?.url){ await navigator.clipboard.writeText(rec.cloud.url); b.textContent='Skopiowano'; setTimeout(()=>b.textContent='Kopiuj',1000); }
-  }));
+  }
 }
 
-/* ===== Eksport / Import metadanych ===== */
-$('#btnExport')?.addEventListener('click', async ()=>{
-  const list = await dbAll();
-  const a=document.createElement('a');
-  const blob=new Blob([JSON.stringify(list.map(x=>({...x, blob:undefined})),null,2)],{type:'application/json'});
-  a.href=URL.createObjectURL(blob); a.download='arkon_pliki_meta.json'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1200);
-});
-$('#inImport')?.addEventListener('change', async e=>{
-  const f=e.target.files[0]; if(!f) return;
+/* ======= Test połączenia ======= */
+async function testCloud(){
+  if(!CLOUD || !PRESET){ alert('Ustaw CLOUD NAME i PRESET w sekcji KONFIG.'); return; }
+  $('#testArea').textContent='Testuję…';
   try{
-    const arr=JSON.parse(await f.text()); if(!Array.isArray(arr)) throw 0;
-    for(const r of arr){ await dbPut(r); }
-    renderFiles(); alert('Zaimportowano metadane.');
-  }catch{ alert('Zły plik JSON'); }
-  e.target.value='';
-});
-
-/* ===== Filtry i dropzone ===== */
-$('#qFiles')?.addEventListener('input', e=>{ fileFilter.q=e.target.value.trim().toLowerCase(); renderFiles(); });
-$('#btnClear')?.addEventListener('click',()=>{ fileFilter={q:'',cat:''}; $('#qFiles').value=''; $('#fCat').value=''; renderFiles(); });
-$('#fCat')?.addEventListener('change', e=>{ fileFilter.cat=e.target.value||''; renderFiles(); });
-
-const drop = $('#drop');
-drop.addEventListener('dragover', e=>{ e.preventDefault(); drop.classList.add('drag'); });
-drop.addEventListener('dragleave', e=>{ drop.classList.remove('drag'); });
-drop.addEventListener('drop', e=>{ e.preventDefault(); drop.classList.remove('drag'); const files = e.dataTransfer.files; if(files?.length) handleFiles(files); });
-drop.addEventListener('click', ()=> $('#inFiles').click());
-$('#inFiles').addEventListener('change', e=>{ handleFiles(e.target.files); e.target.value=''; });
-
-/* ===== Test połączenia (upload maleńkiego blobu) ===== */
-async function pingCloud(){
-  if(!cfg.cloud_name || !cfg.upload_preset){ setCloudState('Uzupełnij Cloud name i Upload preset.', false); return; }
-  try{
-    const tiny = new Blob([new Uint8Array([137,80,78,71])],{type:'application/octet-stream'});
-    const fakeFile = new File([tiny], 'ping.bin', {type:'application/octet-stream'});
-    const res = await uploadToCloudinaryXHR(fakeFile, {clientId:'ping', category:'Ping', tags:'test'});
-    if(res.secure_url){ setCloudState('Chmura: połączono ✓', true); $('#live').textContent='Ping OK'; }
-    else{ setCloudState('Chmura: odpowiedź bez URL (sprawdź preset).', false); }
-  }catch(e){ setCloudState('Chmura: błąd – sprawdź nazwę/preset.', false); console.warn(e); }
+    const blob=new Blob([new Uint8Array([0])],{type:'application/octet-stream'});
+    const res = await uploadToCloudinary(new File([blob],'ping.bin'), { tags:'ping,arkon', context:{category:'Ping'} });
+    $('#testArea').innerHTML = ✅ OK — <a href="${res.secure_url}" target="_blank">zobacz plik testowy</a>;
+    setCloudState('Chmura: połączono ✓', true);
+  }catch(e){
+    $('#testArea').textContent = '❌ Błąd: '+(e.message||e);
+    setCloudState('Chmura: błąd (preset/endpoint?)', false);
+  }
 }
 
-/* ===== INIT ===== */
+/* ======= Init ======= */
 (async function init(){
   await dbOpen();
-  loadCfg();
-  // ustaw pola ustawień
-  $('#cloudName').value = cfg.cloud_name;
-  $('#uploadPreset').value = cfg.upload_preset;
-  $('#cloudFolder').value = cfg.folder || 'umowy';
 
-  fillClients(['selClient']);
-  // pierwsze renderowanie listy
-  renderFiles();
+  // nagłówki statusu
+  $('#cn').textContent = CLOUD || '(brak)';
+  $('#pr').textContent = PRESET || '(brak)';
+  $('#fo').textContent = FOLDER || '(brak)';
+  setCloudState( CLOUD && PRESET ? 'Chmura: gotowe' : 'Chmura: uzupełnij konfigurację', !!(CLOUD && PRESET));
 
-  // keyboard shortcuts
-  document.addEventListener('keydown',e=>{
-    if(e.key==='/' && !/input|textarea|select/i.test(e.target.tagName)){ e.preventDefault(); $('#qFiles')?.focus(); }
-    if(e.altKey && e.key.toLowerCase()==='s'){ e.preventDefault(); /* zostawione pod oferty */ }
+  // Drag&drop
+  const drop = $('#drop');
+  const input = $('#inFiles');
+  drop.addEventListener('dragover',e=>{e.preventDefault(); drop.classList.add('drag');});
+  drop.addEventListener('dragleave',()=>drop.classList.remove('drag'));
+  drop.addEventListener('drop',e=>{e.preventDefault(); drop.classList.remove('drag'); handleFiles(e.dataTransfer.files);});
+  input.addEventListener('change',e=>{ handleFiles(e.target.files); input.value=''; });
+
+  // Filtry listy
+  $('#qFiles').addEventListener('input',e=>{ filter.q=e.target.value.trim(); renderFiles(); });
+  $('#fCat').addEventListener('change',e=>{ filter.cat=e.target.value||''; renderFiles(); });
+  $('#btnClear').addEventListener('click',()=>{ filter={q:'',cat:''}; $('#qFiles').value=''; $('#fCat').value=''; renderFiles(); });
+  $('#btnRefresh').addEventListener('click',renderFiles);
+
+  // Export/Import metadanych
+  $('#btnExport').addEventListener('click', async ()=>{
+    const list = await dbAll();
+    const a=document.createElement('a');
+    const blob=new Blob([JSON.stringify(list,null,2)],{type:'application/json'});
+    a.href=URL.createObjectURL(blob); a.download='arkon_files.json'; a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+  });
+  $('#btnImport').addEventListener('change', async e=>{
+    const f=e.target.files[0]; if(!f) return;
+    try{
+      const arr=JSON.parse(await f.text());
+      if(!Array.isArray(arr)) throw new Error('Zły JSON');
+      for(const r of arr){ if(r?.id) await dbPut(r); }
+      renderFiles(); alert('Zaimportowano.');
+    }catch{ alert('Nieprawidłowy plik JSON.'); }
+    e.target.value='';
   });
 
-  // przyciski ustawień
-  $('#btnSaveCfg').addEventListener('click', saveCfg);
-  $('#btnPing').addEventListener('click', pingCloud);
+  // Test & Media Library
+  $('#btnTest').addEventListener('click', testCloud);
+  $('#btnOpenLib').addEventListener('click', ()=>{
+    if(!CLOUD){ alert('Brak cloud name.'); return; }
+    window.open(https://console.cloudinary.com/console/media_library/asset-management/library?cloud_name=${encodeURIComponent(CLOUD)},'_blank');
+  });
 
-  // informacja startowa
-  if(!cfg.cloud_name || !cfg.upload_preset){
-    setCloudState('Uzupełnij Cloud name i Upload preset (unsigned).', false);
-  }else{
-    setCloudState('Gotowe. Kliknij „Test połączenia” lub wrzuć plik.', true);
-  }
+  renderFiles();
 })();
 </script>
 </body>
