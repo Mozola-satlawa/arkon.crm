@@ -1,73 +1,33 @@
-
-// netlify/functions/upload.mjs
-import { EventEmitter } from "events";
-EventEmitter.defaultMaxListeners = 50;
-
-import { createClient } from "@supabase/supabase-js";
-
-const supa = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
-);
-
-const safe = (s) => String(s).normalize("NFKD").replace(/[^\w.-]+/g, "_").toLowerCase();
-
 export default async (req) => {
   try {
-    if (req.method !== "POST") {
-      return new Response(JSON.stringify({ error: "Method not allowed" }), {
-        status: 405,
-        headers: { "content-type": "application/json" }
-      });
-    }
-
-    // multipart/form-data
-    const form = await req.formData();
-    const file = form.get("file");
-    const clientId = form.get("clientId") || "anon";
-    const folder = form.get("folder") || "misc";
+    const formData = await req.formData();
+    const file = formData.get("file");
 
     if (!file) {
-      return new Response(JSON.stringify({ error: "Brak pliku" }), {
+      return new Response(JSON.stringify({ ok: false, error: "No file uploaded" }), {
         status: 400,
         headers: { "content-type": "application/json" }
       });
     }
 
-    // Ścieżka w buckecie "docs"
+    // Nazwa bezpieczna
+    const safe = (name) =>
+      String(name).replace(/[^a-z0-9.-]/gi, "").toLowerCase();
+
     const ts = Date.now();
-    const parts = [];
-    if (clientId) parts.push(safe(clientId));
-    if (folder) parts.push(safe(folder));
-    parts.push(${ts}_${safe(file.name)});   // <-- poprawione (backticki!)
-    const path = parts.join("/");
+    const filename = ${ts}_${safe(file.name)};
 
-    // Upload do Supabase Storage
-    const { error } = await supa.storage.from("docs").upload(
-      path,
-      file.stream(),
-      {
-        contentType: file.type || "application/octet-stream",
-        upsert: true
-      }
+    // W tym przykładzie zapis tylko „na sucho” (do testu)
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        file: filename,
+        size: file.size
+      }),
+      { status: 200, headers: { "content-type": "application/json" } }
     );
-
-    if (error) {
-      return new Response(JSON.stringify({ ok: false, error: error.message }), {
-        status: 500,
-        headers: { "content-type": "application/json" }
-      });
-    }
-
-    const { data } = supa.storage.from("docs").getPublicUrl(path);
-    const url = data?.publicUrl || "";
-
-    return new Response(JSON.stringify({ ok: true, path, url }), {
-      status: 200,
-      headers: { "content-type": "application/json" }
-    });
-  } catch (err) {
-    return new Response(JSON.stringify({ ok: false, error: String(err) }), {
+  } catch (e) {
+    return new Response(JSON.stringify({ ok: false, error: e.message }), {
       status: 500,
       headers: { "content-type": "application/json" }
     });
