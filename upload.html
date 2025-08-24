@@ -3,131 +3,288 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ARKON — Przesył dokumentów</title>
-<meta name="description" content="Wysyłka plików powiązanych z klientem do chmury (Netlify Blobs).">
+<title>Przesył dokumentów · ARKON (Netlify Blobs)</title>
+<meta name="description" content="Wysyłanie dokumentów do magazynu Netlify Blobs.">
 <style>
   :root{
-    --bg:#0b1020;--p1:#0f1533;--p2:#121a38;--ink:#e7ecff;--muted:#aeb8da;--line:#223066;
-    --ok:#2fbf71;--bad:#ff6b6b;--chip:#0d1530;--field:#0e1330;
+    --bg:#0b1020;--p1:#101735;--p2:#121a38;--ink:#e7ecff;--muted:#aeb8da;--line:#223066;
+    --ok:#2fbf71;--bad:#ff6b6b;--warn:#ffb84d;--chip:#0d1530;--field:#0e1330;--accent:#67a1ff;
   }
-  *{box-sizing:border-box} html,body{margin:0;height:100%}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
   body{background:linear-gradient(180deg,#0a0f1e,#0c1230 60%,#0a0f1e);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
-  header{padding:16px;background:#11183a;border-bottom:1px solid var(--line)}
+  a{color:#cfe1ff;text-decoration:none}
+  header{padding:18px 16px;background:#11183a;border-bottom:1px solid var(--line)}
   header h1{margin:0;font-size:22px}
-  .wrap{max-width:1100px;margin:auto;padding:16px}
-  .card{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;padding:14px;margin:10px 0}
+  .wrap{max-width:1200px;margin:auto;padding:16px}
+  .card{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 16px}
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
   .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
   .btn.ghost{background:transparent;border:1px dashed #3a4ca3}
-  .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
+  .btn.ok{background:#194d34;border-color:#2e925e}
+  .pill{display:inline-flex;gap:8px;align-items:center;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
   input,select{background:var(--field);border:1px solid #28356c;border-radius:10px;padding:8px 10px;color:var(--ink);font:inherit}
+  input::placeholder{color:#aeb8da99}
   .table{width:100%;border-collapse:separate;border-spacing:0}
   .table th,.table td{padding:9px;border-bottom:1px solid #22325f;text-align:left;vertical-align:top}
-  .small{font-size:12px;color:#aeb8da}
-  .ok{color:#8EF6C2} .bad{color:#ff9ba0}
+  .small{font-size:12px;color:var(--muted)}
+  .bar{height:8px;border-radius:6px;background:#16224b;overflow:hidden}
+  .bar>i{display:block;height:100%;background:linear-gradient(90deg,#3d67ff,#4effd4)}
+  .tag{display:inline-block;margin:2px 6px 0 0;padding:3px 8px;border:1px solid #3a4ca3;border-radius:999px;font-size:12px}
+  .hl{outline:2px solid #67a1ff55}
 </style>
 </head>
 <body>
 <header>
-  <h1>Przesył dokumentów • ARKON (Netlify Blobs)</h1>
-  <div class="small">Wybierz klienta, dodaj pliki → leci do chmury Netlify (foldery <code>upload/&lt;klient&gt;/</code>).</div>
+  <h1>Przesył dokumentów · <span style="opacity:.8">ARKON (Netlify Blobs)</span></h1>
+  <div class="small">Pliki → idą do chmury Netlify (foldery <code>upload/&lt;klient&gt;</code>). Bez kluczy, bez konfiguracji serwerów.</div>
 </header>
 
 <div class="wrap">
+  <!-- PANEL WYSYŁKI -->
   <section class="card">
-    <h2 style="margin:0 0 8px">Wysyłka plików</h2>
+    <h2 style="margin:0 0 10px">Wysyłka plików</h2>
     <div class="row" style="margin-bottom:8px">
-      <select id="selClient" title="Klient" style="min-width:260px">
-        <option value="">(bez przypisania)</option>
-        <option value="jan-kowalski">Jan Kowalski</option>
-        <option value="anna-nowak">Anna Nowak</option>
-      </select>
+      <select id="selClient" title="Klient" style="min-width:240px"></select>
       <select id="selCat">
         <option>Umowa z firmą</option>
         <option>Audyt</option>
+        <option>Dokument do audytu Czyste Powietrze</option>
+        <option>Audyt rozprowadzenia instalacji</option>
         <option>Pomiary budynku</option>
+        <option>Rzut budynku</option>
+        <option>Zdjęcia kotłowni</option>
+        <option>Faktura za prąd</option>
+        <option>Zdjęcia falownika</option>
+        <option>Zdjęcia budynku</option>
         <option>Oferta (PDF)</option>
         <option>Ulotka</option>
         <option>Inne</option>
       </select>
-      <input id="tags" placeholder="tagi, przecinkami">
+      <input id="tags" placeholder="tagi, przecinkami" style="min-width:220px">
       <label class="btn">Dodaj pliki… <input id="inFiles" type="file" multiple hidden></label>
       <button id="btnSend" class="btn ok">Wyślij teraz</button>
-      <span id="cloudState" class="pill">Chmura: gotowe</span>
+      <span id="cloud" class="pill">Chmura: <b id="cloudState">gotowe</b></span>
     </div>
-    <div class="small">Nie potrzebujesz żadnych kluczy ani zewnętrznych usług — Netlify Blobs działa wprost z tej funkcji.</div>
+
+    <div id="drop" class="card" style="padding:12px;border-style:dashed">
+      Przeciągnij i upuść pliki tutaj lub kliknij „Dodaj pliki…”
+      <div class="small" style="margin-top:6px">Gotowe do wysyłania.</div>
+    </div>
+
+    <div id="prog" class="card" style="display:none">
+      <div class="row"><span class="pill">Trwa wysyłka…</span><span id="pTxt" class="small"></span></div>
+      <div class="bar" style="margin-top:8px"><i id="pBar" style="width:0%"></i></div>
+    </div>
   </section>
 
+  <!-- PODGLĄD OSTATNIEGO WYSYŁANIA -->
   <section class="card">
     <h2 style="margin:0 0 8px">Podgląd ostatniego wysyłania</h2>
-    <div class="small">Linki publiczne prosto z Blobs. Nazwy plików i foldery: <code>upload/&lt;klient|bez-klienta&gt;/&lt;ISO&gt;_nazwa</code></div>
-    <table class="table" id="tblLog">
-      <thead><tr><th>Plik</th><th>Rozmiar</th><th>Typ</th><th>URL</th></tr></thead>
-      <tbody id="tbLog"><tr><td colspan="4" class="small">Brak (jeszcze nic nie wysyłano)</td></tr></tbody>
-    </table>
+    <div class="small" style="margin:6px 0">Linki publiczne idą przez funkcję, np. <code>/.netlify/functions/upload?get=1&amp;key=...</code></div>
+    <div class="scroll">
+      <table class="table">
+        <thead><tr><th>Plik</th><th>Rozmiar</th><th>Typ</th><th>URL</th></tr></thead>
+        <tbody id="last"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- MAGAZYN: LISTA WSZYSTKICH -->
+  <section class="card">
+    <h2 style="margin:0 0 8px">Magazyn (wszystkie przesłane)</h2>
+    <div class="row" style="margin-bottom:8px">
+      <input id="q" placeholder="🔎 filtr: nazwa/typ/klient/kategoria/tag" style="min-width:280px">
+      <button id="btnReload" class="btn ghost">Odśwież</button>
+      <span class="pill">Widocznych: <b id="vis">0</b></span>
+    </div>
+    <div class="scroll" style="max-height:380px">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Plik</th><th>Klient</th><th>Kategoria</th><th>Tagi</th>
+            <th>Typ</th><th>Rozmiar</th><th>Data</th><th>Akcja</th>
+          </tr>
+        </thead>
+        <tbody id="store"></tbody>
+      </table>
+    </div>
   </section>
 </div>
 
 <script>
 'use strict';
 
-// ===== helpers =====
-const $ = s => document.querySelector(s);
-const fmtBytes = n => n<1024? n+' B' : n<1048576? (n/1024).toFixed(1)+' KB' : n<1073741824? (n/1048576).toFixed(1)+' MB' : (n/1073741824).toFixed(1)+' GB';
-const safeName = (name) => String(name||'plik').normalize('NFKD').replace(/[^\w.\-]+/g,'').replace(/+/g,'_').toLowerCase();
+/* ===== helpers ===== */
+const $=s=>document.querySelector(s);
+const $$=s=>Array.from(document.querySelectorAll(s));
+const INT0=new Intl.NumberFormat('pl-PL',{maximumFractionDigits:0});
+const bytes=n=>n<1024? n+' B' : n<1048576? (n/1024).toFixed(1)+' KB' : n<1073741824? (n/1048576).toFixed(1)+' MB' : (n/1073741824).toFixed(1)+' GB';
+const fmtDate=ms=> new Date(ms).toLocaleString('pl-PL');
+const esc=s=>(s||'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 
-// ===== state =====
+/* ===== przykładowi klienci z localStorage (jeśli nie masz strony „klienci.html”) ===== */
+function loadClients(){
+  try{ const a=JSON.parse(localStorage.getItem('arkon_clients_v2')||'[]'); if(Array.isArray(a)&&a.length) return a; }catch{}
+  try{ const a=JSON.parse(localStorage.getItem('arkon_clients_v1')||'[]'); if(Array.isArray(a)&&a.length) return a; }catch{}
+  // fallback demo:
+  return [
+    {id:'KLIENT_001', name:'Firma Kowalski'},
+    {id:'KLIENT_002', name:'Pani Anna'},
+    {id:'KLIENT_003', name:'Spółka XYZ'}
+  ];
+}
+function fillClients(){
+  const sel=$('#selClient');
+  const list=loadClients();
+  sel.innerHTML = '<option value="">(bez przypisania)</option>' +
+    list.map(c=><option value="${esc(c.id)}">${esc(c.name)}</option>).join('');
+}
+
+/* ===== stan wysyłki ===== */
 let pendingFiles = [];
 
-// ===== UI binds =====
-$('#inFiles').addEventListener('change', e => {
-  pendingFiles = Array.from(e.target.files || []);
-  $('#cloudState').textContent = Wybrane: ${pendingFiles.length} plik(i);
-});
+function setCloudState(txt, ok=null){
+  $('#cloudState').textContent = txt;
+  const pill = $('#cloud');
+  if(ok===true){ pill.style.borderColor='#2e925e'; pill.style.background='#0f2c22'; }
+  else if(ok===false){ pill.style.borderColor='#7b3341'; pill.style.background='#2e1117'; }
+  else { pill.style.borderColor='#2a3a77'; pill.style.background='#0d1530'; }
+}
+function showProg(ratio, txt){
+  $('#prog').style.display='block';
+  $('#pBar').style.width = Math.max(0, Math.min(100, ratio*100)) + '%';
+  $('#pTxt').textContent = txt || '';
+  if(ratio>=1) setTimeout(()=>$('#prog').style.display='none', 600);
+}
 
-$('#btnSend').addEventListener('click', async () => {
-  if (!pendingFiles.length) { alert('Najpierw dodaj pliki.'); return; }
-
-  const clientId = ($('#selClient').value || '').trim() || 'bez-klienta';
-  const category = ($('#selCat').value || 'Inne').trim();
-  const tags     = ($('#tags').value || '').trim();
-
-  const fd = new FormData();
-  pendingFiles.forEach(f => fd.append('files', f, safeName(f.name)));
-  fd.append('clientId', clientId);
-  fd.append('category', category);
-  fd.append('tags', tags);
-
-  $('#cloudState').textContent = 'Wysyłanie…';
-  try{
-    const r = await fetch('/.netlify/functions/upload', { method:'POST', body: fd });
-    const data = await r.json();
-    if(!r.ok || !data.ok){ throw new Error(data.error || r.status); }
-    $('#cloudState').textContent = OK: wysłano ${data.count} plik(i);
-    renderLog(data.files || []);
-    pendingFiles = [];
-  }catch(err){
-    console.error(err);
-    $('#cloudState').textContent = 'Błąd wysyłki';
-    alert('Błąd wysyłki: '+err.message);
+/* ===== upload jednego pliku ===== */
+async function uploadOne(file,{clientId,clientName,category,tags}){
+  const res = await fetch('/.netlify/functions/upload', {
+    method:'POST',
+    headers:{
+      'Content-Type': file.type || 'application/octet-stream',
+      'x-file-name': encodeURIComponent(file.name),
+      'x-client-id': encodeURIComponent(clientId||''),
+      'x-client-name': encodeURIComponent(clientName||''),
+      'x-category': encodeURIComponent(category||''),
+      'x-tags': encodeURIComponent(tags||'')
+    },
+    body:file
+  });
+  if(!res.ok){
+    const t = await res.text().catch(()=>res.statusText);
+    throw new Error('Upload HTTP '+res.status+': '+t);
   }
-});
+  return await res.json();
+}
 
-function renderLog(arr){
-  const tb = $('#tbLog');
-  tb.innerHTML = '';
-  if(!arr.length){ tb.innerHTML = '<tr><td colspan="4" class="small">Brak</td></tr>'; return; }
-  arr.forEach(x=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${x.originalName||''}</td>
-      <td>${fmtBytes(x.bytes||0)}</td>
-      <td>${x.mime||''}</td>
-      <td><a href="${x.url}" target="_blank" rel="noopener">otwórz</a></td>
-    `;
-    tb.appendChild(tr);
+/* ===== wysyłka wielu plików ===== */
+async function sendAll(){
+  const clientId = $('#selClient').value || '';
+  const clientName = clientId ? (loadClients().find(c=>c.id===clientId)?.name||'') : '';
+  const category = $('#selCat').value || 'Inne';
+  const tags = $('#tags').value || '';
+
+  if(!pendingFiles.length){ alert('Najpierw dodaj pliki.'); return; }
+
+  setCloudState('wysyłanie…');
+  let done=0, okCount=0, lastRows=[];
+  for(const f of pendingFiles){
+    try{
+      const out = await uploadOne(f,{clientId,clientName,category,tags});
+      okCount++;
+      lastRows.push(out);
+      done++;
+      showProg(done/pendingFiles.length, Wysłano ${done}/${pendingFiles.length}…);
+    }catch(e){
+      console.error('Błąd wysyłki:', e);
+      done++;
+      showProg(done/pendingFiles.length, Błąd: ${e.message});
+      setCloudState('błąd', false);
+    }
+  }
+  setCloudState(okCount ? 'gotowe ✓' : 'błąd', !!okCount);
+  renderLast(lastRows);
+  pendingFiles = [];
+  $('#inFiles').value='';
+}
+
+/* ===== render tabeli „ostatnie wysyłanie” ===== */
+function renderLast(rows){
+  const tb=$('#last'); tb.innerHTML='';
+  if(!rows?.length){
+    tb.innerHTML = <tr><td colspan="4" class="small">Brak (jeszcze nic nie wysłano)</td></tr>;
+    return;
+  }
+  rows.forEach(r=>{
+    const a = document.createElement('tr');
+    a.innerHTML = `
+      <td>${esc(r.key.split('/').slice(-1)[0])}</td>
+      <td>${bytes(r.size||0)}</td>
+      <td>${esc(r.contentType||'')}</td>
+      <td><a href="${esc(r.viewUrl)}" target="_blank" rel="noopener">otwórz</a></td>`;
+    tb.appendChild(a);
   });
 }
+
+/* ===== „magazyn” – lista z indexu ===== */
+async function reloadStore(){
+  const res = await fetch('/.netlify/functions/upload?list=1');
+  const js = await res.json();
+  const list = Array.isArray(js.rows)? js.rows : [];
+  const q = ($('#q').value||'').toLowerCase();
+  const tb=$('#store'); tb.innerHTML='';
+  let vis=0;
+  list.forEach(r=>{
+    const hay = [r.key, r.clientName, r.category, r.tags, r.contentType].join(' ').toLowerCase();
+    if(q && !hay.includes(q)) return;
+    vis++;
+    const name = r.key.split('/').slice(-1)[0];
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${esc(name)}</td>
+      <td>${esc(r.clientName||'')}</td>
+      <td>${esc(r.category||'')}</td>
+      <td>${(r.tags||'').split(',').filter(Boolean).map(t=><span class="tag">${esc(t.trim())}</span>).join('')}</td>
+      <td>${esc(r.contentType||'')}</td>
+      <td>${bytes(r.size||0)}</td>
+      <td>${fmtDate(r.at||Date.now())}</td>
+      <td><a href="/.netlify/functions/upload?get=1&key=${encodeURIComponent(r.key)}" target="_blank" rel="noopener">otwórz</a></td>`;
+    tb.appendChild(tr);
+  });
+  $('#vis').textContent = vis;
+}
+
+/* ===== init ===== */
+(function init(){
+  fillClients();
+
+  $('#inFiles').addEventListener('change', e=>{
+    pendingFiles = Array.from(e.target.files||[]);
+    $('#drop').classList.add('hl');
+    setTimeout(()=>$('#drop').classList.remove('hl'),400);
+  });
+  $('#btnSend').addEventListener('click', sendAll);
+
+  // Drag & Drop
+  const box = $('#drop');
+  ;['dragenter','dragover'].forEach(ev=> box.addEventListener(ev, e=>{ e.preventDefault(); box.classList.add('hl'); }));
+  ;['dragleave','drop'].forEach(ev=> box.addEventListener(ev, e=>{ e.preventDefault(); box.classList.remove('hl'); }));
+  box.addEventListener('drop', e=>{
+    const files = Array.from(e.dataTransfer?.files||[]);
+    pendingFiles = pendingFiles.concat(files);
+  });
+
+  $('#btnReload').addEventListener('click', reloadStore);
+  $('#q').addEventListener('input', ()=>reloadStore());
+
+  // test funkcji (opcjonalnie)
+  fetch('/.netlify/functions/upload?ping=1').then(r=>r.ok? setCloudState('gotowe') : setCloudState('błąd',false)).catch(()=>setCloudState('błąd',false));
+
+  renderLast([]); // pusty start
+  reloadStore();
+})();
 </script>
 </body>
 </html>
