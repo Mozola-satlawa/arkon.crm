@@ -1,3 +1,5 @@
+
+// netlify/functions/upload.mjs
 import { EventEmitter } from "events";
 EventEmitter.defaultMaxListeners = 50;
 
@@ -8,6 +10,8 @@ const supa = createClient(
   process.env.SUPABASE_KEY
 );
 
+const safe = (s) => String(s).normalize("NFKD").replace(/[^\w.-]+/g, "_").toLowerCase();
+
 export default async (req) => {
   try {
     if (req.method !== "POST") {
@@ -17,6 +21,7 @@ export default async (req) => {
       });
     }
 
+    // multipart/form-data
     const form = await req.formData();
     const file = form.get("file");
     const clientId = form.get("clientId") || "anon";
@@ -24,36 +29,43 @@ export default async (req) => {
 
     if (!file) {
       return new Response(JSON.stringify({ error: "Brak pliku" }), {
-        status: 400, headers: { "content-type": "application/json" }
+        status: 400,
+        headers: { "content-type": "application/json" }
       });
     }
 
-    // generujemy ścieżkę
+    // Ścieżka w buckecie "docs"
     const ts = Date.now();
-    const safe = (s) => String(s).replace(/[^\w.-]+/g, "_").toLowerCase();
     const parts = [];
     if (clientId) parts.push(safe(clientId));
     if (folder) parts.push(safe(folder));
-    parts.push(${ts}_${safe(file.name)});   // <-- tu poprawione
+    parts.push(${ts}_${safe(file.name)});   // <-- poprawione (backticki!)
     const path = parts.join("/");
 
-    const { error } = await supa.storage.from("docs").upload(path, file.stream(), {
-      contentType: file.type || "application/octet-stream",
-      upsert: true
-    });
+    // Upload do Supabase Storage
+    const { error } = await supa.storage.from("docs").upload(
+      path,
+      file.stream(),
+      {
+        contentType: file.type || "application/octet-stream",
+        upsert: true
+      }
+    );
 
     if (error) {
       return new Response(JSON.stringify({ ok: false, error: error.message }), {
-        status: 500, headers: { "content-type": "application/json" }
+        status: 500,
+        headers: { "content-type": "application/json" }
       });
     }
 
-    const pub = supa.storage.from("docs").getPublicUrl(path).data.publicUrl;
+    const { data } = supa.storage.from("docs").getPublicUrl(path);
+    const url = data?.publicUrl || "";
 
-    return new Response(JSON.stringify({ ok: true, path, url: pub }), {
-      status: 200, headers: { "content-type": "application/json" }
+    return new Response(JSON.stringify({ ok: true, path, url }), {
+      status: 200,
+      headers: { "content-type": "application/json" }
     });
-
   } catch (err) {
     return new Response(JSON.stringify({ ok: false, error: String(err) }), {
       status: 500,
