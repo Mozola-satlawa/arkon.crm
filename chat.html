@@ -1,10 +1,11 @@
+
 <!doctype html>
 <html lang="pl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ARKON • Chat + Moduły (Supabase)</title>
-<meta name="description" content="Wielookienkowy czat + moduły (Umowy, Dokumenty, Zadania, Kalkulator) na Supabase.">
+<title>ARKON • Multi-Chat (Supabase)</title>
+<meta name="description" content="Rozbudowany multi-chat na Supabase: 3 prywatne okna (Królowa, Adrian, Emil) + wspólny, realtime, presence, typing, emoji, załączniki, reakcje, wątki.">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <style>
   :root{
@@ -14,18 +15,16 @@
   *{box-sizing:border-box}
   html,body{height:100%}
   body{margin:0;background:linear-gradient(180deg,#0a0f1e,#0c1230 55%,#0a0f1e);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
-  header{padding:12px 16px;border-bottom:1px solid var(--line);background:#11183a;position:sticky;top:0;z-index:10}
+  header{padding:12px 16px;border-bottom:1px solid var(--line);background:#11183a;position:sticky;top:0;z-index:5}
   h1{margin:0;font-size:20px}
-  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .toprow{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:6px}
   .pill{display:inline-flex;align-items:center;gap:6px;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:12px}
   .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 10px;cursor:pointer}
   .btn.ghost{background:transparent;border:1px dashed #3a4ca3}
-  .btn.bad{background:#42202a;border-color:#7b3341}
-  .btn.ok{background:#194d34;border-color:var(--ok)}
-  .tabbar{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+  .tabbar{display:flex;gap:8px;margin-top:8px}
   .tab{padding:6px 10px;border:1px solid #2b3a77;border-radius:999px;cursor:pointer;font-size:12px;text-decoration:none;color:#cfe1ff}
   .tab.active{background:#14225a}
-  .wrap{padding:12px;max-width:1700px;margin:auto}
+  .wrap{padding:12px;max-width:1600px;margin:auto}
   .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
   .panel{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-height:360px}
   .topbar{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
@@ -45,23 +44,21 @@
   .react{background:#0e184a;border:1px solid #3f57c1;border-radius:999px;padding:2px 6px;font-size:12px;cursor:pointer}
   .children{margin-left:22px;margin-top:6px;border-left:1px dashed #2b3a77;padding-left:10px}
   .composer{border-top:1px solid var(--line);padding:10px;display:grid;grid-template-columns:1fr auto;gap:8px}
-  textarea,input[type="text"],input[type="number"],select{width:100%;background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:9px;color:var(--ink)}
-  .card{background:#0e1740;border:1px solid #2b3a77;border-radius:12px;padding:12px}
-  .table{width:100%;border-collapse:separate;border-spacing:0 6px}
-  .table th{font-size:12px;color:#aeb8da;text-align:left;padding:4px 8px}
-  .tr{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:8px;align-items:center;background:#0d1530;border:1px solid #2b3a77;border-radius:10px;padding:6px 8px;margin:6px 0}
-  .fadepage{opacity:0;transform:translateY(8px);transition:.25s}
-  .fadepage.active{opacity:1;transform:none}
-  @media (max-width:1200px){ .grid{grid-template-columns:1fr} .msgwrap{height:40vh} .tr{grid-template-columns:1fr 1fr 1fr 1fr auto} }
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  textarea,input[type="text"]{width:100%;background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:9px;color:var(--ink)}
+  .hoverable:hover{background:var(--hover)}
+  @media (max-width:1200px){ .grid{grid-template-columns:1fr} .msgwrap{height:40vh} }
 </style>
 </head>
 <body>
 <header>
   <h1>Komunikator • ARKON</h1>
-  <div class="row" style="margin-top:6px">
+  <div class="toprow">
     <span class="pill">Realtime + Presence + Typing</span>
-    <span class="pill">Emoji • Reakcje • Wątki • Załączniki</span>
-    <span class="pill">Supabase</span>
+    <span class="pill">Emoji • Reakcje • Wątki</span>
+    <span class="pill">Załączniki (Supabase Storage)</span>
+    <span class="pill">Edycja/Usuń swoje</span>
+    <span class="pill">Eksport</span>
     <span class="pill">Jestem:
       <select id="meSelect">
         <option>Królowa</option>
@@ -69,27 +66,29 @@
         <option>Emil</option>
       </select>
     </span>
+    <button class="btn ghost" id="btnExport">Eksport JSON</button>
   </div>
   <nav class="tabbar">
     <a class="tab" href="#/chat">💬 Czat</a>
     <a class="tab" href="#/contracts">📄 Umowy</a>
     <a class="tab" href="#/docs">📂 Dokumenty</a>
     <a class="tab" href="#/tasks">✅ Zadania</a>
-    <a class="tab" href="#/calc">🧮 Kalkulator</a>
   </nav>
 </header>
 
 <div class="wrap">
-  <!-- CHAT -->
-  <section id="page-chat" class="fadepage">
+  <!-- STRONA: CHAT -->
+  <section id="page-chat">
     <div class="grid">
       <!-- Panel: Królowa -->
       <div class="panel" id="panel-krolowa">
         <div class="topbar">
           <div class="row"><b>👑 Królowa</b> <span class="meta">pokój: krolowa</span></div>
-          <div class="row"><div class="presence" id="p-krolowa"></div></div>
+          <div class="row">
+            <div class="presence" id="p-krolowa"></div>
+          </div>
         </div>
-        <div class="meta" style="padding:4px 12px" id="t-krolowa"></div>
+        <div class="meta" style="padding: 4px 12px" id="t-krolowa"></div>
         <div class="msgwrap" id="m-krolowa"></div>
         <div class="composer">
           <div class="row" style="width:100%">
@@ -110,7 +109,7 @@
           <div class="row"><b>👤 Adrian</b> <span class="meta">pokój: adrian</span></div>
           <div class="row"><div class="presence" id="p-adrian"></div></div>
         </div>
-        <div class="meta" style="padding:4px 12px" id="t-adrian"></div>
+        <div class="meta" style="padding: 4px 12px" id="t-adrian"></div>
         <div class="msgwrap" id="m-adrian"></div>
         <div class="composer">
           <div class="row" style="width:100%">
@@ -131,7 +130,7 @@
           <div class="row"><b>👤 Emil</b> <span class="meta">pokój: emil</span></div>
           <div class="row"><div class="presence" id="p-emil"></div></div>
         </div>
-        <div class="meta" style="padding:4px 12px" id="t-emil"></div>
+        <div class="meta" style="padding: 4px 12px" id="t-emil"></div>
         <div class="msgwrap" id="m-emil"></div>
         <div class="composer">
           <div class="row" style="width:100%">
@@ -152,7 +151,7 @@
           <div class="row"><b>🌍 Wspólny</b> <span class="meta">pokój: global</span></div>
           <div class="row"><div class="presence" id="p-global"></div></div>
         </div>
-        <div class="meta" style="padding:4px 12px" id="t-global"></div>
+        <div class="meta" style="padding: 4px 12px" id="t-global"></div>
         <div class="msgwrap" id="m-global"></div>
         <div class="composer">
           <div class="row" style="width:100%">
@@ -169,90 +168,23 @@
     </div>
   </section>
 
-  <!-- UMOWY -->
-  <section id="page-contracts" class="fadepage" style="display:none">
-    <div class="panel">
-      <div class="topbar"><b>📄 Umowy</b><span class="meta">CRUD w Supabase</span></div>
-      <div style="padding:12px" class="card">
-        <div class="row" style="margin-bottom:8px">
-          <input id="cTitle" placeholder="Tytuł umowy…">
-          <input id="cAmount" type="number" placeholder="Kwota (PLN)">
-          <select id="cStatus">
-            <option>draft</option><option>sent</option><option>signed</option><option>rejected</option>
-          </select>
-          <button class="btn ok" id="btnAddC">Dodaj</button>
-          <button class="btn ghost" id="btnReloadC">Odśwież</button>
-        </div>
-        <div id="contractsList"></div>
-      </div>
+  <!-- STRONY: placeholdery bez backendu (możesz podpiąć później) -->
+  <section id="page-contracts" style="display:none" class="panel">
+    <div class="topbar"><b>📄 Umowy</b></div>
+    <div style="padding:16px">
+      <p class="meta">Tu wpięte zostaną widoki umów (Supabase / funkcje).</p>
     </div>
   </section>
-
-  <!-- DOKUMENTY -->
-  <section id="page-docs" class="fadepage" style="display:none">
-    <div class="panel">
-      <div class="topbar"><b>📂 Dokumenty</b><span class="meta">Supabase Storage (bucket: docs)</span></div>
-      <div style="padding:12px" class="card">
-        <div class="row" style="margin-bottom:8px">
-          <input type="file" id="docFile">
-          <button class="btn" id="btnUpDoc">Wyślij</button>
-          <button class="btn ghost" id="btnReloadDocs">Odśwież</button>
-        </div>
-        <div id="docsList"></div>
-      </div>
+  <section id="page-docs" style="display:none" class="panel">
+    <div class="topbar"><b>📂 Dokumenty</b></div>
+    <div style="padding:16px">
+      <p class="meta">Tu wpięta będzie lista dokumentów/browse (Supabase Storage).</p>
     </div>
   </section>
-
-  <!-- ZADANIA -->
-  <section id="page-tasks" class="fadepage" style="display:none">
-    <div class="panel">
-      <div class="topbar"><b>✅ Zadania</b><span class="meta">Lista zadań w Supabase</span></div>
-      <div style="padding:12px" class="card">
-        <div class="row" style="margin-bottom:8px">
-          <input id="tTitle" placeholder="Nowe zadanie…">
-          <button class="btn ok" id="btnAddT">Dodaj</button>
-          <button class="btn ghost" id="btnReloadT">Odśwież</button>
-        </div>
-        <div id="tasksList"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- KALKULATOR -->
-  <section id="page-calc" class="fadepage" style="display:none">
-    <div class="panel">
-      <div class="topbar"><b>🧮 Kalkulator</b><span class="meta">Raty • VAT • Procent</span></div>
-      <div style="padding:12px" class="card">
-        <h3>Raty (annuitet)</h3>
-        <div class="row" style="margin-bottom:8px">
-          <input id="kKwota" type="number" placeholder="Kwota (PLN)" value="10000">
-          <input id="kOprocent" type="number" placeholder="Oprocentowanie roczne (%)" value="9">
-          <input id="kOkres" type="number" placeholder="Okres (miesięcy)" value="24">
-          <button class="btn" id="btnRat">Oblicz</button>
-        </div>
-        <div id="ratOut" class="meta"></div>
-      </div>
-
-      <div style="padding:12px" class="card">
-        <h3>VAT netto ↔ brutto</h3>
-        <div class="row" style="margin-bottom:8px">
-          <input id="vKwota" type="number" placeholder="Kwota" value="1230">
-          <select id="vStawka"><option value="23">23%</option><option value="8">8%</option><option value="5">5%</option><option value="0">0%</option></select>
-          <select id="vTryb"><option value="nb">netto → brutto</option><option value="bn">brutto → netto</option></select>
-          <button class="btn" id="btnVat">Policz</button>
-        </div>
-        <div id="vatOut" class="meta"></div>
-      </div>
-
-      <div style="padding:12px" class="card">
-        <h3>Szybki procent</h3>
-        <div class="row" style="margin-bottom:8px">
-          <input id="pBase" type="number" placeholder="Podstawa" value="5000">
-          <input id="pPct" type="number" placeholder="% (np. 12)" value="12">
-          <button class="btn" id="btnPct">Policz</button>
-        </div>
-        <div id="pctOut" class="meta"></div>
-      </div>
+  <section id="page-tasks" style="display:none" class="panel">
+    <div class="topbar"><b>✅ Zadania</b></div>
+    <div style="padding:16px">
+      <p class="meta">Tu wpięty zostanie prosty TODO (Supabase).</p>
     </div>
   </section>
 </div>
@@ -262,59 +194,60 @@
 <script>
 'use strict';
 
-/*** KONFIG SUPABASE — USTAW SWOJE ***/
+/*** KONFIG SUPABASE — WSTAW SWOJE ***/
 const SB_URL = 'https://phxxjirqlktzcwnygaha.supabase.co';
 const SB_KEY = 'sb_publishable_iOXdu9fUGGko3MqPmltAag_ZbPUxp4r';
 const supa = supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession:false } });
 
 /*** UTIL ***/
 const $ = s => document.querySelector(s);
-const el = (t,a={}) => Object.assign(document.createElement(t), a);
-const INT = new Intl.DateTimeFormat('pl-PL',{dateStyle:'short', timeStyle:'short'});
+const el = (tag, attrs={}) => Object.assign(document.createElement(tag), attrs);
+const INT = new Intl.DateTimeFormat('pl-PL', { dateStyle:'short', timeStyle:'short' });
 const linkify = t => (t||'').replace(/(https?:\/\/\S+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
 const EMOJI = '😀😁😂🤣😊😉😍😘😎🤩🥰😇🤓🤠🫶👍👏🔥✨🎉🎯🚀🔧💡📎📷🖨📁✅❗❌🤝📝💬🔗📌🕒'.split('');
 
-/*** ROUTER (hash) + animacje ***/
+/*** ROUTING (górne zakładki) ***/
 function route(){
   const hash = location.hash || '#/chat';
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.getAttribute('href')===hash));
-  const pages = ['chat','contracts','docs','tasks','calc'];
-  pages.forEach(id=>{
-    const pg = $('#page-'+id);
-    const show = (hash==='#/'+id);
-    if(show){ pg.style.display='block'; requestAnimationFrame(()=>pg.classList.add('active')); }
-    else{ pg.classList.remove('active'); pg.style.display='none'; }
+  ['chat','contracts','docs','tasks'].forEach(id=>{
+    $('#page-'+id).style.display = (hash==='#/'+id) ? 'block' : 'none';
   });
 }
 window.addEventListener('hashchange', route); route();
 
-/*** „Jestem” ***/
+/*** GLOBAL „Jestem” ***/
 const meSelect = $('#meSelect');
 meSelect.value = localStorage.getItem('me_name') || meSelect.value;
 meSelect.addEventListener('change', ()=>localStorage.setItem('me_name', meSelect.value));
 
-/*** POKOJE ***/
+/*** MODEL: 4 pokoje */
 const ROOMS = ['krolowa','adrian','emil','global'];
+
+/*** Stan per pokój */
 const state = {};
 ROOMS.forEach(r=>{
   state[r] = {
     me: ()=> localStorage.getItem('me_name') || 'Królowa',
     msgs: [],
     cache: new Map(),
-    sub: null, presChan: null,
-    typingSet: new Set(), typingTimer:null, typingViewTimer:null,
-    oldestCursor: null
+    oldestCursor: null,
+    sub: null,
+    presChan: null,
+    typingSet: new Set(),
+    typingTimer: null,
+    typingViewTimer: null
   };
 });
 
-/*** WIDOKI WIADOMOŚCI ***/
+/*** Render jednej wiadomości (z wątkami/reakcjami) ***/
 function fileChip(url){
   if(!url) return '';
   const name = url.split('/').pop();
   const isImg = /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name);
   return <a class="file" href="${url}" target="_blank">📎 ${name}</a>${isImg?<div style="margin-top:6px"><img src="${url}" alt="" style="max-width:260px;border:1px solid #2b3a77;border-radius:10px"></div>:''};
 }
-function reactBadge(emo,c){ return <span class="react" data-emo="${emo}">${emo} ${c}</span>; }
+function reactBadge(emo,count){ return <span class="react" data-emo="${emo}">${emo} ${count}</span>; }
 function bubbleHtml(room, m, children=[]){
   const me = (m.author === state[room].me());
   const reacts = (m.reactions && typeof m.reactions==='object') ? Object.entries(m.reactions).filter(([,v])=>v>0) : [];
@@ -329,8 +262,8 @@ function bubbleHtml(room, m, children=[]){
         <button class="btn ghost" onclick="reactMsg('${room}','${m.id}','👍')">👍</button>
         <button class="btn ghost" onclick="reactMsg('${room}','${m.id}','❤')">❤</button>
         <button class="btn ghost" onclick="reactMsg('${room}','${m.id}','🔥')">🔥</button>
-        ${me && !m.deleted_at ? `<button class="btn ghost" onclick="editMsg('${room}','${m.id}')">✎</button>
-        <button class="btn ghost bad" onclick="deleteMsg('${room}','${m.id}')">🗑</button>`:''}
+        ${me && !m.deleted_at ? `<button class="btn ghost" onclick="editMsg('${room}','${m.id}')">✎ Edytuj</button>
+        <button class="btn ghost" onclick="deleteMsg('${room}','${m.id}')">🗑 Usuń</button>`:''}
         <span class="meta" style="margin-left:auto">${INT.format(new Date(m.created_at))} ${me?'<span title="lokalne ✓✓">✓✓</span>':''}${m.edited_at?' • ed.':''}</span>
       </div>
       ${reacts.length? <div class="reactions">${reacts.map(([e,c])=>reactBadge(e,c)).join(' ')}</div>:''}
@@ -338,9 +271,12 @@ function bubbleHtml(room, m, children=[]){
     </div>
   </div>`;
 }
+
+/*** Render listy (z dzieleniem na dni) ***/
 function renderRoom(room, scrollBottom=true){
   const box = $('#m-'+room);
   const arr = state[room].msgs;
+  // indeks dzieci
   const kids = new Map();
   arr.forEach(m=>{ if(m.parent_id){ (kids.get(m.parent_id)||kids.set(m.parent_id,[]).get(m.parent_id)).push(m); } });
   let out=[], lastDay='';
@@ -353,92 +289,120 @@ function renderRoom(room, scrollBottom=true){
   if(scrollBottom) box.scrollTop = box.scrollHeight;
 }
 
-/*** HISTORIA / SUBSKRYPCJE ***/
+/*** Ładowanie historii ***/
 async function loadInitial(room){
   const { data, error } = await supa.from('messages')
-    .select('*').eq('room_id', room)
+    .select('*')
+    .eq('room_id', room)
     .order('created_at',{ascending:true})
-    .limit(100);
+    .limit(80);
   if(error){ console.error(room, error); return; }
   state[room].msgs = data||[];
   if(state[room].msgs.length) state[room].oldestCursor = state[room].msgs[0].created_at;
   state[room].msgs.forEach(m=>state[room].cache.set(m.id,m));
-  renderRoom(room,true);
+  renderRoom(room, true);
 }
+
+/*** SUB: realtime + updates ***/
 async function subscribeRoom(room){
   if(state[room].sub){ try{ await supa.removeChannel(state[room].sub);}catch{} }
   state[room].sub = supa.channel('room:'+room)
-    .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:room_id=eq.${room}}, p=>{
-      state[room].msgs.push(p.new); state[room].cache.set(p.new.id,p.new); renderRoom(room,true); ding();
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:room_id=eq.${room}}, (p)=>{
+      state[room].msgs.push(p.new);
+      state[room].cache.set(p.new.id,p.new);
+      renderRoom(room,true); ding();
     })
-    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'messages',filter:room_id=eq.${room}}, p=>{
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'messages',filter:room_id=eq.${room}}, (p)=>{
       const m=p.new; const idx=state[room].msgs.findIndex(x=>x.id===m.id);
       if(idx>-1){ state[room].msgs[idx]=m; state[room].cache.set(m.id,m); renderRoom(room,false); }
     })
-    .subscribe(s=>{ $('#t-'+room).textContent = (s==='SUBSCRIBED') ? 'podłączono' : '…'+s.toLowerCase(); });
+    .subscribe((status)=>{
+      $('#t-'+room).textContent = (status==='SUBSCRIBED') ? 'podłączono' : '…'+status.toLowerCase();
+    });
 }
+
+/*** PRESENCE + TYPING ***/
 async function joinPresence(room){
   if(state[room].presChan){ try{ await supa.removeChannel(state[room].presChan);}catch{} }
   const chan = supa.channel('presence:'+room, { config:{ presence:{ key: state[room].me() } } });
   state[room].presChan = chan;
+
   chan.on('presence',{event:'sync'}, ()=>{
     const names = Object.keys(chan.presenceState());
     $('#p-'+room).innerHTML = names.map(n=><span class="pill"><span class="dot"></span>${n}</span>).join('');
   });
   chan.on('broadcast',{event:'typing'}, ({payload})=>{
-    const set = state[room].typingSet; if(payload.on) set.add(payload.user); else set.delete(payload.user);
+    const set = state[room].typingSet;
+    if(payload.on) set.add(payload.user); else set.delete(payload.user);
     const list=[...set].filter(n=>n!==state[room].me());
     $('#t-'+room).textContent = list.length ? (list.join(', ')+' pisze…') : '';
     clearTimeout(state[room].typingViewTimer);
     state[room].typingViewTimer = setTimeout(()=>{ set.clear(); $('#t-'+room).textContent=''; }, 2500);
   });
-  chan.subscribe(s=>{ if(s==='SUBSCRIBED') chan.track({ user: state[room].me(), at: Date.now() }); });
+
+  chan.subscribe(s=>{
+    if(s==='SUBSCRIBED') chan.track({ user: state[room].me(), at: Date.now() });
+  });
 }
-function sendTyping(room,on){
-  try{ state[room].presChan?.send({ type:'broadcast', event:'typing', payload:{ user: state[room].me(), on } }); }catch{}
+function sendTyping(room, on){
+  try{
+    state[room].presChan?.send({ type:'broadcast', event:'typing', payload:{ user: state[room].me(), on } });
+  }catch{}
 }
 
-/*** AKCJE WIADOMOŚCI ***/
+/*** Wysyłanie, odpowiedzi, reakcje, edycja, usuwanie ***/
 const replyTo = { krolowa:null, adrian:null, emil:null, global:null };
+
 async function sendMsg(room){
   const ta = $('#i-'+room);
   let text = (ta.value||'').trim();
-  const fileUrl = ta.dataset.fileurl || null;
-  if(!text && !fileUrl) return;
-  const payload = { room_id:room, author:state[room].me(), body:text, file_url:fileUrl, parent_id:replyTo[room] };
+  if(!text && !ta.dataset.fileurl) return;
+  const payload = {
+    room_id: room,
+    author: state[room].me(),
+    body: text || '',
+    file_url: ta.dataset.fileurl || null,
+    parent_id: replyTo[room]
+  };
   const { error } = await supa.from('messages').insert([payload]);
   if(error){ alert(error.message); return; }
-  ta.value=''; ta.dataset.fileurl=''; replyTo[room]=null; sendTyping(room,false);
+  ta.value=''; ta.dataset.fileurl=''; replyTo[room]=null;
+  sendTyping(room,false);
 }
-function startReply(room,id){
-  replyTo[room]=id;
+
+function startReply(room, id){
+  replyTo[room] = id;
   const m = state[room].cache.get(id);
   const ta = $('#i-'+room);
   const prev = ↪ ${m?.author||'—'}: ${(m?.body||'').slice(0,60)};
-  ta.value = (prev+'\n'+ta.value).trim() + ' '; ta.focus();
+  ta.value = (prev+'\n'+ta.value).trim() + ' ';
+  ta.focus();
 }
-async function reactMsg(room,id,emo){
+
+async function reactMsg(room, id, emo){
   try{
     const m = state[room].cache.get(id) || (await supa.from('messages').select('*').eq('id',id).single()).data;
     const r = m.reactions || {}; r[emo]=(r[emo]||0)+1;
     await supa.from('messages').update({ reactions:r }).eq('id', id);
   }catch(e){ console.error(e); }
 }
-async function editMsg(room,id){
+
+async function editMsg(room, id){
   const m = state[room].cache.get(id); if(!m || m.author!==state[room].me() || m.deleted_at) return;
   const t = prompt('Edytuj:', m.body||''); if(t==null) return;
   const { error } = await supa.from('messages').update({ body:t, edited_at:new Date().toISOString() }).eq('id', id);
   if(error) alert(error.message);
 }
-async function deleteMsg(room,id){
+
+async function deleteMsg(room, id){
   const m = state[room].cache.get(id); if(!m || m.author!==state[room].me() || m.deleted_at) return;
   if(!confirm('Usunąć wiadomość?')) return;
   const { error } = await supa.from('messages').update({ deleted_at:new Date().toISOString(), body:'[usunięto]' }).eq('id', id);
   if(error) alert(error.message);
 }
 
-/*** EMOJI + ZAŁĄCZNIKI ***/
-const pickers = {};
+/*** Emoji picker per pokój ***/
+let pickers = {};
 function toggleEmoji(room){
   if(pickers[room]){ document.body.removeChild(pickers[room]); delete pickers[room]; return; }
   const p = el('div'); p.style.position='fixed'; p.style.right='24px'; p.style.bottom='120px'; p.style.zIndex=10;
@@ -449,19 +413,21 @@ function toggleEmoji(room){
   });
   document.body.appendChild(p); pickers[room]=p;
 }
+
+/*** Załączniki (Supabase Storage) ***/
 function browseFile(room){ $('#f-'+room).click(); }
 ROOMS.forEach(room=>{
   $('#f-'+room).addEventListener('change', async (e)=>{
     const f = e.target.files[0]; if(!f) return;
     try{
-      // Storage: chat (public)
       const path = ${room}/${Date.now()}_${f.name};
       const up = await supa.storage.from('chat').upload(path, f, { upsert:false });
       if(up.error) throw up.error;
       const pub = supa.storage.from('chat').getPublicUrl(path);
       $('#i-'+room).dataset.fileurl = pub.data.publicUrl;
+      const name = f.name;
       const ta = $('#i-'+room);
-      ta.value = (ta.value? ta.value+'\n' : '') + `[załącznik: ${f.name}] `;
+      ta.value = (ta.value? ta.value+'\n' : '') + `[załącznik: ${name}] `;
       ta.focus();
     }catch(err){
       if(f.size <= 1024*1024){
@@ -475,171 +441,41 @@ ROOMS.forEach(room=>{
     e.target.value='';
   });
 });
+
+/*** Input zdarzenia (Enter, typing) ***/
 ROOMS.forEach(room=>{
-  const ta=$('#i-'+room);
-  ta.addEventListener('input', ()=>{ clearTimeout(state[room].typingTimer); sendTyping(room,true); state[room].typingTimer=setTimeout(()=>sendTyping(room,false),1200); });
-  ta.addEventListener('keydown', e=>{ if(e.key==='Enter' && (e.ctrlKey||e.metaKey)){ e.preventDefault(); sendMsg(room); } });
+  const ta = $('#i-'+room);
+  ta.addEventListener('input', ()=>{
+    clearTimeout(state[room].typingTimer);
+    sendTyping(room,true);
+    state[room].typingTimer = setTimeout(()=>sendTyping(room,false), 1200);
+  });
+  ta.addEventListener('keydown', (e)=>{
+    if(e.key==='Enter' && (e.ctrlKey||e.metaKey)){ e.preventDefault(); sendMsg(room); }
+  });
 });
 
-/*** DŹWIĘK ***/
+/*** Eksport (wszystko) ***/
+$('#btnExport').addEventListener('click', async ()=>{
+  const all = {};
+  for(const r of ROOMS){
+    const { data } = await supa.from('messages').select('*').eq('room_id', r).order('created_at',{ascending:true}).limit(1000);
+    all[r] = data||[];
+  }
+  const a=el('a',{href:URL.createObjectURL(new Blob([JSON.stringify(all,null,2)],{type:'application/json'})),download:'chat-export.json'}); a.click();
+});
+
+/*** Dźwięk ***/
 function ding(){ try{ new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABYAAAABAACAgICAAAAA').play(); }catch{} }
 
-/*** UMOWY (Supabase) ***/
-async function loadContracts(){
-  const { data, error } = await supa.from('contracts').select('*').order('created_at',{ascending:false}).limit(200);
-  if(error){ alert(error.message); return; }
-  const box = $('#contractsList');
-  box.innerHTML = '';
-  const hdr = <div class="tr" style="opacity:.7"><div><b>Tytuł</b></div><div><b>Kwota</b></div><div><b>Status</b></div><div><b>Data</b></div><div></div></div>;
-  box.insertAdjacentHTML('beforeend', hdr);
-  (data||[]).forEach(c=>{
-    const row = el('div',{className:'tr'});
-    row.innerHTML = `
-      <div>${c.title}</div>
-      <div>${c.amount ?? '—'}</div>
-      <div>${c.status}</div>
-      <div>${INT.format(new Date(c.created_at))}</div>
-      <div class="row">
-        <button class="btn ghost" onclick="updContract('${c.id}','signed')">✔</button>
-        <button class="btn ghost" onclick="updContract('${c.id}','rejected')">✖</button>
-        <button class="btn ghost bad" onclick="delContract('${c.id}')">🗑</button>
-      </div>`;
-    box.appendChild(row);
-  });
-}
-async function addContract(){
-  const title = ($('#cTitle').value||'').trim(); if(!title) return;
-  const amount = parseFloat($('#cAmount').value||'') || null;
-  const status = $('#cStatus').value || 'draft';
-  const { error } = await supa.from('contracts').insert([{ title, amount, status }]);
-  if(error){ alert(error.message); return; }
-  $('#cTitle').value=''; $('#cAmount').value='';
-  await loadContracts();
-}
-async function updContract(id,status){
-  const { error } = await supa.from('contracts').update({ status }).eq('id', id);
-  if(error) alert(error.message); else loadContracts();
-}
-async function delContract(id){
-  if(!confirm('Usunąć umowę?')) return;
-  const { error } = await supa.from('contracts').delete().eq('id', id);
-  if(error) alert(error.message); else loadContracts();
-}
-$('#btnAddC').addEventListener('click', addContract);
-$('#btnReloadC').addEventListener('click', loadContracts);
-
-/*** DOKUMENTY (Storage bucket: docs) ***/
-async function loadDocs(){
-  const { data, error } = await supa.storage.from('docs').list('', { limit: 100, offset: 0, sortBy: { column:'name', order:'asc' } });
-  if(error){ alert(error.message); return; }
-  const box=$('#docsList'); box.innerHTML='';
-  (data||[]).forEach(it=>{
-    const url = supa.storage.from('docs').getPublicUrl(it.name).data.publicUrl;
-    const row = el('div',{className:'row', style:'margin:6px 0'});
-    row.innerHTML = `<a class="pill" href="${url}" target="_blank">📄 ${it.name}</a>
-      <button class="btn ghost bad" onclick="delDoc('${it.name}')">🗑</button>`;
-    box.appendChild(row);
-  });
-}
-async function uploadDoc(){
-  const f = $('#docFile').files[0]; if(!f) return;
-  const path = ${Date.now()}_${f.name};
-  const up = await supa.storage.from('docs').upload(path, f, { upsert:false });
-  if(up.error){ alert(up.error.message); return; }
-  $('#docFile').value=''; loadDocs();
-}
-async function delDoc(name){
-  if(!confirm('Usunąć dokument?')) return;
-  const { error } = await supa.storage.from('docs').remove([name]);
-  if(error) alert(error.message); else loadDocs();
-}
-$('#btnUpDoc').addEventListener('click', uploadDoc);
-$('#btnReloadDocs').addEventListener('click', loadDocs);
-
-/*** ZADANIA (Supabase) ***/
-async function loadTasks(){
-  const { data, error } = await supa.from('tasks').select('*').order('created_at',{ascending:false}).limit(200);
-  if(error){ alert(error.message); return; }
-  const box=$('#tasksList'); box.innerHTML='';
-  (data||[]).forEach(t=>{
-    const row = el('div',{className:'row', style:'margin:6px 0'});
-    row.innerHTML = `
-      <label class="pill" style="cursor:pointer">
-        <input type="checkbox" ${t.done?'checked':''} onchange="toggleTask('${t.id}', this.checked)" style="margin-right:8px">
-        ${t.title}
-      </label>
-      <span class="meta">${INT.format(new Date(t.created_at))}</span>
-      <button class="btn ghost bad" onclick="delTask('${t.id}')">🗑</button>`;
-    box.appendChild(row);
-  });
-}
-async function addTask(){
-  const title = ($('#tTitle').value||'').trim(); if(!title) return;
-  const { error } = await supa.from('tasks').insert([{ title }]);
-  if(error){ alert(error.message); return; }
-  $('#tTitle').value=''; loadTasks();
-}
-async function toggleTask(id,done){
-  const { error } = await supa.from('tasks').update({ done }).eq('id', id);
-  if(error) alert(error.message);
-}
-async function delTask(id){
-  if(!confirm('Usunąć zadanie?')) return;
-  const { error } = await supa.from('tasks').delete().eq('id', id);
-  if(error) alert(error.message); else loadTasks();
-}
-$('#btnAddT').addEventListener('click', addTask);
-$('#btnReloadT').addEventListener('click', loadTasks);
-
-/*** KALKULATORY ***/
-function obliczRaty(){
-  const K = parseFloat($('#kKwota').value||0);
-  const r = (parseFloat($('#kOprocent').value||0) / 100) / 12;
-  const n = parseInt($('#kOkres').value||0,10);
-  if(K<=0 || n<=0){ $('#ratOut').textContent='Podaj kwotę i okres'; return; }
-  const R = r>0 ? (K * r) / (1 - Math.pow(1+r, -n)) : (K / n);
-  $('#ratOut').textContent = Rata: ${R.toFixed(2)} PLN • Łącznie: ${(R*n).toFixed(2)} PLN;
-}
-function obliczVAT(){
-  const kw = parseFloat($('#vKwota').value||0);
-  const st = parseFloat($('#vStawka').value||0)/100;
-  const tryb = $('#vTryb').value;
-  if(kw<=0){ $('#vatOut').textContent='Podaj kwotę'; return; }
-  if(tryb==='nb'){
-    const brutto = kw*(1+st);
-    $('#vatOut').textContent = Brutto: ${brutto.toFixed(2)} PLN (VAT ${(brutto-kw).toFixed(2)});
-  }else{
-    const netto = kw/(1+st);
-    $('#vatOut').textContent = Netto: ${netto.toFixed(2)} PLN (VAT ${(kw-netto).toFixed(2)});
-  }
-}
-function obliczPct(){
-  const base = parseFloat($('#pBase').value||0);
-  const pct  = parseFloat($('#pPct').value||0)/100;
-  if(base<=0){ $('#pctOut').textContent='Podaj podstawę'; return; }
-  $('#pctOut').textContent = ${(pct*100).toFixed(2)}% z ${base.toFixed(2)} = ${(base*pct).toFixed(2)} PLN;
-}
-$('#btnRat').addEventListener('click', obliczRaty);
-$('#btnVat').addEventListener('click', obliczVAT);
-$('#btnPct').addEventListener('click', obliczPct);
-
-/*** INIT: odpal 4 pokoje + wczytaj moduły przy wejściu na stronę ***/
+/*** INIT: dla 4 pokoi równolegle ***/
 (async function init(){
   for(const r of ROOMS){
     await loadInitial(r);
     await subscribeRoom(r);
     await joinPresence(r);
   }
-  // wczytaj dane list przy wejściu w zakładkę
-  if(location.hash==='#/contracts') loadContracts();
-  if(location.hash==='#/docs') loadDocs();
-  if(location.hash==='#/tasks') loadTasks();
 })();
-window.addEventListener('hashchange', ()=>{
-  if(location.hash==='#/contracts') loadContracts();
-  if(location.hash==='#/docs') loadDocs();
-  if(location.hash==='#/tasks') loadTasks();
-});
 </script>
 </body>
 </html>
