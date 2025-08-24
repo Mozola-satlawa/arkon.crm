@@ -1,0 +1,10 @@
+{
+  "name": "arkon-netlify-blobs",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@netlify/blobs": "^6.4.1",
+    "busboy": "^1.6.0"
+  }
+}
