@@ -1,3 +1,8 @@
+import { EventEmitter } from "events";
+
+// zwiększamy globalny limit listenerów
+EventEmitter.defaultMaxListeners = 50;
+
 export default async () => {
   return new Response(
     JSON.stringify({
