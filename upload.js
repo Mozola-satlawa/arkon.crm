@@ -29,7 +29,7 @@ async function readIndex(store) {
     return [];
   }
 }
-
+<script src="upload.js"></script>
 // Zapis indexu
 async function writeIndex(store, list) {
   const body = JSON.stringify(list, null, 2);
@@ -134,3 +134,4 @@ function json(obj, code = 200) {
 }
 function bad(msg)     { return json({ ok: false, error: msg }, 400); }
 function notFound(m)  { return json({ ok: false, error: m || 'Not found' }, 404); }
+
