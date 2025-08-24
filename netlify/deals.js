@@ -1,12 +1,6 @@
-import { neon } from '@netlify/neon'
-const sql = neon()
+import { neon } from '@neondatabase/serverless'
+const sql = neon(process.env.NETLIFY_DATABASE_URL)
 
-/**
- * GET    /.netlify/functions/deals?clientId=<uuid>  -> list deals for client
- * POST   JSON: { clientId, title, status, value_numeric }
- * PATCH  JSON: { id, title?, status?, value_numeric? }
- * DELETE JSON: { id }
- */
 export async function handler(event) {
   try {
     if (event.httpMethod === 'GET') {
