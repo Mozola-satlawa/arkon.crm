@@ -3,136 +3,169 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ARKON — Komunikator (Supabase)</title>
-<meta name="description" content="Lekki komunikator ARKON z Supabase: pokoje, konta, wiadomości, realtime, presence, załączniki, emoji, eksport.">
+<title>ARKON • Sypasny Komunikator</title>
+<meta name="description" content="Rozbudowany komunikator ARKON na Supabase: prywatne pokoje, realtime, presence, typing, emoji, reakcje, załączniki, wątki, eksport, router.">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <style>
   :root{
     --bg:#0b1020; --p1:#101736; --p2:#0f1a44; --ink:#e8edff; --muted:#aeb8da; --accent:#4cc9f0;
-    --ok:#2b8a57; --bad:#ff6b6b; --line:#253166; --chip:#162357; --card:#0f1533;
+    --ok:#2b8a57; --bad:#ff6b6b; --line:#253166; --chip:#162357; --card:#0f1533; --hover:#172152;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
   body{margin:0;background:linear-gradient(180deg,#0a0f1e,#0c1230 55%,#0a0f1e);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
-  a{color:#cfe1ff;text-decoration:none}
-  header{padding:12px 16px;border-bottom:1px solid var(--line);background:#11183a}
+  header{padding:12px 16px;border-bottom:1px solid var(--line);background:#11183a;position:sticky;top:0;z-index:5}
   h1{margin:0;font-size:20px}
-  .wrap{display:grid;grid-template-columns:280px 1fr;gap:12px;height:calc(100% - 58px);padding:12px;max-width:1400px;margin:auto}
+  .wrap{display:grid;grid-template-columns:300px 1fr;gap:12px;height:calc(100% - 58px);padding:12px;max-width:1500px;margin:auto}
   .panel{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;overflow:hidden}
   .left{display:flex;flex-direction:column}
   .section{padding:10px;border-bottom:1px solid var(--line)}
-  .list{overflow:auto;min-height:150px;max-height:40vh}
-  .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:12px}
+  .list{overflow:auto;min-height:120px;max-height:38vh}
   .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  input,select,button,textarea{font:500 14px/1.2 system-ui,Segoe UI,Roboto,Arial;color:var(--ink)}
-  input,select,textarea{width:100%;background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:9px}
-  button{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:9px 12px;cursor:pointer}
-  button.ghost{background:transparent;border:1px dashed #3a4ca3}
-  button.ok{background:#194d34;border-color:var(--ok)}
-  button.bad{background:#42202a;border-color:#7b3341}
-  .msg-wrap{height:calc(100% - 170px);overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
-  .msg{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:flex-start}
-  .bubble{background:linear-gradient(180deg,#111a3c,#0f1a44);border:1px solid #2a3a75;border-radius:12px;padding:8px 10px;max-width:920px;word-break:break-word}
-  .bubble.me{background:#16204d;border-color:#3d58c1}
-  .meta{font-size:11px;color:#aeb8da}
-  .composer{border-top:1px solid var(--line);padding:10px;display:grid;grid-template-columns:1fr auto;gap:8px}
-  .emoji{cursor:pointer}
-  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-  .online{display:flex;gap:6px;flex-wrap:wrap}
-  .dot{width:8px;height:8px;border-radius:50%;background:#4ade80;display:inline-block;margin-right:6px}
-  .system{opacity:.7;font-style:italic}
-  .file{display:inline-flex;gap:6px;align-items:center;padding:3px 6px;border:1px dashed #3a4ca3;border-radius:8px}
-  .divider{display:flex;align-items:center;gap:10px;margin:12px 0}
-  .divider span{font-size:12px;color:#aeb8da}
-  .divider::before,.divider::after{content:"";height:1px;background:#223160;flex:1}
-  .badge{display:inline-block;padding:1px 6px;border:1px solid #5672d1;border-radius:999px;font-size:10px;background:#0e184a;color:#cfe1ff}
+  .pill{display:inline-flex;align-items:center;gap:6px;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:12px}
+  .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:9px 12px;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px dashed #3a4ca3}
+  .btn.ok{background:#194d34;border-color:var(--ok)}
+  .btn.bad{background:#42202a;border-color:#7b3341}
+  input,select,textarea{width:100%;background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:9px;color:var(--ink)}
   .topbar{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
-  @media(max-width:980px){ .wrap{grid-template-columns:1fr} .msg-wrap{height:50vh} }
+  .meta{font-size:11px;color:#aeb8da}
+  .badge{display:inline-block;padding:1px 6px;border:1px solid #5672d1;border-radius:999px;font-size:10px;background:#0e184a;color:#cfe1ff}
+  .msg-wrap{height:calc(100% - 200px);overflow:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+  .day{display:flex;align-items:center;gap:10px;margin:2px 0}
+  .day::before,.day::after{content:"";height:1px;background:#223160;flex:1}
+  .msg{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:flex-start}
+  .bubble{background:linear-gradient(180deg,#111a3c,#0f1a44);border:1px solid #2a3a75;border-radius:12px;padding:8px 10px;max-width:980px;word-break:break-word}
+  .bubble.me{background:#16204d;border-color:#3d58c1}
+  .bubble .tools{display:flex;gap:6px;opacity:.85;margin-top:4px}
+  .bubble .tools .btn-icon{background:transparent;border:1px solid #2d3e86;border-radius:8px;padding:2px 6px;cursor:pointer}
+  .bubble .file{display:inline-flex;gap:6px;align-items:center;padding:3px 6px;border:1px dashed #3a4ca3;border-radius:8px;margin-top:4px}
+  .reactions{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap}
+  .react{background:#0e184a;border:1px solid #3f57c1;border-radius:999px;padding:2px 6px;font-size:12px;cursor:pointer}
+  .children{margin-left:22px;margin-top:6px;border-left:1px dashed #2b3a77;padding-left:10px}
+  .composer{border-top:1px solid var(--line);padding:10px;display:grid;grid-template-columns:1fr auto;gap:8px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .tabbar{display:flex;gap:8px}
+  .tab{padding:6px 10px;border:1px solid #2b3a77;border-radius:999px;cursor:pointer;font-size:12px}
+  .tab.active{background:#14225a}
+  .typing{font-size:12px;color:#9cc3ff}
+  .presence{display:flex;gap:6px;flex-wrap:wrap}
+  .dot{width:8px;height:8px;border-radius:50%;background:#4ade80;display:inline-block}
+  .search{display:grid;grid-template-columns:1fr auto;gap:6px}
+  .loadmore{padding:8px 10px;text-align:center;border:1px dashed #2b3a77;border-radius:10px;cursor:pointer;background:#0d1530}
+  .hoverable:hover{background:var(--hover)}
+  @media(max-width:1060px){ .wrap{grid-template-columns:1fr} .msg-wrap{height:50vh} }
 </style>
 </head>
 <body>
 <header>
-  <h1>Komunikator • ARKON</h1>
-  <div class="row" style="margin-top:4px">
-    <span class="pill">Realtime + Presence</span>
-    <span class="pill">Emoji & Załączniki</span>
-    <span class="pill">Eksport/Druk</span>
+  <h1 style="display:flex;align-items:center;gap:10px;margin-bottom:6px">Komunikator • ARKON <span class="badge">Supabase</span></h1>
+  <div class="tabbar">
+    <a class="tab" href="#/chat">💬 Czat</a>
+    <a class="tab" href="#/contracts">📄 Umowy</a>
+    <a class="tab" href="#/docs">📂 Dokumenty</a>
+    <a class="tab" href="#/tasks">✅ Zadania</a>
   </div>
 </header>
 
 <div class="wrap">
-  <!-- LEWY PANEL: konta, pokoje, ustawienia -->
-  <aside class="panel left">
-    <div class="topbar">
-      <div class="row">
-        <span class="badge">Supabase</span>
-        <span id="conn" class="meta">łączenie…</span>
-      </div>
-      <div class="row">
-        <button id="btnReload" class="ghost" title="Odśwież listy">⟳</button>
+  <!-- LEWY PANEL -->
+  <aside class="panel left" id="left">
+    <div class="section">
+      <div class="meta">Pokoje prywatne</div>
+      <div class="row" style="margin-top:6px">
+        <button class="btn ghost" onclick="setRoom('krolowa')">👑 Królowa</button>
+        <button class="btn ghost" onclick="setRoom('adrian')">👤 Adrian</button>
+        <button class="btn ghost" onclick="setRoom('emil')">👤 Emil</button>
+        <button class="btn ghost" onclick="setRoom('global')">🌍 Wspólny</button>
       </div>
     </div>
 
     <div class="section">
-      <div class="meta">Konto (workspace)</div>
-      <div class="row" style="margin-top:6px">
-        <select id="selAccount"></select>
-        <button id="btnAddAcc" class="ghost">+ Konto</button>
+      <div class="meta">Wyszukiwanie</div>
+      <div class="search" style="margin-top:6px">
+        <input id="q" placeholder="fraza… (Enter)" />
+        <button class="btn ghost" onclick="searchMessages()">Szukaj</button>
       </div>
-      <div id="accList" class="list"></div>
-    </div>
-
-    <div class="section">
-      <div class="meta">Pokoje</div>
       <div class="row" style="margin-top:6px">
-        <select id="selRoom"></select>
-        <button id="btnAddRoom" class="ghost">+ Pokój</button>
+        <select id="authorFilter" style="flex:1">
+          <option value="">— Autor —</option>
+          <option>Królowa</option><option>Adrian</option><option>Emil</option><option>Pracownik</option>
+        </select>
+        <button class="btn ghost" onclick="clearSearch()">Wyczyść</button>
       </div>
-      <div id="roomList" class="list"></div>
     </div>
 
     <div class="section">
       <div class="meta">Online w pokoju</div>
-      <div id="presence" class="online" style="margin-top:6px"></div>
+      <div id="presence" class="presence" style="margin-top:6px"></div>
+      <div id="typing" class="typing" style="margin-top:4px"></div>
     </div>
 
     <div class="section">
       <div class="meta">Eksport</div>
       <div class="row" style="margin-top:6px">
-        <button id="btnCSV" class="ghost">CSV</button>
-        <button id="btnJSON" class="ghost">JSON</button>
-        <button id="btnPrint" class="ghost">Drukuj</button>
+        <button class="btn ghost" onclick="exportCSV()">CSV</button>
+        <button class="btn ghost" onclick="exportJSON()">JSON</button>
+        <button class="btn ghost" onclick="window.print()">Drukuj</button>
       </div>
+    </div>
+
+    <div class="section">
+      <div class="meta">Ja</div>
+      <div class="row" style="margin-top:6px">
+        <span class="pill">Podpis: <b id="meName">—</b></span>
+        <button class="btn ghost" id="btnName">✎ Zmień</button>
+      </div>
+      <div class="meta" id="conn" style="margin-top:6px">łączenie…</div>
     </div>
   </aside>
 
-  <!-- PRAWO: chat -->
-  <main class="panel" style="display:flex;flex-direction:column">
+  <!-- PRAWO: STRONY -->
+  <main class="panel" id="page-chat" style="display:flex;flex-direction:column">
     <div class="topbar">
       <div class="row">
         <div id="roomTitle"><b>—</b></div>
-        <div id="roomHint" class="meta" style="margin-left:8px"></div>
+        <span id="readBadge" class="badge" title="Lokalne potwierdzenia">✓✓</span>
       </div>
       <div class="toolbar">
-        <span class="pill">Mój podpis: <b id="meName">—</b></span>
-        <button id="btnName" class="ghost">✎ Zmień</button>
-        <span id="readBadge" class="badge" title="Lokalne potwierdzenia odczytu">✓✓</span>
+        <button class="btn ghost" onclick="toggleEmoji()">😊 Emoji</button>
+        <button class="btn ghost" onclick="document.getElementById('file').click()">📎 Załącz</button>
+        <input id="file" type="file" hidden>
       </div>
     </div>
 
-    <div id="msgs" class="msg-wrap" aria-live="polite"></div>
+    <div id="msgs" class="msg-wrap" aria-live="polite">
+      <div class="loadmore hoverable" id="older" onclick="loadOlder()">⟲ Załaduj starsze…</div>
+    </div>
 
     <div class="composer">
       <div class="row" style="width:100%">
-        <button id="btnEmoji" title="Wstaw emoji">😊</button>
         <textarea id="txt" placeholder="Napisz wiadomość… (Ctrl+Enter wysyła)" rows="2" style="flex:1"></textarea>
-        <input id="file" type="file" hidden>
-        <button id="btnFile" class="ghost" title="Dodaj załącznik">📎</button>
       </div>
       <div class="row">
-        <button id="btnSend" class="ok">Wyślij ▶</button>
+        <button id="btnSend" class="btn ok">Wyślij ▶</button>
       </div>
     </div>
+  </main>
+
+  <main class="panel" id="page-contracts" style="display:none;padding:16px">
+    <h2>📄 Umowy</h2>
+    <p class="meta">Tu możesz podpiąć generowanie/podpisywanie umów (np. fetch do Netlify Functions).</p>
+    <button class="btn" onclick="alert('TODO: generowanie umowy / integracja funkcji')">Nowa umowa</button>
+  </main>
+
+  <main class="panel" id="page-docs" style="display:none;padding:16px">
+    <h2>📂 Dokumenty</h2>
+    <p class="meta">Przegląd i pobieranie plików (Supabase Storage / Netlify Blobs).</p>
+    <button class="btn" onclick="alert('TODO: lista dokumentów z bazy / storage')">Odśwież listę</button>
+    <div id="docsList" style="margin-top:10px"></div>
+  </main>
+
+  <main class="panel" id="page-tasks" style="display:none;padding:16px">
+    <h2>✅ Zadania</h2>
+    <p class="meta">Prosty moduł zadań przypięty do pokoju (do rozbudowy).</p>
+    <button class="btn" onclick="alert('TODO: CRUD zadań w Supabase')">Dodaj zadanie</button>
   </main>
 </div>
 
@@ -141,235 +174,325 @@
 <script>
 'use strict';
 
-/*** KONFIG SUPABASE (Twoje dane) ***/
+/*** KONFIG SUPABASE ***/
 const SB_URL = 'https://phxxjirqlktzcwnygaha.supabase.co';
 const SB_KEY = 'sb_publishable_iOXdu9fUGGko3MqPmltAag_ZbPUxp4r';
-
-/*** INICJALIZACJA ***/
 const supa = supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: false } });
-const $ = s => document.querySelector(s);
-const INT = new Intl.DateTimeFormat('pl-PL', { dateStyle:'short', timeStyle:'short' });
 
+/*** UTIL ***/
+const $ = s => document.querySelector(s);
+const el = (tag, attrs={}) => Object.assign(document.createElement(tag), attrs);
+const INT = new Intl.DateTimeFormat('pl-PL', { dateStyle:'short', timeStyle:'short' });
+const linkify = t => (t||'').replace(/(https?:\/\/\S+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+const EMOJI = '😀😁😂🤣😊😉😍😘😎🤩🥰😇🤓🤠🫶👍👏🔥✨🎉🎯🚀🔧💡📎📷🖨📁✅❗❌🤝📝💬🔗📌🕒'.split('');
+
+/*** STAN ***/
 let state = {
-  account: localStorage.getItem('chat_acc') || 'arkon-crm',
-  room:    localStorage.getItem('chat_room')|| 'global',
-  me:      localStorage.getItem('chat_me')  || 'Pracownik',
-  sub: null, presChan: null, presenceIds: new Set(),
-  cursor: null, // do stronicowania w dół (opcjonalnie)
+  room: localStorage.getItem('chat_room') || 'global',
+  me:   localStorage.getItem('chat_me')   || 'Pracownik',
+  sub:null, presChan:null,
+  typingTimer:null, typingViewTimer:null,
+  oldestCursor:null, // do paginacji w górę
+  search:{ q:'', author:'' },
+  cache: new Map(), // cache wiadomości po id
 };
 
 $('#meName').textContent = state.me;
+$('#roomTitle').innerHTML = '<b>'+state.room.toUpperCase()+'</b>';
 $('#conn').textContent = 'łączę…';
 
-/*** UI: listy kont i pokoi ***/
-async function loadAccounts(){
-  const { data, error } = await supa.from('accounts').select('id').order('id');
-  if(error){ console.error(error); $('#conn').textContent='błąd kont'; return; }
-  const sel = $('#selAccount'); sel.innerHTML='';
-  (data||[]).forEach(a=>{
-    const o=document.createElement('option'); o.value=a.id; o.textContent=a.id; if(a.id===state.account) o.selected=true; sel.appendChild(o);
+/*** ROUTER ***/
+function route(){
+  const hash = location.hash || '#/chat';
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.getAttribute('href')===hash));
+  ['chat','contracts','docs','tasks'].forEach(id=>{
+    $('#page-'+id).style.display = (hash==='#/'+id) ? 'block' : 'none';
   });
-  $('#accList').innerHTML = (data||[]).map(a=>`<div class="pill">${a.id}</div>`).join('');
 }
-async function loadRooms(){
-  const { data, error } = await supa.from('rooms').select('id,label').order('id');
-  if(error){ console.error(error); $('#conn').textContent='błąd pokoi'; return; }
-  const sel = $('#selRoom'); sel.innerHTML='';
-  (data||[]).forEach(r=>{
-    const o=document.createElement('option'); o.value=r.id; o.textContent=r.label||r.id; if(r.id===state.room) o.selected=true; sel.appendChild(o);
+window.addEventListener('hashchange', route); route();
+
+/*** EMOJI PICKER ***/
+let picker=null;
+function toggleEmoji(){
+  if(picker){ document.body.removeChild(picker); picker=null; return; }
+  picker = el('div'); picker.style.position='fixed'; picker.style.bottom='120px'; picker.style.right='40px';
+  picker.style.background='#0e1740'; picker.style.border='1px solid #2b3a77'; picker.style.padding='8px'; picker.style.borderRadius='10px'; picker.style.zIndex=10;
+  picker.innerHTML = EMOJI.map(e=><span class="emoji" style="font-size:22px;padding:6px;cursor:pointer">${e}</span>).join('');
+  picker.addEventListener('click', ev=>{
+    if(ev.target.classList.contains('emoji')){ $('#txt').value += ev.target.textContent; document.body.removeChild(picker); picker=null; $('#txt').focus(); sendTyping(true); }
   });
-  $('#roomList').innerHTML = (data||[]).map(r=>`<div class="pill">${r.label||r.id}</div>`).join('');
-  const curr = (data||[]).find(r=>r.id===state.room);
-  $('#roomTitle').innerHTML = '<b>'+ (curr?.label || state.room) +'</b>';
-  $('#roomHint').textContent = 'Pokój ID: '+state.room+' • Konto: '+state.account;
+  document.body.appendChild(picker);
 }
 
-/*** ŁADOWANIE WIADOMOŚCI ***/
-let messages = [];
-function bubbleHtml(m){
-  const me = m.author === state.me;
-  const body = (m.body||'').replace(/(https?:\/\/\S+)/g, '<a href="$1" target="_blank">$1</a>');
-  let filePart='';
-  if(m.file_url){
-    const fn = m.file_url.split('/').pop();
-    filePart = ` <a class="file" href="${m.file_url}" target="_blank" rel="noopener">📎 <span>${fn}</span></a>`;
-  }
-  return `<div class="msg ${m.system?'system':''}">
-    <div class="meta">${me? 'Ja' : (m.author||'—')}</div>
-    <div class="bubble ${me?'me':''}">${body}${filePart}
-      <div class="meta">${INT.format(new Date(m.created_at))} ${me?'<span title="Lokalny znacznik odczytu">✓✓</span>':''}</div>
+/*** PRESENCE + TYPING ***/
+function typingLabel(names){
+  if(!names.length) return '';
+  if(names.length===1) return names[0]+' pisze…';
+  if(names.length===2) return names.join(' i ')+' piszą…';
+  return names.slice(0,2).join(', ')+' i inni piszą…';
+}
+async function joinPresence(){
+  if(state.presChan){ try{ await supa.removeChannel(state.presChan);}catch{} }
+  const chan = supa.channel('presence:'+state.room, { config:{ presence:{ key: state.me } } });
+  state.presChan = chan;
+
+  chan.on('presence', { event:'sync' }, ()=>{
+    const p = chan.presenceState();
+    const names = Object.keys(p).sort();
+    $('#presence').innerHTML = names.map(n=><span class="pill"><span class="dot"></span>${n}</span>).join('');
+  });
+
+  chan.on('broadcast', { event:'typing' }, ({payload})=>{
+    // payload: {user, on}
+    const key='typing:'+state.room;
+    const set = window._typingSet || new Set();
+    window._typingSet = set;
+    if(payload.on) set.add(payload.user); else set.delete(payload.user);
+    $('#typing').textContent = typingLabel([...set].filter(n=>n!==state.me));
+    clearTimeout(state.typingViewTimer);
+    state.typingViewTimer = setTimeout(()=>{ set.clear(); $('#typing').textContent=''; }, 3000);
+  });
+
+  chan.subscribe(status=>{
+    if(status==='SUBSCRIBED'){ chan.track({ user: state.me, at: Date.now() }); }
+  });
+}
+function sendTyping(on){
+  try{
+    state.presChan?.send({ type:'broadcast', event:'typing', payload:{ user: state.me, on } });
+  }catch{}
+}
+
+/*** HISTORIA + PAGINACJA ***/
+let messages = []; // płaska lista + wątki (parent_id)
+function dayDivider(ts){
+  return <div class="day"><span>${INT.format(new Date(ts)).split(',')[0]}</span></div>;
+}
+function reactionBadge(emoji, count){ return <span class="react" data-r="${emoji}">${emoji} ${count}</span>; }
+function fileChip(url){
+  const name = (url||'').split('/').pop();
+  const isImg = /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name);
+  return <a class="file" href="${url}" target="_blank" rel="noopener">📎 ${name}</a>${isImg?<div style="margin-top:6px"><img src="${url}" alt="" style="max-width:280px;border:1px solid #2b3a77;border-radius:10px"></div>:''};
+}
+function bubbleHtml(m, children=[]){
+  const me = m.author===state.me;
+  const body = linkify(m.body||'');
+  const when = INT.format(new Date(m.created_at));
+  const reacts = (m.reactions && typeof m.reactions==='object') ? Object.entries(m.reactions).filter(([,v])=>v>0) : [];
+  return `
+  <div class="msg" id="m-${m.id}">
+    <div class="meta">${me?'Ja':(m.author||'—')}</div>
+    <div class="bubble ${me?'me':''}">
+      ${m.deleted_at? <i class="meta">[wiadomość usunięta]</i> : body}
+      ${m.file_url? fileChip(m.file_url):''}
+      <div class="tools">
+        <button class="btn-icon" onclick="startReply('${m.id}')">💬 Odpowiedz</button>
+        <button class="btn-icon" onclick="react('${m.id}','👍')">👍</button>
+        <button class="btn-icon" onclick="react('${m.id}','❤')">❤</button>
+        <button class="btn-icon" onclick="react('${m.id}','🔥')">🔥</button>
+        ${me && !m.deleted_at ? `<button class="btn-icon" onclick="editMsg('${m.id}')">✎ Edytuj</button>
+        <button class="btn-icon" onclick="delMsg('${m.id}')">🗑 Usuń</button>`:''}
+        <span class="meta" style="margin-left:auto">${when} ${me?'<span title="lokalne ✓✓">✓✓</span>':''}${m.edited_at?' • ed.':''}</span>
+      </div>
+      ${reacts.length? <div class="reactions">${reacts.map(([emo,c])=>reactionBadge(emo,c)).join(' ')}</div>:''}
+      ${children.length? <div class="children">${children.map(c=>bubbleHtml(c,[])).join('')}</div>:''}
     </div>
   </div>`;
 }
-function renderMessages(scroll=true){
-  const box = $('#msgs');
-  let out = [];
-  let lastDay = '';
-  messages.forEach(m=>{
-    const d = (m.created_at||'').slice(0,10);
-    if(d && d!==lastDay){ out.push(`<div class="divider"><span>${INT.format(new Date(m.created_at)).split(',')[0]}</span></div>`); lastDay = d; }
-    out.push(bubbleHtml(m));
-  });
-  box.innerHTML = out.join('');
-  if(scroll) box.scrollTop = box.scrollHeight;
+function indexByParent(list){
+  const byId=new Map(), children=new Map();
+  list.forEach(m=>{ byId.set(m.id,m); if(m.parent_id){ (children.get(m.parent_id)||children.set(m.parent_id,[]).get(m.parent_id)).push(m); } });
+  return { byId, children };
 }
-async function loadHistory(){
-  const { data, error } = await supa
-    .from('messages')
-    .select('*')
-    .eq('account_id', state.account)
-    .eq('room_id', state.room)
-    .order('created_at', { ascending:true })
-    .limit(200);
+function renderMessages(scrollToBottom=true){
+  const box = $('#msgs');
+  const { children } = indexByParent(messages);
+  let out=[], lastDay='';
+  messages.filter(m=>!m.parent_id).forEach(m=>{
+    const d=(m.created_at||'').slice(0,10);
+    if(d && d!==lastDay){ out.push(dayDivider(m.created_at)); lastDay=d; }
+    out.push(bubbleHtml(m, children.get(m.id)||[]));
+  });
+  const older = $('#older').outerHTML;
+  box.innerHTML = older + out.join('');
+  if(scrollToBottom) box.scrollTop=box.scrollHeight;
+}
+async function loadInitial(){
+  const lim=60;
+  const f = supa.from('messages').select('*').eq('room_id', state.room)
+              .order('created_at',{ascending:true}).limit(lim);
+  const { data, error } = await f;
   if(error){ console.error(error); return; }
-  messages = data || [];
+  messages = data||[];
+  if(messages.length) state.oldestCursor = messages[0].created_at;
+  messages.forEach(m=>state.cache.set(m.id,m));
   renderMessages(true);
 }
+async function loadOlder(){
+  if(!state.oldestCursor) return;
+  const { data, error } = await supa.from('messages')
+    .select('*').eq('room_id', state.room)
+    .lt('created_at', state.oldestCursor)
+    .order('created_at',{ascending:false})
+    .limit(40);
+  if(error){ console.error(error); return; }
+  const older = (data||[]).reverse();
+  if(!older.length) { $('#older').textContent='— brak starszych —'; return; }
+  messages = older.concat(messages);
+  state.oldestCursor = messages[0].created_at;
+  older.forEach(m=>state.cache.set(m.id,m));
+  const box = $('#msgs'); const prev = box.scrollHeight;
+  renderMessages(false);
+  // zachowaj pozycję scrolla
+  const diff = $('#msgs').scrollHeight - prev;
+  box.scrollTop = diff;
+}
 
-/*** REALTIME: nowe wiadomości ***/
-async function subscribeChannel(){
-  if(state.sub) { try{ await supa.removeChannel(state.sub) }catch{} }
-  state.sub = supa.channel('room-'+state.account+'-'+state.room)
-    .on('postgres_changes', { event:'INSERT', schema:'public', table:'messages', filter:`account_id=eq.${state.account}` }, (payload)=>{
-      const m = payload.new;
-      if(m.room_id !== state.room) return;
-      messages.push(m);
-      renderMessages(true);
-      ding();
+/*** SUBSKRYPCJE ***/
+async function subscribeRoom(){
+  if(state.sub){ try{ await supa.removeChannel(state.sub);}catch{} }
+  state.sub = supa.channel('room:'+state.room)
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:room_id=eq.${state.room}},(p)=>{
+      messages.push(p.new); state.cache.set(p.new.id,p.new); renderMessages(true); ding();
+    })
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'messages',filter:room_id=eq.${state.room}},(p)=>{
+      const m=p.new; const idx=messages.findIndex(x=>x.id===m.id); if(idx>-1){ messages[idx]=m; state.cache.set(m.id,m); renderMessages(false); }
     })
     .subscribe((status)=>{ $('#conn').textContent = status==='SUBSCRIBED'?'podłączono':'…'+status.toLowerCase(); });
 }
 
-/*** PRESENCE ***/
-async function joinPresence(){
-  if(state.presChan){ try{ await supa.removeChannel(state.presChan); }catch{} }
-  const key = 'presence:'+state.account+':'+state.room;
-  const chan = supa.channel(key, { config: { presence: { key: state.me } } });
-  state.presChan = chan;
-  chan.on('presence', { event: 'sync' }, ()=>{
-    const stateP = chan.presenceState();
-    const names = Object.keys(stateP).sort();
-    $('#presence').innerHTML = names.map(n=>`<span class="pill"><span class="dot"></span>${n}</span>`).join('');
-  });
-  chan.subscribe(async (s)=>{
-    if(s==='SUBSCRIBED'){
-      await chan.track({ user: state.me, at: Date.now() });
-    }
-  });
+/*** WYSYŁANIE / ODP / REAKCJE / EDYCJA / KASOWANIE ***/
+let replyTo=null;
+function startReply(id){
+  replyTo=id;
+  const m=state.cache.get(id);
+  const preview = ↪ Odp: ${m?.author||'—'}: ${(m?.body||'').slice(0,80)};
+  $('#txt').value = (preview+'\n'+$('#txt').value).trim() + ' ';
+  $('#txt').focus();
 }
-
-/*** WYSYŁANIE ***/
-async function sendMessage(text, fileUrl){
-  text = (text||'').trim();
-  if(!text && !fileUrl) return;
-  const { error } = await supa.from('messages').insert([{
-    account_id: state.account, room_id: state.room, author: state.me, body: text, file_url: fileUrl || null
-  }]);
-  if(error){ alert('Błąd wysyłania: '+error.message); return; }
-  $('#txt').value='';
-}
-function ding(){
-  try{ new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABYAAAABAACAgICAAAAA').play(); }catch{}
-}
-
-/*** PLIK / ZAŁĄCZNIK ***/
-$('#btnFile').addEventListener('click', ()=>$('#file').click());
-$('#file').addEventListener('change', async (e)=>{
-  const f = e.target.files[0]; if(!f) return;
-  // Preferuj Storage bucket "chat". Jeśli nie istnieje / brak uprawnień – fallback jako dataURL (do 1MB)
-  let url = '';
+async function react(id, emo){
   try{
-    const path = `${state.account}/${state.room}/${Date.now()}_${f.name}`;
+    const m = state.cache.get(id) || (await supa.from('messages').select('*').eq('id',id).single()).data;
+    const r = m.reactions || {};
+    r[emo] = (r[emo]||0)+1;
+    await supa.from('messages').update({ reactions:r }).eq('id', id);
+  }catch(e){ console.error(e); }
+}
+async function editMsg(id){
+  const m = state.cache.get(id); if(!m || m.author!==state.me || m.deleted_at) return;
+  const t = prompt('Edytuj wiadomość:', m.body||''); if(t==null) return;
+  const { error } = await supa.from('messages').update({ body:t, edited_at: new Date().toISOString() }).eq('id', id);
+  if(error) alert(error.message);
+}
+async function delMsg(id){
+  const m = state.cache.get(id); if(!m || m.author!==state.me || m.deleted_at) return;
+  if(!confirm('Usunąć wiadomość?')) return;
+  const { error } = await supa.from('messages').update({ deleted_at: new Date().toISOString(), body:'[usunięto]' }).eq('id', id);
+  if(error) alert(error.message);
+}
+async function sendMessage(text, fileUrl){
+  text=(text||'').trim();
+  if(!text && !fileUrl) return;
+  const payload = { room_id: state.room, author: state.me, body: text, file_url: fileUrl||null, parent_id: replyTo };
+  const { error } = await supa.from('messages').insert([payload]);
+  if(error){ alert('Błąd wysyłania: '+error.message); return; }
+  $('#txt').value=''; replyTo=null;
+}
+
+/*** ZAŁĄCZNIKI ***/
+$('#file').addEventListener('change', async (e)=>{
+  const f=e.target.files[0]; if(!f) return;
+  try{
+    const path=${state.room}/${Date.now()}_${f.name};
     const up = await supa.storage.from('chat').upload(path, f, { upsert:false });
     if(up.error) throw up.error;
     const pub = supa.storage.from('chat').getPublicUrl(path);
-    url = pub.data.publicUrl;
+    await sendMessage('', pub.data.publicUrl);
   }catch(err){
     if(f.size <= 1024*1024){
-      const reader = new FileReader();
+      const reader=new FileReader();
       reader.onload = async ()=>{ await sendMessage('', reader.result); };
       reader.readAsDataURL(f);
-      return;
     }else{
-      alert('Nie udało się zapisać pliku do Storage, a plik jest zbyt duży na wklejkę.');
-      return;
+      alert('Nie udało się zapisać pliku (i zbyt duży na dataURL).');
     }
   }
-  await sendMessage('', url);
   e.target.value='';
 });
 
-/*** EMOJI ***/
-const EMOJI = '😀😁😂🤣😊😉😍😘😎🤩🥰😇🤓🤠🫶👍👏🔥✨🎉🎯🚀🔧💡📎📷🖨️📁✅❗❌'.split('');
-$('#btnEmoji').addEventListener('click', ()=>{
-  const picker = document.createElement('div');
-  picker.style.position='absolute'; picker.style.bottom='100px'; picker.style.left='20px';
-  picker.style.background='#0e1740'; picker.style.border='1px solid #2b3a77'; picker.style.padding='8px'; picker.style.borderRadius='10px';
-  picker.innerHTML = EMOJI.map(e=>`<span class="emoji" style="font-size:22px;padding:4px">${e}</span>`).join('');
-  picker.addEventListener('click', (ev)=>{
-    if(ev.target.classList.contains('emoji')){ $('#txt').value += ev.target.textContent; document.body.removeChild(picker); $('#txt').focus(); }
-  });
-  document.body.appendChild(picker);
+/*** PISANIE ***/
+$('#txt').addEventListener('input', ()=>{
+  clearTimeout(state.typingTimer);
+  sendTyping(true);
+  state.typingTimer = setTimeout(()=>sendTyping(false), 1200);
 });
-
-/*** EKSPORT / DRUK ***/
-$('#btnCSV').addEventListener('click', ()=>{
-  const rows=[['autor','treść','plik','czas']].concat(messages.map(m=>[m.author,m.body||'',m.file_url||'',m.created_at]));
-  const csv = rows.map(r=>r.map(s=>{s=(s??'').toString(); return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s}).join(';')).join('\n');
-  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})); a.download='chat.csv'; a.click();
-});
-$('#btnJSON').addEventListener('click', ()=>{
-  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(messages,null,2)],{type:'application/json'})); a.download='chat.json'; a.click();
-});
-$('#btnPrint').addEventListener('click', ()=>window.print());
-
-/*** ZDARZENIA UI ***/
-$('#btnAddAcc').addEventListener('click', async ()=>{
-  const id = prompt('Nazwa konta (bez spacji):','nowe-konto'); if(!id) return;
-  const { error } = await supa.from('accounts').insert([{id}]); if(error) return alert(error.message);
-  await loadAccounts();
-});
-$('#btnAddRoom').addEventListener('click', async ()=>{
-  const id = prompt('ID pokoju:','pokoj'); if(!id) return;
-  const label = prompt('Etykieta:','Nowy pokój')||id;
-  const { error } = await supa.from('rooms').insert([{id,label}]); if(error) return alert(error.message);
-  await loadRooms();
-});
-$('#selAccount').addEventListener('change', async (e)=>{
-  state.account = e.target.value; localStorage.setItem('chat_acc', state.account);
-  await loadRooms(); await loadHistory(); await subscribeChannel(); await joinPresence();
-});
-$('#selRoom').addEventListener('change', async (e)=>{
-  state.room = e.target.value; localStorage.setItem('chat_room', state.room);
-  await loadRooms(); await loadHistory(); await subscribeChannel(); await joinPresence();
-});
-$('#btnName').addEventListener('click', ()=>{
-  const n = prompt('Twój podpis (imię w czacie):', state.me)||state.me;
-  state.me = n; localStorage.setItem('chat_me', n); $('#meName').textContent = n;
-  joinPresence();
-});
-$('#btnReload').addEventListener('click', ()=>{ loadAccounts(); loadRooms(); loadHistory(); });
-
-/*** WYSYŁANIE — textarea ***/
 $('#txt').addEventListener('keydown', (e)=>{
-  if(e.key==='Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); $('#btnSend').click(); }
+  if(e.key==='Enter' && (e.ctrlKey||e.metaKey)){ e.preventDefault(); $('#btnSend').click(); }
 });
-$('#btnSend').addEventListener('click', async ()=>{
-  const t = $('#txt').value;
-  await sendMessage(t, null);
+$('#btnSend').addEventListener('click', async ()=>{ await sendMessage($('#txt').value, null); });
+
+/*** SZUKANIE + FILTRY ***/
+async function searchMessages(){
+  state.search.q = $('#q').value.trim();
+  state.search.author = $('#authorFilter').value.trim();
+  const q=state.search.q, a=state.search.author;
+  let req = supa.from('messages').select('*').eq('room_id', state.room).order('created_at',{ascending:true}).limit(400);
+  if(a) req = req.eq('author', a);
+  const { data, error } = await req;
+  if(error){ console.error(error); return; }
+  let arr = data||[];
+  if(q){
+    const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i');
+    arr = arr.filter(m=> rx.test(m.body||'') || rx.test(m.file_url||'') );
+  }
+  messages = arr;
+  renderMessages(true);
+}
+function clearSearch(){
+  $('#q').value=''; $('#authorFilter').value='';
+  state.search={q:'',author:''};
+  loadInitial();
+}
+
+/*** EKSPORT ***/
+function exportCSV(){
+  const rows=[['id','author','body','file','time','parent','edited','deleted']].concat(messages.map(m=>[
+    m.id, m.author, m.body||'', m.file_url||'', m.created_at, m.parent_id||'', m.edited_at||'', m.deleted_at||''
+  ]));
+  const csv = rows.map(r=>r.map(s=>{s=(s??'').toString(); return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s}).join(';')).join('\n');
+  const a=el('a',{href:URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})), download:'chat.csv'}); a.click();
+}
+function exportJSON(){
+  const a=el('a',{href:URL.createObjectURL(new Blob([JSON.stringify(messages,null,2)],{type:'application/json'})), download:'chat.json'}); a.click();
+}
+
+/*** DŹWIĘK ***/
+function ding(){ try{ new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABYAAAABAACAgICAAAAA').play(); }catch{} }
+
+/*** ROOM SWITCH ***/
+async function setRoom(id){
+  if(state.room===id) return;
+  state.room=id; localStorage.setItem('chat_room', id);
+  $('#roomTitle').innerHTML = '<b>'+id.toUpperCase()+'</b>';
+  $('#msgs').scrollTop=0; messages=[]; state.oldestCursor=null; renderMessages(false);
+  await loadInitial(); await subscribeRoom(); await joinPresence();
+}
+
+/*** JA (podpis) ***/
+$('#btnName').addEventListener('click', ()=>{
+  const n = prompt('Twój podpis (imię w czacie):', state.me) || state.me;
+  state.me=n; localStorage.setItem('chat_me', n); $('#meName').textContent=n; joinPresence();
 });
 
 /*** START ***/
 (async function init(){
   try{
-    await loadAccounts();
-    await loadRooms();
-    await loadHistory();
-    await subscribeChannel();
+    await loadInitial();
+    await subscribeRoom();
     await joinPresence();
-    $('#conn').textContent = 'gotowe';
+    $('#conn').textContent='gotowe';
   }catch(e){
-    console.error(e); $('#conn').textContent = 'błąd inicjalizacji';
+    console.error(e); $('#conn').textContent='błąd inicjalizacji';
   }
 })();
 </script>
