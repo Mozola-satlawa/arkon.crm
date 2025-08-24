@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <title>Test Upload • Netlify</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 2rem; background:#0b1020; color:#fff; }
+    h1 { font-size: 22px; }
+    .box { border:2px dashed #4cc9f0; padding:20px; border-radius:10px; text-align:center; }
+    .box input { margin-top:10px; }
+    pre { background:#11183a; padding:12px; border-radius:8px; margin-top:20px; color:#aeb8da; }
+  </style>
+</head>
+<body>
+  <h1>📤 Upload pliku do Netlify Functions</h1>
+
+  <form id="uploadForm" class="box">
+    <input type="file" name="file" required>
+    <br>
+    <button type="submit">Wyślij</button>
+  </form>
+
+  <pre id="result">[wynik pojawi się tutaj]</pre>
+
+  <script>
+    const form = document.getElementById('uploadForm');
+    const result = document.getElementById('result');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = new FormData(form);
+
+      result.textContent = "⏳ Wysyłanie...";
+
+      try {
+        const r = await fetch('/.netlify/functions/upload', {
+          method: 'POST',
+          body: data
+        });
+        const json = await r.json();
+        result.textContent = JSON.stringify(json, null, 2);
+      } catch (err) {
+        result.textContent = "❌ Błąd: " + err.message;
+      }
+    });
+  </script>
+</body>
+</html>
