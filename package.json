@@ -1,7 +1,4 @@
-
 {
-  "name": "arkon-crm",
-  "version": "1.0.0",
   "type": "module",
   "dependencies": {
     "@netlify/blobs": "^7.0.0",
