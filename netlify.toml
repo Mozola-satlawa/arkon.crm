@@ -1,3 +1,4 @@
 [functions]
   directory = "netlify/functions"
-  node_bundler = "none"       # tymczasowo, żeby wykluczyć problemy z bundlerem
+  node_bundler = "none"       
+
