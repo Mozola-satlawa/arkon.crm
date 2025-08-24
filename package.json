@@ -1,7 +1,10 @@
+
 {
+  "name": "arkon-crm",
+  "version": "1.0.0",
   "type": "module",
+  "private": true,
   "dependencies": {
-    "@netlify/blobs": "^7.0.0",
-    "@neondatabase/serverless": "^0.10.0"
+    "@supabase/supabase-js": "2.45.4"
   }
 }
