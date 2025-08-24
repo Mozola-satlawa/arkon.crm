@@ -1,9 +1,10 @@
+
 {
   "name": "arkon-crm",
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
     "@netlify/blobs": "^7.0.0",
-    "@netlify/neon": "^0.7.0"
+    "@neondatabase/serverless": "^0.10.0"
   }
 }
