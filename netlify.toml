@@ -1,1 +1,23 @@
-publish = "public"
+[build]
+  publish = "dist"          # lub "public" / "." – zgodnie z Twoim projektem statycznym
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+  included_files = []
+
+# (opcjonalnie) przekierowania dla funkcji (ładne ścieżki)
+[[redirects]]
+  from = "/api/hello"
+  to = "/.netlify/functions/hello"
+  status = 200
+
+[[redirects]]
+  from = "/api/messages"
+  to = "/.netlify/functions/messages"
+  status = 200
+
+[[redirects]]
+  from = "/api/upload"
+  to = "/.netlify/functions/upload"
+  status = 200
