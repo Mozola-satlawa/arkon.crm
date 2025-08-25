@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ARKON • Sypasny Komunikator</title>
-<meta name="description" content="Rozbudowany komunikator ARKON na Supabase: prywatne pokoje, realtime, presence, typing, emoji, reakcje, załączniki, wątki, eksport, router.">
+<meta name="description" content="Komunikator ARKON na Netlify Functions + Blobs: pokoje, emoji, załączniki, wątki, eksport, router.">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <style>
   :root{
@@ -59,7 +59,9 @@
 </head>
 <body>
 <header>
-  <h1 style="display:flex;align-items:center;gap:10px;margin-bottom:6px">Komunikator • ARKON <span class="badge">Supabase</span></h1>
+  <h1 style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+    Komunikator • ARKON <span class="badge">Netlify Blobs</span>
+  </h1>
   <div class="tabbar">
     <a class="tab" href="#/chat">💬 Czat</a>
     <a class="tab" href="#/contracts">📄 Umowy</a>
@@ -157,49 +159,46 @@
 
   <main class="panel" id="page-docs" style="display:none;padding:16px">
     <h2>📂 Dokumenty</h2>
-    <p class="meta">Przegląd i pobieranie plików (Supabase Storage / Netlify Blobs).</p>
-    <button class="btn" onclick="alert('TODO: lista dokumentów z bazy / storage')">Odśwież listę</button>
+    <p class="meta">Przegląd i pobieranie plików (Netlify Blobs).</p>
+    <button class="btn" onclick="alert('TODO: lista dokumentów z blobów')">Odśwież listę</button>
     <div id="docsList" style="margin-top:10px"></div>
   </main>
 
   <main class="panel" id="page-tasks" style="display:none;padding:16px">
     <h2>✅ Zadania</h2>
     <p class="meta">Prosty moduł zadań przypięty do pokoju (do rozbudowy).</p>
-    <button class="btn" onclick="alert('TODO: CRUD zadań w Supabase')">Dodaj zadanie</button>
+    <button class="btn" onclick="alert('TODO: CRUD zadań')">Dodaj zadanie</button>
   </main>
 </div>
 
-<!-- Supabase UMD -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
 'use strict';
 
-/*** KONFIG SUPABASE ***/
-const SB_URL = 'https://phxxjirqlktzcwnygaha.supabase.co';
-const SB_KEY = 'sb_publishable_iOXdu9fUGGko3MqPmltAag_ZbPUxp4r';
-const supa = supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: false } });
+/*** USTAWIENIA ***/
+const API_MESSAGES = '/api/messages'; // Netlify Function
+const API_UPLOAD   = '/api/upload';   // Netlify Function
 
 /*** UTIL ***/
 const $ = s => document.querySelector(s);
 const el = (tag, attrs={}) => Object.assign(document.createElement(tag), attrs);
 const INT = new Intl.DateTimeFormat('pl-PL', { dateStyle:'short', timeStyle:'short' });
-const linkify = t => (t||'').replace(/(https?:\/\/\S+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
 const EMOJI = '😀😁😂🤣😊😉😍😘😎🤩🥰😇🤓🤠🫶👍👏🔥✨🎉🎯🚀🔧💡📎📷🖨📁✅❗❌🤝📝💬🔗📌🕒'.split('');
 
 /*** STAN ***/
 let state = {
   room: localStorage.getItem('chat_room') || 'global',
   me:   localStorage.getItem('chat_me')   || 'Pracownik',
-  sub:null, presChan:null,
-  typingTimer:null, typingViewTimer:null,
-  oldestCursor:null, // do paginacji w górę
+  oldestCursor: null,
   search:{ q:'', author:'' },
-  cache: new Map(), // cache wiadomości po id
+  messages: [],
+  cache: new Map(),
+  poller: null,
+  typingTimer:null, typingViewTimer:null
 };
 
 $('#meName').textContent = state.me;
 $('#roomTitle').innerHTML = '<b>'+state.room.toUpperCase()+'</b>';
-$('#conn').textContent = 'łączę…';
+$('#conn').textContent = 'łączenie…';
 
 /*** ROUTER ***/
 function route(){
@@ -215,200 +214,219 @@ window.addEventListener('hashchange', route); route();
 let picker=null;
 function toggleEmoji(){
   if(picker){ document.body.removeChild(picker); picker=null; return; }
-  picker = el('div'); picker.style.position='fixed'; picker.style.bottom='120px'; picker.style.right='40px';
-  picker.style.background='#0e1740'; picker.style.border='1px solid #2b3a77'; picker.style.padding='8px'; picker.style.borderRadius='10px'; picker.style.zIndex=10;
-  picker.innerHTML = EMOJI.map(e=><span class="emoji" style="font-size:22px;padding:6px;cursor:pointer">${e}</span>).join('');
+  picker = el('div');
+  Object.assign(picker.style, {position:'fixed', bottom:'120px', right:'40px', background:'#0e1740', border:'1px solid #2b3a77', padding:'8px', borderRadius:'10px', zIndex:10});
+  picker.innerHTML = EMOJI.map(e => '<span class="emoji" style="font-size:22px;padding:6px;cursor:pointer">'+e+'</span>').join('');
   picker.addEventListener('click', ev=>{
-    if(ev.target.classList.contains('emoji')){ $('#txt').value += ev.target.textContent; document.body.removeChild(picker); picker=null; $('#txt').focus(); sendTyping(true); }
+    if(ev.target.classList.contains('emoji')){
+      $('#txt').value += ev.target.textContent;
+      document.body.removeChild(picker); picker=null; $('#txt').focus();
+      showTyping(true);
+    }
   });
   document.body.appendChild(picker);
 }
 
-/*** PRESENCE + TYPING ***/
-function typingLabel(names){
-  if(!names.length) return '';
-  if(names.length===1) return names[0]+' pisze…';
-  if(names.length===2) return names.join(' i ')+' piszą…';
-  return names.slice(0,2).join(', ')+' i inni piszą…';
-}
-async function joinPresence(){
-  if(state.presChan){ try{ await supa.removeChannel(state.presChan);}catch{} }
-  const chan = supa.channel('presence:'+state.room, { config:{ presence:{ key: state.me } } });
-  state.presChan = chan;
-
-  chan.on('presence', { event:'sync' }, ()=>{
-    const p = chan.presenceState();
-    const names = Object.keys(p).sort();
-    $('#presence').innerHTML = names.map(n=><span class="pill"><span class="dot"></span>${n}</span>).join('');
-  });
-
-  chan.on('broadcast', { event:'typing' }, ({payload})=>{
-    // payload: {user, on}
-    const key='typing:'+state.room;
-    const set = window._typingSet || new Set();
-    window._typingSet = set;
-    if(payload.on) set.add(payload.user); else set.delete(payload.user);
-    $('#typing').textContent = typingLabel([...set].filter(n=>n!==state.me));
-    clearTimeout(state.typingViewTimer);
-    state.typingViewTimer = setTimeout(()=>{ set.clear(); $('#typing').textContent=''; }, 3000);
-  });
-
-  chan.subscribe(status=>{
-    if(status==='SUBSCRIBED'){ chan.track({ user: state.me, at: Date.now() }); }
-  });
-}
-function sendTyping(on){
-  try{
-    state.presChan?.send({ type:'broadcast', event:'typing', payload:{ user: state.me, on } });
-  }catch{}
-}
-
-/*** HISTORIA + PAGINACJA ***/
-let messages = []; // płaska lista + wątki (parent_id)
+/*** RENDER ***/
+const linkify = (t='') => t.replace(/(https?:\/\/\S+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
 function dayDivider(ts){
-  return <div class="day"><span>${INT.format(new Date(ts)).split(',')[0]}</span></div>;
+  return '<div class="day"><span>'+INT.format(new Date(ts)).split(',')[0]+'</span></div>';
 }
-function reactionBadge(emoji, count){ return <span class="react" data-r="${emoji}">${emoji} ${count}</span>; }
+function reactionBadge(emoji, count){ return '<span class="react" data-r="'+emoji+'">'+emoji+' '+count+'</span>'; }
 function fileChip(url){
   const name = (url||'').split('/').pop();
   const isImg = /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name);
-  return <a class="file" href="${url}" target="_blank" rel="noopener">📎 ${name}</a>${isImg?<div style="margin-top:6px"><img src="${url}" alt="" style="max-width:280px;border:1px solid #2b3a77;border-radius:10px"></div>:''};
+  return '<a class="file" href="'+url+'" target="_blank" rel="noopener">📎 '+name+'</a>' + (isImg?('<div style="margin-top:6px"><img src="'+url+'" alt="" style="max-width:280px;border:1px solid #2b3a77;border-radius:10px"></div>'):'');
 }
-function bubbleHtml(m, children=[]){
+function bubbleHtml(m, children){
   const me = m.author===state.me;
   const body = linkify(m.body||'');
-  const when = INT.format(new Date(m.created_at));
-  const reacts = (m.reactions && typeof m.reactions==='object') ? Object.entries(m.reactions).filter(([,v])=>v>0) : [];
-  return `
-  <div class="msg" id="m-${m.id}">
-    <div class="meta">${me?'Ja':(m.author||'—')}</div>
-    <div class="bubble ${me?'me':''}">
-      ${m.deleted_at? <i class="meta">[wiadomość usunięta]</i> : body}
-      ${m.file_url? fileChip(m.file_url):''}
-      <div class="tools">
-        <button class="btn-icon" onclick="startReply('${m.id}')">💬 Odpowiedz</button>
-        <button class="btn-icon" onclick="react('${m.id}','👍')">👍</button>
-        <button class="btn-icon" onclick="react('${m.id}','❤')">❤</button>
-        <button class="btn-icon" onclick="react('${m.id}','🔥')">🔥</button>
-        ${me && !m.deleted_at ? `<button class="btn-icon" onclick="editMsg('${m.id}')">✎ Edytuj</button>
-        <button class="btn-icon" onclick="delMsg('${m.id}')">🗑 Usuń</button>`:''}
-        <span class="meta" style="margin-left:auto">${when} ${me?'<span title="lokalne ✓✓">✓✓</span>':''}${m.edited_at?' • ed.':''}</span>
-      </div>
-      ${reacts.length? <div class="reactions">${reacts.map(([emo,c])=>reactionBadge(emo,c)).join(' ')}</div>:''}
-      ${children.length? <div class="children">${children.map(c=>bubbleHtml(c,[])).join('')}</div>:''}
-    </div>
-  </div>`;
+  const when = INT.format(new Date(m.created_at||Date.now()));
+  const reactions = (m.reactions && typeof m.reactions==='object') ? Object.entries(m.reactions).filter(([,v])=>v>0) : [];
+  return [
+    '<div class="msg" id="m-'+m.id+'">',
+      '<div class="meta">', (me?'Ja':(m.author||'—')) ,'</div>',
+      '<div class="bubble ', (me?'me':''), '">',
+        (m.deleted_at ? '<i class="meta">[wiadomość usunięta]</i>' : body),
+        (m.file_url ? fileChip(m.file_url) : ''),
+        '<div class="tools">',
+          '<button class="btn-icon" onclick="startReply(\''+m.id+'\')">💬 Odpowiedz</button>',
+          // Reakcje zostawiamy lokalnie (brak serwera do update)
+          '<button class="btn-icon" onclick="localReact(\''+m.id+'\',\'👍\')">👍</button>',
+          '<button class="btn-icon" onclick="localReact(\''+m.id+'\',\'❤\')">❤</button>',
+          '<button class="btn-icon" onclick="localReact(\''+m.id+'\',\'🔥\')">🔥</button>',
+          (me && !m.deleted_at ? '<button class="btn-icon" onclick="localEdit(\''+m.id+'\')">✎ Edytuj</button><button class="btn-icon" onclick="localDelete(\''+m.id+'\')">🗑 Usuń</button>':''),
+          '<span class="meta" style="margin-left:auto">'+when+(me?' <span title="lokalne ✓✓">✓✓</span>':'')+(m.edited_at?' • ed.':'')+'</span>',
+        '</div>',
+        (reactions.length ? '<div class="reactions">'+reactions.map(([emo,c])=>reactionBadge(emo,c)).join(' ')+'</div>' : ''),
+        (children && children.length ? '<div class="children">'+children.map(c=>bubbleHtml(c,[])).join('')+'</div>' : ''),
+      '</div>',
+    '</div>'
+  ].join('');
 }
 function indexByParent(list){
   const byId=new Map(), children=new Map();
-  list.forEach(m=>{ byId.set(m.id,m); if(m.parent_id){ (children.get(m.parent_id)||children.set(m.parent_id,[]).get(m.parent_id)).push(m); } });
+  list.forEach(m=>{
+    byId.set(m.id,m);
+    if(m.parent_id){
+      if(!children.has(m.parent_id)) children.set(m.parent_id, []);
+      children.get(m.parent_id).push(m);
+    }
+  });
   return { byId, children };
 }
 function renderMessages(scrollToBottom=true){
   const box = $('#msgs');
-  const { children } = indexByParent(messages);
+  const { children } = indexByParent(state.messages);
   let out=[], lastDay='';
-  messages.filter(m=>!m.parent_id).forEach(m=>{
+  state.messages.filter(m=>!m.parent_id).forEach(m=>{
     const d=(m.created_at||'').slice(0,10);
     if(d && d!==lastDay){ out.push(dayDivider(m.created_at)); lastDay=d; }
     out.push(bubbleHtml(m, children.get(m.id)||[]));
   });
   const older = $('#older').outerHTML;
   box.innerHTML = older + out.join('');
-  if(scrollToBottom) box.scrollTop=box.scrollHeight;
+  if(scrollToBottom) box.scrollTop = box.scrollHeight;
 }
+
+/*** API (Netlify Functions) ***/
+async function apiList(room){
+  const r = await fetch(API_MESSAGES+'?room='+encodeURIComponent(room), { headers:{'Accept':'application/json'} });
+  if(!r.ok) throw new Error('GET /api/messages HTTP '+r.status);
+  const json = await r.json();
+  const arr = Array.isArray(json) ? json : (json.messages || []);
+  // normalizacja
+  return arr.map((m, i)=>({
+    id: m.id || m.key || String(i+1)+'-'+(m.ts||m.date||Date.now()),
+    room_id: m.room || m.room_id || room,
+    author: m.author || m.name || 'Anon',
+    body: m.text || m.body || m.message || '',
+    file_url: m.file_url || m.file || null,
+    created_at: m.created_at || m.date || m.ts || new Date().toISOString(),
+    parent_id: m.parent_id || null,
+    reactions: m.reactions || {}
+  }));
+}
+async function apiSend(payload){
+  const r = await fetch(API_MESSAGES, {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body: JSON.stringify({
+      room: payload.room_id,
+      author: payload.author,
+      text: payload.body,
+      file_url: payload.file_url || null,
+      parent_id: payload.parent_id || null
+    })
+  });
+  if(!r.ok) throw new Error('POST /api/messages HTTP '+r.status);
+  return await r.json();
+}
+async function apiUpload(file){
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('room', state.room);
+  const r = await fetch(API_UPLOAD, { method:'POST', body: fd });
+  if(!r.ok) throw new Error('POST /api/upload HTTP '+r.status);
+  const data = await r.json();
+  const url = data.url || data.publicUrl || data.fileUrl || data.location || '';
+  if(!url) throw new Error('Brak URL z upload');
+  return url;
+}
+
+/*** HISTORIA + POLLING ***/
 async function loadInitial(){
-  const lim=60;
-  const f = supa.from('messages').select('*').eq('room_id', state.room)
-              .order('created_at',{ascending:true}).limit(lim);
-  const { data, error } = await f;
-  if(error){ console.error(error); return; }
-  messages = data||[];
-  if(messages.length) state.oldestCursor = messages[0].created_at;
-  messages.forEach(m=>state.cache.set(m.id,m));
-  renderMessages(true);
+  try{
+    $('#conn').textContent = 'pobieram…';
+    const data = await apiList(state.room);
+    state.messages = data;
+    state.messages.forEach(m=>state.cache.set(m.id,m));
+    if(state.messages.length) state.oldestCursor = state.messages[0].created_at;
+    renderMessages(true);
+    $('#conn').textContent = 'gotowe';
+  }catch(err){
+    console.error(err);
+    $('#conn').textContent = 'błąd listy';
+  }
+}
+function startPolling(){
+  if(state.poller) clearInterval(state.poller);
+  state.poller = setInterval(async ()=>{
+    try{
+      const data = await apiList(state.room);
+      const oldLen = state.messages.length;
+      // prosta detekcja nowych (po id)
+      const known = new Set(state.messages.map(m=>m.id));
+      const merged = [...state.messages];
+      data.forEach(m=>{ if(!known.has(m.id)) merged.push(m); });
+      if(merged.length !== oldLen){
+        state.messages = merged.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+        renderMessages(true);
+        ding();
+      }
+    }catch(e){ /* cicho, żeby nie spamować */ }
+  }, 3000);
 }
 async function loadOlder(){
-  if(!state.oldestCursor) return;
-  const { data, error } = await supa.from('messages')
-    .select('*').eq('room_id', state.room)
-    .lt('created_at', state.oldestCursor)
-    .order('created_at',{ascending:false})
-    .limit(40);
-  if(error){ console.error(error); return; }
-  const older = (data||[]).reverse();
-  if(!older.length) { $('#older').textContent='— brak starszych —'; return; }
-  messages = older.concat(messages);
-  state.oldestCursor = messages[0].created_at;
-  older.forEach(m=>state.cache.set(m.id,m));
-  const box = $('#msgs'); const prev = box.scrollHeight;
-  renderMessages(false);
-  // zachowaj pozycję scrolla
-  const diff = $('#msgs').scrollHeight - prev;
-  box.scrollTop = diff;
+  alert('Paginacja w górę: do wdrożenia po stronie funkcji (parametry before/limit).');
 }
 
-/*** SUBSKRYPCJE ***/
-async function subscribeRoom(){
-  if(state.sub){ try{ await supa.removeChannel(state.sub);}catch{} }
-  state.sub = supa.channel('room:'+state.room)
-    .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:room_id=eq.${state.room}},(p)=>{
-      messages.push(p.new); state.cache.set(p.new.id,p.new); renderMessages(true); ding();
-    })
-    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'messages',filter:room_id=eq.${state.room}},(p)=>{
-      const m=p.new; const idx=messages.findIndex(x=>x.id===m.id); if(idx>-1){ messages[idx]=m; state.cache.set(m.id,m); renderMessages(false); }
-    })
-    .subscribe((status)=>{ $('#conn').textContent = status==='SUBSCRIBED'?'podłączono':'…'+status.toLowerCase(); });
-}
-
-/*** WYSYŁANIE / ODP / REAKCJE / EDYCJA / KASOWANIE ***/
+/*** WYSYŁANIE / ODP / REAKCJE LOKALNE ***/
 let replyTo=null;
 function startReply(id){
-  replyTo=id;
-  const m=state.cache.get(id);
-  const preview = ↪ Odp: ${m?.author||'—'}: ${(m?.body||'').slice(0,80)};
-  $('#txt').value = (preview+'\n'+$('#txt').value).trim() + ' ';
-  $('#txt').focus();
+  replyTo = id;
+  const m = state.cache.get(id);
+  const preview = '↪ Odp: '+(m?.author||'—')+': '+((m?.body||'').slice(0,80));
+  const t = $('#txt');
+  t.value = (preview+'\n'+t.value).trim()+' ';
+  t.focus();
 }
-async function react(id, emo){
-  try{
-    const m = state.cache.get(id) || (await supa.from('messages').select('*').eq('id',id).single()).data;
-    const r = m.reactions || {};
-    r[emo] = (r[emo]||0)+1;
-    await supa.from('messages').update({ reactions:r }).eq('id', id);
-  }catch(e){ console.error(e); }
+function localReact(id, emo){
+  const m = state.cache.get(id);
+  if(!m) return;
+  m.reactions = m.reactions || {};
+  m.reactions[emo] = (m.reactions[emo]||0)+1;
+  renderMessages(false);
 }
-async function editMsg(id){
-  const m = state.cache.get(id); if(!m || m.author!==state.me || m.deleted_at) return;
-  const t = prompt('Edytuj wiadomość:', m.body||''); if(t==null) return;
-  const { error } = await supa.from('messages').update({ body:t, edited_at: new Date().toISOString() }).eq('id', id);
-  if(error) alert(error.message);
+function localEdit(id){
+  const m = state.cache.get(id); if(!m) return;
+  const t = prompt('Edytuj treść:', m.body||''); if(t==null) return;
+  m.body = t; m.edited_at = new Date().toISOString();
+  renderMessages(false);
 }
-async function delMsg(id){
-  const m = state.cache.get(id); if(!m || m.author!==state.me || m.deleted_at) return;
-  if(!confirm('Usunąć wiadomość?')) return;
-  const { error } = await supa.from('messages').update({ deleted_at: new Date().toISOString(), body:'[usunięto]' }).eq('id', id);
-  if(error) alert(error.message);
+function localDelete(id){
+  const m = state.cache.get(id); if(!m) return;
+  if(!confirm('Usunąć wiadomość lokalnie?')) return;
+  m.deleted_at = new Date().toISOString(); m.body='[usunięto]';
+  renderMessages(false);
 }
 async function sendMessage(text, fileUrl){
-  text=(text||'').trim();
+  text = (text||'').trim();
   if(!text && !fileUrl) return;
   const payload = { room_id: state.room, author: state.me, body: text, file_url: fileUrl||null, parent_id: replyTo };
-  const { error } = await supa.from('messages').insert([payload]);
-  if(error){ alert('Błąd wysyłania: '+error.message); return; }
-  $('#txt').value=''; replyTo=null;
+  try{
+    await apiSend(payload);
+    replyTo = null;
+    $('#txt').value='';
+    // odśwież listę po zapisie
+    const data = await apiList(state.room);
+    state.messages = data;
+    state.messages.forEach(m=>state.cache.set(m.id,m));
+    renderMessages(true);
+  }catch(err){
+    alert('Błąd wysyłania: '+err.message);
+  }
 }
 
 /*** ZAŁĄCZNIKI ***/
 $('#file').addEventListener('change', async (e)=>{
   const f=e.target.files[0]; if(!f) return;
   try{
-    const path=${state.room}/${Date.now()}_${f.name};
-    const up = await supa.storage.from('chat').upload(path, f, { upsert:false });
-    if(up.error) throw up.error;
-    const pub = supa.storage.from('chat').getPublicUrl(path);
-    await sendMessage('', pub.data.publicUrl);
+    const url = await apiUpload(f);
+    await sendMessage('', url);
   }catch(err){
+    console.error(err);
+    // awaryjnie: dla małych plików dołącz jako dataURL
     if(f.size <= 1024*1024){
       const reader=new FileReader();
       reader.onload = async ()=>{ await sendMessage('', reader.result); };
@@ -420,50 +438,64 @@ $('#file').addEventListener('change', async (e)=>{
   e.target.value='';
 });
 
-/*** PISANIE ***/
+/*** PISANIE (tylko UI) ***/
+function showTyping(on){
+  const key='typing:'+state.room;
+  const set = window._typingSet || new Set();
+  window._typingSet = set;
+  if(on) set.add(state.me); else set.delete(state.me);
+  const names = [...set];
+  let label='';
+  if(names.length===1) label = names[0]+' pisze…';
+  else if(names.length===2) label = names.join(' i ')+' piszą…';
+  else if(names.length>2) label = names.slice(0,2).join(', ')+' i inni piszą…';
+  $('#typing').textContent = label;
+  clearTimeout(state.typingViewTimer);
+  state.typingViewTimer = setTimeout(()=>{ set.clear(); $('#typing').textContent=''; }, 1200);
+}
 $('#txt').addEventListener('input', ()=>{
   clearTimeout(state.typingTimer);
-  sendTyping(true);
-  state.typingTimer = setTimeout(()=>sendTyping(false), 1200);
+  showTyping(true);
+  state.typingTimer = setTimeout(()=>showTyping(false), 800);
 });
 $('#txt').addEventListener('keydown', (e)=>{
   if(e.key==='Enter' && (e.ctrlKey||e.metaKey)){ e.preventDefault(); $('#btnSend').click(); }
 });
 $('#btnSend').addEventListener('click', async ()=>{ await sendMessage($('#txt').value, null); });
 
-/*** SZUKANIE + FILTRY ***/
+/*** SZUKANIE ***/
 async function searchMessages(){
   state.search.q = $('#q').value.trim();
   state.search.author = $('#authorFilter').value.trim();
   const q=state.search.q, a=state.search.author;
-  let req = supa.from('messages').select('*').eq('room_id', state.room).order('created_at',{ascending:true}).limit(400);
-  if(a) req = req.eq('author', a);
-  const { data, error } = await req;
-  if(error){ console.error(error); return; }
-  let arr = data||[];
+  let arr = [...state.messages];
+  if(a) arr = arr.filter(m=>m.author===a);
   if(q){
     const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i');
     arr = arr.filter(m=> rx.test(m.body||'') || rx.test(m.file_url||'') );
   }
-  messages = arr;
+  const bak = state.messages;
+  state.messages = arr;
   renderMessages(true);
+  // po 10s przywróć pełną listę
+  setTimeout(()=>{ state.messages = bak; renderMessages(false); }, 10000);
 }
 function clearSearch(){
   $('#q').value=''; $('#authorFilter').value='';
   state.search={q:'',author:''};
-  loadInitial();
+  renderMessages(true);
 }
 
 /*** EKSPORT ***/
 function exportCSV(){
-  const rows=[['id','author','body','file','time','parent','edited','deleted']].concat(messages.map(m=>[
+  const rows=[['id','author','body','file','time','parent','edited','deleted']].concat(state.messages.map(m=>[
     m.id, m.author, m.body||'', m.file_url||'', m.created_at, m.parent_id||'', m.edited_at||'', m.deleted_at||''
   ]));
   const csv = rows.map(r=>r.map(s=>{s=(s??'').toString(); return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s}).join(';')).join('\n');
   const a=el('a',{href:URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})), download:'chat.csv'}); a.click();
 }
 function exportJSON(){
-  const a=el('a',{href:URL.createObjectURL(new Blob([JSON.stringify(messages,null,2)],{type:'application/json'})), download:'chat.json'}); a.click();
+  const a=el('a',{href:URL.createObjectURL(new Blob([JSON.stringify(state.messages,null,2)],{type:'application/json'})), download:'chat.json'}); a.click();
 }
 
 /*** DŹWIĘK ***/
@@ -474,22 +506,21 @@ async function setRoom(id){
   if(state.room===id) return;
   state.room=id; localStorage.setItem('chat_room', id);
   $('#roomTitle').innerHTML = '<b>'+id.toUpperCase()+'</b>';
-  $('#msgs').scrollTop=0; messages=[]; state.oldestCursor=null; renderMessages(false);
-  await loadInitial(); await subscribeRoom(); await joinPresence();
+  $('#msgs').scrollTop=0; state.messages=[]; state.oldestCursor=null; renderMessages(false);
+  await loadInitial();
 }
 
 /*** JA (podpis) ***/
 $('#btnName').addEventListener('click', ()=>{
   const n = prompt('Twój podpis (imię w czacie):', state.me) || state.me;
-  state.me=n; localStorage.setItem('chat_me', n); $('#meName').textContent=n; joinPresence();
+  state.me=n; localStorage.setItem('chat_me', n); $('#meName').textContent=n;
 });
 
 /*** START ***/
 (async function init(){
   try{
     await loadInitial();
-    await subscribeRoom();
-    await joinPresence();
+    startPolling();
     $('#conn').textContent='gotowe';
   }catch(e){
     console.error(e); $('#conn').textContent='błąd inicjalizacji';
