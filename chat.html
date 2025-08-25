@@ -1,60 +1,208 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pl">
 <head>
-  <meta charset="UTF-8" />
-  <title>Arkon Chat</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Chat • Netlify Functions</title>
   <style>
-    body { font-family: Arial, sans-serif; background:#0b1020; color:#fff; margin:0; }
-    header { background:#11183a; padding:10px; text-align:center; font-weight:bold; }
-    #chat { max-width:700px; margin:20px auto; background:#101736; padding:15px; border-radius:10px; }
-    #messages { height:300px; overflow-y:auto; border:1px solid #333; padding:10px; background:#0f1533; }
-    .msg { margin-bottom:8px; padding:6px 10px; background:#16204d; border-radius:6px; }
-    textarea { width:100%; height:60px; border-radius:6px; padding:8px; background:#0d1530; color:#fff; }
-    button { margin-top:6px; padding:8px 12px; background:#4cc9f0; border:none; border-radius:6px; cursor:pointer; }
-    button:hover { background:#36a7cc; }
+    body{margin:0;background:#0b1020;color:#e8edff;font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
+    header{padding:12px 16px;border-bottom:1px solid #253166;background:#11183a}
+    h1{margin:0;font-size:18px}
+    .wrap{max-width:940px;margin:0 auto;padding:12px}
+    .panel{background:linear-gradient(180deg,#101736,#0f1a44);border:1px solid #253166;border-radius:12px;overflow:hidden}
+    .top{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid #253166}
+    .msgs{height:55vh;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+    .msg{display:grid;grid-template-columns:auto 1fr;gap:8px}
+    .bub{background:#0f1a44;border:1px solid #2a3a75;border-radius:10px;padding:8px 10px;max-width:720px;word-break:break-word}
+    .me .bub{background:#16204d;border-color:#3d58c1}
+    .meta{font-size:11px;color:#aeb8da}
+    .composer{display:grid;grid-template-columns:1fr auto;gap:8px;padding:10px;border-top:1px solid #253166}
+    textarea,input,button{font:inherit;color:#e8edff}
+    textarea,input{background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:9px}
+    button{background:#233261;border:1px solid #3a4ca3;border-radius:10px;padding:9px 12px;cursor:pointer}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .pill{display:inline-block;border:1px dashed #3a4ca3;border-radius:999px;padding:4px 8px;color:#aeb8da}
+    .file{display:inline-flex;gap:6px;align-items:center;padding:3px 6px;border:1px dashed #3a4ca3;border-radius:8px}
+    a{color:#cfe1ff}
   </style>
 </head>
 <body>
-  <header>💬 Arkon Chat (Netlify)</header>
-  <div id="chat">
-    <div id="messages"></div>
-    <textarea id="txt" placeholder="Napisz wiadomość..."></textarea>
-    <button onclick="sendMsg()">Wyślij</button>
+<header>
+  <h1>Chat • Netlify Functions</h1>
+</header>
+
+<div class="wrap">
+  <div class="panel" id="app">
+    <div class="top">
+      <div class="row">
+        <span class="pill">Pokój: <b id="roomLbl">global</b></span>
+        <span class="pill">Ja: <b id="meLbl">Pracownik</b></span>
+      </div>
+      <div class="row">
+        <label class="pill">Załącz plik
+          <input id="file" type="file" style="display:none">
+        </label>
+        <button id="btnFile">📎 Wybierz</button>
+        <button id="btnReload">⟳ Odśwież</button>
+      </div>
+    </div>
+
+    <div id="msgs" class="msgs" aria-live="polite"></div>
+
+    <div class="composer">
+      <textarea id="txt" placeholder="Napisz wiadomość… (Ctrl+Enter wysyła)" rows="2"></textarea>
+      <div class="row">
+        <button id="btnSend">Wyślij ▶</button>
+      </div>
+    </div>
   </div>
+</div>
 
-  <script>
-    const API = "/api/messages";
-    const room = "global"; // stały pokój testowy
+<script>
+(() => {
+  "use strict";
 
-    async function loadMsgs(){
-      const res = await fetch(${API}?room=${room});
-      const data = await res.json();
-      const box = document.getElementById("messages");
-      box.innerHTML = "";
-      data.forEach(m=>{
-        const div = document.createElement("div");
-        div.className = "msg";
-        div.textContent = [${m.author||'anon'}] ${m.body};
-        box.appendChild(div);
-      });
-      box.scrollTop = box.scrollHeight;
+  // === KONFIG (dostosuj tylko jeśli chcesz inny pokój/autor) ===
+  const ROOM = localStorage.getItem('chat_room') || 'global';
+  const ME   = localStorage.getItem('chat_me')   || 'Pracownik';
+
+  // === DOM ===
+  const $ = s => document.querySelector(s);
+  const msgsBox = $('#msgs');
+  const txt = $('#txt');
+  const fileInput = $('#file');
+
+  // Ustaw labelki
+  $('#roomLbl').textContent = ROOM;
+  $('#meLbl').textContent = ME;
+
+  // === HELPERS ===
+  const INT = new Intl.DateTimeFormat('pl-PL', { dateStyle:'short', timeStyle:'short' });
+  const esc = s => (s||'').toString().replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const linkify = t => (t||'').replace(/(https?:\/\/\S+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+
+  function fileChip(url) {
+    const name = (url||'').split('/').pop();
+    const isImg = /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name);
+    return `
+      <a class="file" href="${url}" target="_blank" rel="noopener">📎 ${esc(name)}</a>
+      ${isImg ? <div style="margin-top:6px"><img src="${url}" alt="" style="max-width:300px;border:1px solid #2a3a75;border-radius:8px"></div> : ''}`;
+  }
+
+  function render(messages) {
+    const out = [];
+    let lastDay = '';
+    (messages || []).forEach(m => {
+      const day = (m.created_at||'').slice(0,10);
+      if (day && day !== lastDay) {
+        out.push(<div class="meta" style="text-align:center;margin:6px 0">${INT.format(new Date(m.created_at)).split(',')[0]}</div>);
+        lastDay = day;
+      }
+      const me = m.author === ME;
+      out.push(`
+        <div class="msg ${me ? 'me' : ''}">
+          <div class="meta" style="min-width:90px">${me ? 'Ja' : esc(m.author||'—')}</div>
+          <div class="bub">
+            ${m.deleted_at ? <i class="meta">[usunięto]</i> : linkify(esc(m.body||''))}
+            ${m.file_url ? fileChip(m.file_url) : ''}
+            <div class="meta" style="margin-top:4px">${INT.format(new Date(m.created_at))}${m.edited_at ? ' • ed.' : ''}</div>
+          </div>
+        </div>
+      `);
+    });
+    msgsBox.innerHTML = out.join('');
+    msgsBox.scrollTop = msgsBox.scrollHeight;
+  }
+
+  // === API ===
+  async function apiGetMessages() {
+    const res = await fetch(/api/messages?room=${encodeURIComponent(ROOM)});
+    if (!res.ok) throw new Error(GET /api/messages HTTP ${res.status});
+    return res.json(); // oczekujemy { items: [...] }
+  }
+
+  async function apiSend(body) {
+    const res = await fetch('/api/messages', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        room: ROOM,
+        author: ME,
+        body
+      })
+    });
+    if (!res.ok) throw new Error(POST /api/messages HTTP ${res.status});
+    return res.json();
+  }
+
+  async function apiUpload(file) {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('room', ROOM);
+
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      body: fd
+    });
+    if (!res.ok) throw new Error(POST /api/upload HTTP ${res.status});
+    return res.json(); // oczekujemy { url: "https://..." }
+  }
+
+  // === AKCJE ===
+  async function load() {
+    try {
+      const data = await apiGetMessages();
+      render(data.items || data || []);
+    } catch (e) {
+      console.error(e);
+      alert('Błąd pobierania wiadomości');
     }
+  }
 
-    async function sendMsg(){
-      const text = document.getElementById("txt").value.trim();
-      if(!text) return;
-      await fetch(API, {
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ room, author:"Pracownik", body:text })
-      });
-      document.getElementById("txt").value = "";
-      loadMsgs();
+  async function sendMsg() {
+    const text = (txt.value || '').trim();
+    if (!text) return;
+    try {
+      await apiSend(text);
+      txt.value = '';
+      await load(); // odśwież po wysłaniu
+    } catch (e) {
+      console.error(e);
+      alert('Błąd wysyłania wiadomości');
     }
+  }
 
-    // odświeżanie co 2 sekundy
-    setInterval(loadMsgs, 2000);
-    loadMsgs();
-  </script>
+  async function sendFile(file) {
+    try {
+      const up = await apiUpload(file);
+      // po uploadzie wyślij wiadomość z linkiem do pliku
+      await apiSend(up.url || '');
+      await load();
+    } catch (e) {
+      console.error(e);
+      alert('Błąd wysyłania pliku');
+    }
+  }
+
+  // === ZDARZENIA ===
+  $('#btnReload').addEventListener('click', load);
+  $('#btnSend').addEventListener('click', sendMsg);
+  $('#btnFile').addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0];
+    if (f) sendFile(f);
+    e.target.value = '';
+  });
+  txt.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      sendMsg();
+    }
+  });
+
+  // START
+  load();
+})();
+</script>
 </body>
 </html>
