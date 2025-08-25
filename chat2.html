@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <title>Arkon Chat</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#0b1020; color:#fff; margin:0; }
+    header { background:#11183a; padding:10px; text-align:center; font-weight:bold; }
+    #chat { max-width:700px; margin:20px auto; background:#101736; padding:15px; border-radius:10px; }
+    #messages { height:300px; overflow-y:auto; border:1px solid #333; padding:10px; background:#0f1533; }
+    .msg { margin-bottom:8px; padding:6px 10px; background:#16204d; border-radius:6px; }
+    textarea { width:100%; height:60px; border-radius:6px; padding:8px; background:#0d1530; color:#fff; }
+    button { margin-top:6px; padding:8px 12px; background:#4cc9f0; border:none; border-radius:6px; cursor:pointer; }
+    button:hover { background:#36a7cc; }
+  </style>
+</head>
+<body>
+  <header>💬 Arkon Chat (Netlify)</header>
+  <div id="chat">
+    <div id="messages"></div>
+    <textarea id="txt" placeholder="Napisz wiadomość..."></textarea>
+    <button onclick="sendMsg()">Wyślij</button>
+  </div>
+
+  <script>
+    const API = "/api/messages";
+    const room = "global"; // stały pokój testowy
+
+    async function loadMsgs(){
+      const res = await fetch(${API}?room=${room});
+      const data = await res.json();
+      const box = document.getElementById("messages");
+      box.innerHTML = "";
+      data.forEach(m=>{
+        const div = document.createElement("div");
+        div.className = "msg";
+        div.textContent = [${m.author||'anon'}] ${m.body};
+        box.appendChild(div);
+      });
+      box.scrollTop = box.scrollHeight;
+    }
+
+    async function sendMsg(){
+      const text = document.getElementById("txt").value.trim();
+      if(!text) return;
+      await fetch(API, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ room, author:"Pracownik", body:text })
+      });
+      document.getElementById("txt").value = "";
+      loadMsgs();
+    }
+
+    // odświeżanie co 2 sekundy
+    setInterval(loadMsgs, 2000);
+    loadMsgs();
+  </script>
+</body>
+</html>
