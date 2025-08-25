@@ -1,17 +1,17 @@
 [build]
-  publish = "."  # serwuj statyczne pliki z głównego katalogu
+  # nie budujemy frameworka – publikujemy root
+  publish = "/"
 
+[functions]
+  node_bundler = "esbuild"
+
+# Proxy do funkcji
 [[redirects]]
   from = "/api/hello"
-  to   = "/.netlify/functions/hello"
+  to = "/.netlify/functions/hello"
   status = 200
 
 [[redirects]]
   from = "/api/messages"
-  to   = "/.netlify/functions/messages"
-  status = 200
-
-[[redirects]]
-  from = "/api/upload"
-  to   = "/.netlify/functions/upload"
+  to = "/.netlify/functions/messages"
   status = 200
