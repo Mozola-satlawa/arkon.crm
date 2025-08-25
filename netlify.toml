@@ -1,25 +1,17 @@
 [build]
-# brak komendy budowania – to czysty HTML/CSS/JS
-command = ""
-# publikujemy katalog główny repo (tam gdzie index.html / chat.html)
-publish = "/"
-
-[functions]
-directory = "netlify/functions"
-node_bundler = "esbuild"
-
-# API aliasy
-[[redirects]]
-from = "/api/hello"
-to = "/.netlify/functions/hello"
-status = 200
+  publish = "."  # serwuj statyczne pliki z głównego katalogu
 
 [[redirects]]
-from = "/api/messages"
-to = "/.netlify/functions/messages"
-status = 200
+  from = "/api/hello"
+  to   = "/.netlify/functions/hello"
+  status = 200
 
 [[redirects]]
-from = "/api/upload"
-to = "/.netlify/functions/upload"
-status = 200
+  from = "/api/messages"
+  to   = "/.netlify/functions/messages"
+  status = 200
+
+[[redirects]]
+  from = "/api/upload"
+  to   = "/.netlify/functions/upload"
+  status = 200
