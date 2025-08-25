@@ -1,8 +1,35 @@
 [build]
-  command = ""
-  publish = "."
+  publish = "."              # zostaw – serwujesz statyczne pliki z repo
+  node_bundler = "esbuild"
+
+[functions]
+  node_bundler = "esbuild"
+  directory = "netlify/functions"
+
+# REST-owe aliasy /api/**
+[[redirects]]
+  from = "/api/contracts"
+  to   = "/.netlify/functions/contracts"
+  status = 200
+[[redirects]]
+  from = "/api/contracts/*"
+  to   = "/.netlify/functions/contracts/:splat"
+  status = 200
 
 [[redirects]]
-  from = "/*"
-  to = "/index.html"
+  from = "/api/docs"
+  to   = "/.netlify/functions/docs"
+  status = 200
+[[redirects]]
+  from = "/api/docs/*"
+  to   = "/.netlify/functions/docs/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/api/tasks"
+  to   = "/.netlify/functions/tasks"
+  status = 200
+[[redirects]]
+  from = "/api/tasks/*"
+  to   = "/.netlify/functions/tasks/:splat"
   status = 200
