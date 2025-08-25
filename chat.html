@@ -1,307 +1,60 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pl">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ARKON • Chat</title>
-<meta name="description" content="Prosty, stabilny chat dla Netlify Functions.">
-<style>
-  :root{
-    --bg:#0b1020; --p1:#101736; --p2:#0f1a44; --ink:#e8edff; --muted:#aeb8da; --line:#253166; --accent:#4cc9f0;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:linear-gradient(180deg,#0a0f1e,#0c1230 55%,#0a0f1e);color:var(--ink);
-       font:15px/1.5 system-ui,Segoe UI,Roboto,Arial;min-height:100vh;display:flex;flex-direction:column}
-  header{padding:12px 16px;border-bottom:1px solid var(--line);background:#11183a;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
-  header h1{margin:0;font-size:18px}
-  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  input,select,textarea,button{font:inherit;color:var(--ink)}
-  input,select,textarea{background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:8px}
-  button{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
-  button.ghost{background:transparent;border-style:dashed}
-  main{max-width:1100px;margin:12px auto;padding:0 12px;flex:1;width:100%}
-  .panel{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-height:70vh}
-  .topbar{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
-  .msgs{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
-  .msg{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:flex-start}
-  .bubble{background:linear-gradient(180deg,#111a3c,#0f1a44);border:1px solid #2a3a75;border-radius:12px;padding:8px 10px;max-width:920px;word-break:break-word}
-  .me .bubble{background:#16204d;border-color:#3d58c1}
-  .meta{font-size:11px;color:var(--muted)}
-  .composer{border-top:1px solid var(--line);padding:10px;display:grid;grid-template-columns:1fr auto;gap:8px}
-  .error{background:#3a1f2a;border:1px solid #7b3341;color:#ffd7d7;padding:8px 10px;border-radius:8px;margin:8px 12px;display:none}
-  .chip{display:inline-block;padding:2px 8px;border:1px dashed #3a4ca3;border-radius:999px;font-size:12px;background:#0d1530}
-  .day{display:flex;align-items:center;gap:10px;margin:4px 0}
-  .day::before,.day::after{content:"";height:1px;background:#223160;flex:1}
-  a{color:#cfe1ff}
-</style>
+  <meta charset="UTF-8">
+  <title>Chat</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    #chat-box { border: 1px solid #ccc; height: 300px; overflow-y: auto; padding: 10px; margin-bottom: 10px; }
+    .msg { margin: 5px 0; }
+    .time { color: gray; font-size: 0.8em; margin-left: 6px; }
+  </style>
 </head>
 <body>
-  <header>
-    <h1>ARKON • Chat</h1>
-    <div class="row">
-      <label>Pokój:
-        <select id="room">
-          <option value="global">global</option>
-          <option value="krolowa">krolowa</option>
-          <option value="adrian">adrian</option>
-          <option value="emil">emil</option>
-        </select>
-      </label>
-      <label>Ja:
-        <input id="nick" placeholder="Twój podpis" style="width:160px">
-      </label>
-      <button id="btnSave" class="ghost">Zapisz ustawienia</button>
-      <span id="conn" class="chip">status: —</span>
-    </div>
-  </header>
+  <h1>Netlify Chat</h1>
+  <div id="chat-box"></div>
+  <input type="text" id="msgInput" placeholder="Napisz wiadomość..." />
+  <button id="sendBtn">Wyślij</button>
 
-  <main>
-    <div id="err" class="error"></div>
-    <section class="panel">
-      <div class="topbar">
-        <div class="row">
-          <strong id="title">Pokój: global</strong>
-        </div>
-        <div class="row">
-          <input id="file" type="file" hidden>
-          <button id="btnFile" class="ghost" title="Załącz plik">📎 Załącz</button>
-          <button id="btnReload" class="ghost" title="Odśwież">⟳</button>
-        </div>
-      </div>
+  <script>
+    const apiUrl = "/api/messages"; // kieruje do netlify/functions/messages.js
 
-      <div id="list" class="msgs" aria-live="polite"></div>
-
-      <div class="composer">
-        <textarea id="text" rows="2" placeholder="Napisz wiadomość… (Ctrl+Enter wysyła)"></textarea>
-        <div class="row">
-          <button id="btnSend">Wyślij ▶</button>
-        </div>
-      </div>
-    </section>
-  </main>
-
-<script>
-(function(){
-  "use strict";
-
-  // ==== KONFIG API (zmień tylko jeśli Twoje funkcje są pod inną bazową ścieżką) ====
-  const API_BASE = "/api"; // np. "" (gdy proxy), "/.netlify/functions" (gdy chcesz bez redirectów)
-
-  // ==== STAN ====
-  const $ = sel => document.querySelector(sel);
-  const state = {
-    room: localStorage.getItem("room") || "global",
-    me:   localStorage.getItem("nick") || "Pracownik",
-    items: [],
-    poll: null,
-    lastRenderedDay: ""
-  };
-  const INT = new Intl.DateTimeFormat('pl-PL', {dateStyle:'short', timeStyle:'short'});
-
-  // ==== UI INIT ====
-  $("#room").value = state.room;
-  $("#nick").value = state.me;
-  $("#title").textContent = "Pokój: " + state.room;
-
-  // ==== NARZĘDZIA ====
-  function showErr(msg){
-    const box = $("#err");
-    box.textContent = msg || "";
-    box.style.display = msg ? "block" : "none";
-  }
-  function setConn(txt){ $("#conn").textContent = "status: " + txt; }
-
-  function esc(s){
-    return String(s||"").replace(/[&<>"]/g, c => (
-      c==="&" ? "&amp;" : c==="<" ? "&lt;" : c===">" ? "&gt;" : c
-    ));
-  }
-  function linkify(s){
-    const t = String(s||"");
-    return t.replace(/(https?:\/\/[^\s)]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
-  }
-
-  function dividerIfNewDay(ts){
-    const d = (ts||"").slice(0,10);
-    if(!d) return "";
-    if (d !== state.lastRenderedDay){
-      state.lastRenderedDay = d;
-      const dateStr = INT.format(new Date(ts)).split(",")[0];
-      return '<div class="day"><span>'+esc(dateStr)+'</span></div>';
-    }
-    return "";
-  }
-
-  function render(){
-    const box = $("#list");
-    state.lastRenderedDay = "";
-    let html = "";
-    const items = state.items.slice().sort((a,b)=> new Date(a.time||a.created_at||0) - new Date(b.time||b.created_at||0));
-    for(const m of items){
-      const me = (m.author || m.nick) === state.me;
-      const ts = m.time || m.created_at || new Date().toISOString();
-      html += dividerIfNewDay(ts);
-      const who = me ? "Ja" : esc(m.author || m.nick || "—");
-      let body = esc(m.text || m.body || "");
-      body = linkify(body);
-      let filePart = "";
-      if (m.file || m.file_url || m.url){
-        const url = m.file || m.file_url || m.url;
-        const name = url.split("/").pop();
-        filePart = ' <div><a class="chip" href="'+esc(url)+'" target="_blank" rel="noopener">📎 '+esc(name)+'</a></div>';
+    async function loadMessages() {
+      try {
+        const res = await fetch(apiUrl);
+        const data = await res.json();
+        const box = document.getElementById("chat-box");
+        box.innerHTML = "";
+        (data.items || []).forEach(m => {
+          const div = document.createElement("div");
+          div.className = "msg";
+          div.innerHTML = <b>${m.user}:</b> ${m.text} <span class="time">(${new Date(m.time).toLocaleTimeString()})</span>;
+          box.appendChild(div);
+        });
+        box.scrollTop = box.scrollHeight;
+      } catch (err) {
+        console.error("Błąd ładowania:", err);
       }
-      html += ''
-        + '<div class="msg '+(me?'me':'')+'">'
-        +   '<div class="meta">'+ who +'</div>'
-        +   '<div class="bubble">'
-        +     (body ? body : '<i class="meta">[bez treści]</i>')
-        +     filePart
-        +     '<div class="meta" style="margin-top:4px">'+ esc(INT.format(new Date(ts))) + (me?' • ✓✓':'') +'</div>'
-        +   '</div>'
-        + '</div>';
     }
-    box.innerHTML = html || '<div class="meta">Brak wiadomości…</div>';
-    box.scrollTop = box.scrollHeight;
-  }
 
-  // ==== API ====
-  async function apiGetMessages(room){
-    const url = API_BASE + "/messages?room=" + encodeURIComponent(room);
-    const r = await fetch(url, {method:"GET"});
-    if(!r.ok) throw new Error("GET /api/messages HTTP "+r.status);
-    const data = await r.json();
-    // obsłuż dwa możliwe formaty
-    if (Array.isArray(data)) return data;
-    if (data && Array.isArray(data.items)) return data.items;
-    return [];
-  }
+    async function sendMsg() {
+      const input = document.getElementById("msgInput");
+      const text = input.value.trim();
+      if (!text) return;
 
-  async function apiSend(payload){
-    const r = await fetch(API_BASE + "/messages", {
-      method:"POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify(payload)
-    });
-    if(!r.ok) throw new Error("POST /api/messages HTTP "+r.status);
-    return r.json().catch(()=> ({}));
-  }
-
-  async function apiUpload(file){
-    // endpoint opcjonalny — jeśli go nie masz, po prostu nie używaj załączników
-    const fd = new FormData();
-    fd.append("file", file);
-    const r = await fetch(API_BASE + "/upload", { method:"POST", body: fd });
-    if(!r.ok) throw new Error("POST /api/upload HTTP "+r.status);
-    return r.json(); // { url: "..." }
-  }
-
-  // ==== LOGIKA ====
-  async function load(){
-    try{
-      setConn("pobieram…");
-      const items = await apiGetMessages(state.room);
-      state.items = items;
-      render();
-      setConn("OK");
-    }catch(e){
-      console.error(e);
-      showErr(String(e.message||e));
-      setConn("błąd");
+      await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user: "User", text })
+      });
+      input.value = "";
+      loadMessages();
     }
-  }
 
-  async function sendMessage(){
-    const ta = $("#text");
-    const txt = (ta.value||"").trim();
-    if(!txt){ ta.focus(); return; }
-    const payload = {
-      room: state.room,
-      author: state.me,
-      text: txt,
-      body: txt,   // zgodność wsteczna (gdy funkcja oczekuje body)
-      time: new Date().toISOString()
-    };
-    try{
-      setConn("wysyłam…");
-      await apiSend(payload);
-      ta.value = "";
-      await load(); // przeładuj po wysłaniu
-      setConn("OK");
-    }catch(e){
-      console.error(e);
-      showErr(String(e.message||e));
-      setConn("błąd");
-    }
-  }
+    document.getElementById("sendBtn").onclick = sendMsg;
 
-  async function sendWithFile(file){
-    try{
-      setConn("upload…");
-      const up = await apiUpload(file); // {url}
-      const url = up && (up.url || up.pathname);
-      if(!url) throw new Error("Brak URL z uploadu");
-      $("#text").value = ($("#text").value||"").trim();
-      const finalText = $("#text").value ? ($("#text").value + " " + url) : url;
-      const payload = {
-        room: state.room,
-        author: state.me,
-        text: finalText,
-        body: finalText,
-        file: url,
-        time: new Date().toISOString()
-      };
-      setConn("wysyłam…");
-      await apiSend(payload);
-      $("#text").value = "";
-      await load();
-      setConn("OK");
-    }catch(e){
-      console.error(e);
-      showErr(String(e.message||e));
-      setConn("błąd");
-    }
-  }
-
-  // ==== ZDARZENIA ====
-  $("#btnSave").addEventListener("click", ()=>{
-    state.room = $("#room").value || "global";
-    state.me   = ($("#nick").value||"").trim() || "Pracownik";
-    localStorage.setItem("room", state.room);
-    localStorage.setItem("nick", state.me);
-    $("#title").textContent = "Pokój: " + state.room;
-    load();
-  });
-
-  $("#btnReload").addEventListener("click", load);
-
-  $("#btnSend").addEventListener("click", sendMessage);
-
-  $("#text").addEventListener("keydown", (e)=>{
-    if(e.key === "Enter" && (e.ctrlKey || e.metaKey)){
-      e.preventDefault();
-      sendMessage();
-    }
-  });
-
-  $("#btnFile").addEventListener("click", ()=> $("#file").click());
-
-  $("#file").addEventListener("change", (e)=>{
-    const f = e.target.files && e.target.files[0];
-    if(!f) return;
-    sendWithFile(f);
-    e.target.value = ""; // reset input
-  });
-
-  // prosty polling co 5s (bez SSE, żeby było „żelazo proste”)
-  function startPolling(){
-    if(state.poll) clearInterval(state.poll);
-    state.poll = setInterval(load, 5000);
-  }
-
-  // ==== START ====
-  load();
-  startPolling();
-})();
-</script>
+    loadMessages();
+    setInterval(loadMessages, 5000);
+  </script>
 </body>
 </html>
