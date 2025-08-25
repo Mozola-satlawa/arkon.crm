@@ -1,6 +1,9 @@
 {
-  "name": "arkon-crm",
-  "version": "1.0.0",
+  "name": "arkon-netlify-api",
+  "private": true,
   "type": "module",
-  "private": true
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "@netlify/blobs": "^8.0.0"
+  }
 }
