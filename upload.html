@@ -316,7 +316,7 @@ async function supaPing(){
 
   const clients = loadClients();
   const cc = $('#cloudClient');
-  cc.innerHTML = <option value="">— wszyscy klienci —</option> + clients.map(c=><option value="${esc(c.id)}">${esc(c.name||'')}</option>).join('');
+  cc.innerHTML = '<option value="">— wszyscy klienci —</option>' + clients.map(c=>`<option value="${esc(c.id)}">${esc(c.name||'')}</option>`).join('');
 }
 
 const safeName = (name='plik') =>
@@ -326,14 +326,14 @@ function ymPrefix(){
   const d = new Date();
   const y = d.getFullYear();
   const m = String(d.getMonth()+1).padStart(2,'0');
-  return ${y}-${m};
+  return `${y}-${m}`;
 }
 
 function buildRemotePath({clientId, file, kind}){
   const who = (clientId||'bez-klienta').toLowerCase();
   const ts  = new Date().toISOString().replace(/[:.]/g,'-');
   const base = kind==='flyer' ? 'flyers' : 'clients';
-  return ${base}/${who}/${ymPrefix()}/${ts}_${safeName(file.name)};
+  return `${base}/${who}/${ymPrefix()}/${ts}_${safeName(file.name)}`;
 }
 
 /* Upload: signed → fallback direct */
@@ -406,12 +406,12 @@ async function handleFiles(files){
           onProgress:(p)=>{ bar.style.width=p+'%'; pct.textContent=p+'%'; }
         });
         bar.style.width='100%'; pct.textContent='100%';
-        row.insertAdjacentHTML('beforeend', <span class="pill" style="background:#0f2c22;border-color:#2e925e">OK</span>);
+        row.insertAdjacentHTML('beforeend', '<span class="pill" style="background:#0f2c22;border-color:#2e925e">OK</span>');
         const rec = await dbGet(id);
         await dbPut({...rec, cloudUrl: up.url, cloudPath: up.path});
         await renderCloudList(); // natychmiast
       }catch(e){
-        row.insertAdjacentHTML('beforeend', <span class="pill" style="background:#2e1117;border-color:#7b3341">Błąd</span>);
+        row.insertAdjacentHTML('beforeend', '<span class="pill" style="background:#2e1117;border-color:#7b3341">Błąd</span>');
         console.warn('Upload error:', e);
       }
     }
@@ -426,35 +426,35 @@ async function renderFiles(){
   const cat = fileFilter.cat||'';
   const tb = $('#tbFiles'); tb.innerHTML='';
   const cats = new Set();
-  list.sort((a,b)=>(b.at||0)-(a.at||0)).forEach(rec=>cats.add(rec.category||''));
-  $('#fCat').innerHTML = '<option value="">Kategoria (wszystkie)</option>' + Array.from(cats).filter(Boolean).map(c=><option ${cat===c?'selected':''}>${esc(c)}</option>).join('');
-  let vis=0;
-  list.filter(x=>{
-    if(cat && (x.category||'')!==cat) return false;
-    const hay=[x.name,x.clientName,x.category,x.type,x.tags].join(' ').toLowerCase();
-    return !q || hay.includes(q);
-  }).forEach(rec=>{
-    vis++;
-    const tr=document.createElement('tr');
-    const when=rec.at? new Date(rec.at).toLocaleString('pl-PL'):'';
-    const urlBusted = rec.cloudUrl ? rec.cloudUrl + ?v=${Date.now()} : '';
-    const cloudLink = rec.cloudUrl ? <a class="btn ghost" href="${urlBusted}" target="_blank" rel="noopener">Link</a> : '';
-    const cloudDel  = rec.cloudPath ? <button class="btn bad" data-delcloud="${esc(rec.cloudPath)}">Usuń z chmury</button> : '';
-    tr.innerHTML = `
-      <td class="row">
-        <button class="btn ghost" data-dl="${rec.id}">Pobierz</button>
-        ${cloudLink}
-        ${cloudDel}
-        <button class="btn" data-edit="${rec.id}">Edytuj</button>
-        <button class="btn bad" data-del="${rec.id}">Usuń lokalnie</button>
-      </td>
-      <td>${esc(rec.name)}</td>
-      <td>${esc(rec.clientName||'')}</td>
-      <td>${esc(rec.category||'')}</td>
-      <td>${esc(rec.tags||'')}</td>
-      <td>${esc(rec.type||'')}</td>
-      <td>${bytes(rec.size||0)}</td>
-      <td>${when}</td>`;
+    list.sort((a,b)=>(b.at||0)-(a.at||0)).forEach(rec=>cats.add(rec.category||''));
+    $('#fCat').innerHTML = '<option value="">Kategoria (wszystkie)</option>' + Array.from(cats).filter(Boolean).map(c => `<option value="${esc(c)}" ${cat===c ? 'selected' : ''}>${esc(c)}</option>`).join('');
+    let vis=0;
+    list.filter(x=>{
+      if(cat && (x.category||'')!==cat) return false;
+      const hay=[x.name,x.clientName,x.category,x.type,x.tags].join(' ').toLowerCase();
+      return !q || hay.includes(q);
+    }).forEach(rec=>{
+      vis++;
+      const tr=document.createElement('tr');
+      const when=rec.at? new Date(rec.at).toLocaleString('pl-PL'):'';
+      const urlBusted = rec.cloudUrl ? (rec.cloudUrl + '?v=' + Date.now()) : '';
+      const cloudLink = rec.cloudUrl ? `<a class="btn ghost" href="${esc(urlBusted)}" target="_blank" rel="noopener">Link</a>` : '';
+      const cloudDel  = rec.cloudPath ? `<button class="btn bad" data-delcloud="${esc(rec.cloudPath)}">Usuń z chmury</button>` : '';
+      tr.innerHTML = `
+        <td class="row">
+          <button class="btn ghost" data-dl="${rec.id}">Pobierz</button>
+          ${cloudLink}
+          ${cloudDel}
+          <button class="btn" data-edit="${rec.id}">Edytuj</button>
+          <button class="btn bad" data-del="${rec.id}">Usuń lokalnie</button>
+        </td>
+        <td>${esc(rec.name)}</td>
+        <td>${esc(rec.clientName||'')}</td>
+        <td>${esc(rec.category||'')}</td>
+        <td>${esc(rec.tags||'')}</td>
+        <td>${esc(rec.type||'')}</td>
+        <td>${bytes(rec.size||0)}</td>
+        <td>${when}</td>`;
     tb.appendChild(tr);
   });
   $('#filesVis').textContent = vis;
@@ -468,7 +468,7 @@ async function renderFiles(){
   }));
   tb.querySelectorAll('[data-delcloud]').forEach(b=>b.addEventListener('click', async ()=>{
     const path=b.dataset.delcloud;
-    if(!confirm(Usunąć z chmury?\n${path})) return;
+    if(!confirm(`Usunąć z chmury?\n${path}`)) return;
     try{ await deleteFromCloud(path); alert('Usunięto z chmury.'); }catch(e){ alert('Błąd usuwania: '+(e?.message||e)); }
     renderCloudList();
   }));
@@ -489,7 +489,7 @@ function currentPrefix(){
   const clientPref = $('#cloudClient').value || '';
   const extraPref  = ($('#cloudPrefix').value||'').trim().replace(/^\/+|\/+$/g,'');
   let prefix = '';
-  if(clientPref){ prefix = clients/${clientPref}/; }
+  if(clientPref){ prefix = `clients/${clientPref}/`; }
   if(extraPref){ prefix += extraPref.endsWith('/') ? extraPref : (extraPref + '/'); }
   return prefix; // może być pusty: UWAŻAJ przy kasowaniu!
 }
@@ -500,13 +500,13 @@ async function renderCloudList(){
 
   const { data, error } = await supa.storage.from(CLOUD.bucket).list(prefix, { limit: 1000, offset: 0, sortBy:{ column:'name', order:'asc' } });
   const body = $('#cloudBody'); body.innerHTML='';
-  if(error){ body.innerHTML = <tr><td colspan="4">Błąd listowania: ${esc(error.message||String(error))}</td></tr>; $('#cloudCount').textContent='0'; return; }
+  if(error){ body.innerHTML = `<tr><td colspan="4">Błąd listowania: ${esc(error.message||String(error))}</td></tr>`; $('#cloudCount').textContent='0'; return; }
   let count=0;
   for(const it of (data||[])){
     if(it.id){
       count++;
       const fullPath = (prefix? prefix : '') + it.name;
-      const url = supa.storage.from(CLOUD.bucket).getPublicUrl(fullPath).data.publicUrl + ?v=${Date.now()};
+      const url = supa.storage.from(CLOUD.bucket).getPublicUrl(fullPath).data.publicUrl + '?v=' + Date.now();
       const tr=document.createElement('tr');
       tr.innerHTML = `
         <td class="row">
@@ -520,12 +520,12 @@ async function renderCloudList(){
     }
   }
   if(count===0){
-    body.innerHTML = <tr><td colspan="4">Brak plików dla prefixu: <code>${esc(prefix||'/')}</code></td></tr>;
+    body.innerHTML = `<tr><td colspan="4">Brak plików dla prefixu: <code>${esc(prefix||'/')}</code></td></tr>`;
   }
   $('#cloudCount').textContent = String(count);
   body.querySelectorAll('[data-cloud-del]').forEach(b=>b.addEventListener('click', async ()=>{
     const p=b.dataset.cloudDel;
-    if(!confirm(Usunąć z chmury?\n${p})) return;
+    if(!confirm(`Usunąć z chmury?\n${p}`)) return;
     try{ await deleteFromCloud(p); }catch(e){ alert('Błąd usuwania: '+(e?.message||e)); }
     renderCloudList();
   }));
@@ -543,7 +543,7 @@ function migLog(msg, isErr){
 function migProgress(cur, total){
   const pct = total ? Math.round((cur/total)*100) : 0;
   $('#migBar').style.width = pct+'%';
-  $('#migStats').textContent = Postęp: ${cur}/${total} (${pct}%);
+  $('#migStats').textContent = `Postęp: ${cur}/${total} (${pct}%)`;
 }
 
 /* ===== MIGRACJA: lokalne → chmura ===== */
@@ -560,7 +560,8 @@ async function migrateLocalToCloud({onlyMissing=false}={}){
   for(const rec of list){
     i++;
     if(!(rec && rec.blob instanceof Blob)){
-      migLog(Pominięto ${rec.name} — brak Blob, true); err++; migProgress(i, list.length); continue;
+      migLog(`Pominięto ${rec.name} — brak Blob`, true);
+      err++; migProgress(i, list.length); continue;
     }
     const clientId = rec.clientId || '';
     const clientName = rec.clientName || '';
@@ -574,16 +575,16 @@ async function migrateLocalToCloud({onlyMissing=false}={}){
         allowOverwrite
       });
       await dbPut({...rec, cloudUrl: up.url, cloudPath: up.path});
-      migLog(OK: ${rec.name} → ${up.path});
+      migLog(`OK: ${rec.name} → ${up.path}`);
       ok++;
     }catch(e){
-      migLog(Błąd: ${rec.name} — ${e?.message||e}, true);
+      migLog(`Błąd: ${rec.name} — ${e?.message||e}`, true);
       err++;
     }
     migProgress(i, list.length);
   }
 
-  $('#migStats').textContent = Zakończono: OK ${ok}, błędów ${err}.;
+  $('#migStats').textContent = `Zakończono: OK ${ok}, błędów ${err}.`;
   await renderFiles();
   await renderCloudList();
 }
@@ -595,7 +596,7 @@ async function pullCloudToLocalByPrefix(){
   if(!prefix){ if(!confirm('Prefiks jest pusty – pobierzesz CAŁĄ chmurę (maks. 1000 w katalogu root). Kontynuować?')) return; }
 
   $('#migLog').innerHTML=''; migProgress(0, 0);
-  migLog(Pobieranie listy z chmury dla prefixu: ${prefix||'/'});
+  migLog(`Pobieranie listy z chmury dla prefixu: ${prefix||'/'}`);
 
   const { data, error } = await supa.storage.from(CLOUD.bucket).list(prefix, { limit: 1000, offset: 0, sortBy:{ column:'name', order:'asc' } });
   if(error){ migLog('Błąd listowania: '+(error.message||String(error)), true); return; }
@@ -615,7 +616,7 @@ async function pullCloudToLocalByPrefix(){
     try{
       const pub = supa.storage.from(CLOUD.bucket).getPublicUrl(f.fullPath).data.publicUrl;
       const res = await fetch(pub, { cache:'no-store' });
-      if(!res.ok) throw new Error(HTTP ${res.status});
+      if(!res.ok) throw new Error(`HTTP ${res.status}`);
       const blob = await res.blob();
 
       const name = f.fullPath.split('/').pop() || 'plik';
@@ -637,16 +638,16 @@ async function pullCloudToLocalByPrefix(){
         cloudPath: f.fullPath
       };
       await dbPut(rec);
-      migLog(OK: ${name});
+      migLog(`OK: ${name}`);
       ok++;
     }catch(e){
-      migLog(Błąd pobierania ${f.fullPath}: ${e?.message||e}, true);
+      migLog(`Błąd pobierania ${f.fullPath}: ${e?.message||e}`, true);
       err++;
     }
     migProgress(i, files.length);
   }
 
-  $('#migStats').textContent = Import z chmury zakończony: OK ${ok}, błędów ${err}.;
+  $('#migStats').textContent = `Import z chmury zakończony: OK ${ok}, błędów ${err}.`;
   await renderFiles();
 }
 
@@ -656,10 +657,10 @@ async function bulkDeleteCloudByPrefix(){
   const prefix = currentPrefix();
   if(!prefix){ alert('Dla bezpieczeństwa wskaż prefiks (klient i/lub dodatkowy). Nie kasuję root.'); return; }
 
-  if(!confirm(USUNĄĆ WSZYSTKO w:\n${prefix}\n\nOperacja jest NIEODWRACALNA.)) return;
+  if(!confirm(`USUNĄĆ WSZYSTKO w:\n${prefix}\n\nOperacja jest NIEODWRACALNA.`)) return;
 
   $('#migLog').innerHTML=''; migProgress(0,0);
-  migLog(Pobieranie listy do usunięcia w prefixie: ${prefix});
+  migLog(`Pobieranie listy do usunięcia w prefixie: ${prefix}`);
 
   const { data, error } = await supa.storage.from(CLOUD.bucket).list(prefix, { limit: 1000, offset: 0 });
   if(error){ migLog('Błąd listowania: '+(error.message||String(error)), true); return; }
@@ -671,7 +672,7 @@ async function bulkDeleteCloudByPrefix(){
   const { error: delErr } = await supa.storage.from(CLOUD.bucket).remove(paths);
   if(delErr){ migLog('Błąd usuwania: '+(delErr.message||String(delErr)), true); return; }
 
-  migLog(Usunięto ${paths.length} plików z chmury.);
+  migLog(`Usunięto ${paths.length} plików z chmury.`);
   await renderCloudList();
 }
 
@@ -688,8 +689,8 @@ async function cleanNetlifyShadows(){
     }
   }
   $('#migLog').innerHTML='';
-  migLog(Usunięto ślady Netlify z ${touched} rekordów.);
-  $('#migStats').textContent = Czyszczenie zakończone. Dotknięte rekordy: ${touched}.;
+  migLog(`Usunięto ślady Netlify z ${touched} rekordów.`);
+  $('#migStats').textContent = `Czyszczenie zakończone. Dotknięte rekordy: ${touched}.`;
   await renderFiles();
 }
 
@@ -717,7 +718,7 @@ function renderOfferEditor(){
         <button class="btn bad" data-del="${i}">Usuń</button>
       </td>
       <td><select data-k="cat" data-i="${i}">
-        ${['PV','Pompa','Piec','Ocieplenie','Stolarka','Inne'].map(x=><option ${it.cat===x?'selected':''}>${x}</option>).join('')}
+        ${['PV','Pompa','Piec','Ocieplenie','Stolarka','Inne'].map(x=>`<option ${it.cat===x?'selected':''}>${x}</option>`).join('')}
       </select></td>
       <td><input data-k="mm" data-i="${i}" placeholder="Marka/Model" value="${esc(it.mm||'')}"></td>
       <td><input data-k="spec" data-i="${i}" placeholder="Specyfikacja" value="${esc(it.spec||'')}"></td>
@@ -834,8 +835,12 @@ $('#compAddSel')?.addEventListener('click',()=>{
 /* ===== Tabs ===== */
 function selectTab(key){
   $$('.tabs .tab').forEach(b=>b.setAttribute('aria-selected','false'));
-  const t=document.querySelector(.tabs .tab[data-tab="${key}"]); if(t) t.setAttribute('aria-selected','true');
-  ['builder','components','list'].forEach(id=>{ const el=document.getElementById(tab-${id}); if(el) el.hidden = id!==key; });
+  const t = document.querySelector(`.tabs .tab[data-tab="${key}"]`);
+  if(t) t.setAttribute('aria-selected','true');
+  ['builder','components','list'].forEach(id=>{
+    const el = document.getElementById(`tab-${id}`);
+    if(el) el.hidden = (id !== key);
+  });
 }
 $$('.tabs .tab').forEach(b=>b.addEventListener('click',()=>selectTab(b.dataset.tab)));
 
@@ -874,10 +879,10 @@ function renderFlyers(){
   const tb=$('#flyBody'); if(!tb) return; tb.innerHTML='';
   const clients=loadClients();
   const name=id=> clients.find(c=>c.id===id)?.name||'';
-  flyers.forEach(f=>{
-    const urlBusted = f.cloudUrl ? f.cloudUrl + ?v=${Date.now()} : '';
-    const cloudLink = f.cloudUrl ? <a class="btn ghost" href="${urlBusted}" target="_blank" rel="noopener">Link</a> : '';
-    const cloudDel  = f.cloudPath ? <button class="btn bad" data-fly-delcloud="${esc(f.cloudPath)}">Usuń z chmury</button> : '';
+    flyers.forEach(f=>{
+    const urlBusted = f.cloudUrl ? f.cloudUrl + '?v=' + Date.now() : '';
+    const cloudLink = f.cloudUrl ? `<a class="btn ghost" href="${esc(urlBusted)}" target="_blank" rel="noopener">Link</a>` : '';
+    const cloudDel  = f.cloudPath ? `<button class="btn bad" data-fly-delcloud="${esc(f.cloudPath)}">Usuń z chmury</button>` : '';
     const tr=document.createElement('tr');
     tr.innerHTML = `
       <td class="row">
@@ -913,7 +918,7 @@ function renderFlyers(){
   }));
   tb.querySelectorAll('[data-fly-delcloud]').forEach(b=>b.addEventListener('click', async ()=>{
     const path=b.dataset.flyDelcloud;
-    if(!confirm(Usunąć ulotkę z chmury?\n${path})) return;
+    if(!confirm(`Usunąć ulotkę z chmury?\n${path}`)) return;
     try{ await deleteFromCloud(path); alert('Ulotka usunięta z chmury.'); }catch(e){ alert('Błąd: '+(e?.message||e)); }
     renderCloudList();
   }));
@@ -927,7 +932,7 @@ $('#flyAdd')?.addEventListener('click', addFlyer);
   ['selClient','offClient','flyClient'].forEach(id=>{
     const el = document.getElementById(id);
     if(!el) return;
-    el.innerHTML = '<option value="">(bez przypisania)</option>' + clients.map(c=><option value="${esc(c.id)}">${esc(c.name||'')}</option>).join('');
+    el.innerHTML = '<option value="">(bez przypisania)</option>' + clients.map(c=>`<option value="${esc(c.id)}">${esc(c.name||'')}</option>`).join('');
   });
 
   const dz = $('#drop');
