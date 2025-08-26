@@ -1,3 +1,4 @@
+// netlify/functions/upload.js
 import { getStore } from "@netlify/blobs";
 
 const CORS = {
@@ -6,50 +7,40 @@ const CORS = {
   "Access-Control-Allow-Headers": "Content-Type"
 };
 
-const store = getStore("chat-uploads");
-
-const json = (status, body = {}) => ({
-  statusCode: status,
-  headers: { "Content-Type": "application/json; charset=utf-8", ...CORS },
-  body: JSON.stringify(body)
-});
-
 export async function handler(event) {
-  if (event.httpMethod === "OPTIONS") {
-    return { statusCode: 204, headers: CORS };
-  }
+  if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers: CORS };
   if (event.httpMethod !== "POST") {
-    return json(405, { ok: false, error: "Method Not Allowed" });
+    return { statusCode: 405, headers: CORS, body: JSON.stringify({ ok: false, error: "Method Not Allowed" }) };
   }
 
   try {
     const ct = event.headers["content-type"] || event.headers["Content-Type"] || "";
-    if (!ct.toLowerCase().startsWith("multipart/form-data")) {
-      return json(400, { ok: false, error: "Wymagane multipart/form-data (pole 'file')" });
+    const boundary = ct.split("boundary=")[1];
+    if (!boundary) {
+      return { statusCode: 400, headers: CORS, body: JSON.stringify({ ok: false, error: "Brak boundary (multipart/form-data)" }) };
     }
+
     const raw = Buffer.from(event.body || "", event.isBase64Encoded ? "base64" : "utf8");
     const req = new Request("http://local/upload", { method: "POST", headers: { "content-type": ct }, body: raw });
     const form = await req.formData();
     const file = form.get("file");
-    if (!file || typeof file.arrayBuffer !== "function") {
-      return json(400, { ok: false, error: "Pole 'file' nie znalezione" });
+    if (!file) {
+      return { statusCode: 400, headers: CORS, body: JSON.stringify({ ok: false, error: "Pole 'file' jest wymagane" }) };
     }
-    const room = String(form.get("room") || "global").toLowerCase();
-    const ext = (String(file.name || "").split(".").pop() || "bin").toLowerCase();
-    const key = `uploads/${room}/${Date.now()}-${crypto.randomUUID().slice(0,8)}.${ext}`;
 
-    const buf = await file.arrayBuffer();
-    await store.set(key, buf, {
-      metadata: {
-        name: file.name || "",
-        type: file.type || "application/octet-stream",
-        room
-      }
+    const store = getStore("chat-uploads");
+    const safe = (name) => String(name || "plik").replace(/[^\w.\-]+/g, "_");
+    const key = uploads/${Date.now()}-${safe(file.name)};
+
+    await store.set(key, await file.arrayBuffer(), {
+      metadata: { name: file.name || "", type: file.type || "application/octet-stream", size: file.size || 0 }
     });
 
-    const url = `/.netlify/blobs/${encodeURIComponent("chat-uploads")}/${encodeURIComponent(key)}`;
-    return json(201, { ok: true, url, key });
+    // Publiczny URL do pobrania:
+    const url = /.netlify/blobs/${encodeURIComponent("chat-uploads")}/${encodeURIComponent(key)};
+
+    return { statusCode: 201, headers: { ...CORS, "Content-Type": "application/json" }, body: JSON.stringify({ ok: true, url, key }) };
   } catch (e) {
-    return json(500, { ok: false, error: e?.message || String(e) });
+    return { statusCode: 500, headers: CORS, body: JSON.stringify({ ok: false, error: e?.message || String(e) }) };
   }
 }
