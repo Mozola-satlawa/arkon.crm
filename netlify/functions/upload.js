@@ -1,4 +1,3 @@
-
 // POST /api/upload   (multipart/form-data; pole "file")
 import { getStore } from "@netlify/blobs";
 
@@ -34,13 +33,13 @@ export async function handler(event) {
 
     const store = getStore("chat-uploads");
     const ext = (file.name?.split(".").pop() || "bin").toLowerCase();
-    const key = `uploads/${Date.now()}-${Math.random().toString(36).slice(2,10)}.${ext}`;
+    const key = uploads/${Date.now()}-${Math.random().toString(36).slice(2,10)}.${ext};
     await store.set(key, await file.arrayBuffer(), {
       metadata: { name: file.name || "", type: file.type || "application/octet-stream", size: file.size || 0 }
     });
 
     // publiczny adres przez Blobs Router:
-    const url = `/.netlify/blobs/${encodeURIComponent("chat-uploads")}/${encodeURIComponent(key)}`;
+    const url = /.netlify/blobs/${encodeURIComponent("chat-uploads")}/${encodeURIComponent(key)};
     return json(201, { ok: true, url, key });
   } catch (e) {
     return json(500, { ok: false, error: e?.message || String(e) });
