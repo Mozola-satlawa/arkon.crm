@@ -1,531 +1,290 @@
 <!doctype html>
 <html lang="pl">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ARKON • Sypasny Komunikator</title>
-<meta name="description" content="Komunikator ARKON na Netlify Functions + Blobs: pokoje, emoji, załączniki, wątki, eksport, router.">
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ARKON • Chat (Netlify)</title>
 <style>
-  :root{
-    --bg:#0b1020; --p1:#101736; --p2:#0f1a44; --ink:#e8edff; --muted:#aeb8da; --accent:#4cc9f0;
-    --ok:#2b8a57; --bad:#ff6b6b; --line:#253166; --chip:#162357; --card:#0f1533; --hover:#172152;
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{margin:0;background:linear-gradient(180deg,#0a0f1e,#0c1230 55%,#0a0f1e);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
-  header{padding:12px 16px;border-bottom:1px solid var(--line);background:#11183a;position:sticky;top:0;z-index:5}
-  h1{margin:0;font-size:20px}
-  .wrap{display:grid;grid-template-columns:300px 1fr;gap:12px;height:calc(100% - 58px);padding:12px;max-width:1500px;margin:auto}
-  .panel{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;overflow:hidden}
-  .left{display:flex;flex-direction:column}
+  :root{--bg:#0b1020;--p1:#101736;--p2:#0f1a44;--ink:#e8edff;--line:#253166;--muted:#aeb8da;--ok:#2b8a57;--bad:#ff6b6b}
+  *{box-sizing:border-box} html,body{height:100%} body{margin:0;background:#0a0f1e;color:var(--ink);font:15px/1.5 system-ui}
+  header{background:#11183a;border-bottom:1px solid var(--line);padding:10px 12px;position:sticky;top:0;z-index:2}
+  .wrap{max-width:1200px;margin:auto;padding:12px;display:grid;gap:12px;grid-template-columns:300px 1fr}
+  .panel{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:12px;overflow:hidden}
   .section{padding:10px;border-bottom:1px solid var(--line)}
-  .list{overflow:auto;min-height:120px;max-height:38vh}
   .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  .pill{display:inline-flex;align-items:center;gap:6px;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:12px}
-  .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:9px 12px;cursor:pointer}
-  .btn.ghost{background:transparent;border:1px dashed #3a4ca3}
-  .btn.ok{background:#194d34;border-color:var(--ok)}
-  .btn.bad{background:#42202a;border-color:#7b3341}
-  input,select,textarea{width:100%;background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:9px;color:var(--ink)}
-  .topbar{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
-  .meta{font-size:11px;color:#aeb8da}
-  .badge{display:inline-block;padding:1px 6px;border:1px solid #5672d1;border-radius:999px;font-size:10px;background:#0e184a;color:#cfe1ff}
-  .msg-wrap{height:calc(100% - 200px);overflow:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
-  .day{display:flex;align-items:center;gap:10px;margin:2px 0}
-  .day::before,.day::after{content:"";height:1px;background:#223160;flex:1}
-  .msg{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:flex-start}
-  .bubble{background:linear-gradient(180deg,#111a3c,#0f1a44);border:1px solid #2a3a75;border-radius:12px;padding:8px 10px;max-width:980px;word-break:break-word}
+  .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 10px;cursor:pointer}
+  .btn.ghost{background:transparent;border-style:dashed}
+  input,select,textarea{width:100%;background:#0d1530;border:1px solid #28356c;color:var(--ink);border-radius:10px;padding:8px}
+  .msg-wrap{height:60vh;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:12px}
+  .msg{display:grid;grid-template-columns:auto 1fr;gap:8px}
+  .bubble{background:#0f1a44;border:1px solid #2a3a75;border-radius:12px;padding:8px 10px}
   .bubble.me{background:#16204d;border-color:#3d58c1}
-  .bubble .tools{display:flex;gap:6px;opacity:.85;margin-top:4px}
-  .bubble .tools .btn-icon{background:transparent;border:1px solid #2d3e86;border-radius:8px;padding:2px 6px;cursor:pointer}
-  .bubble .file{display:inline-flex;gap:6px;align-items:center;padding:3px 6px;border:1px dashed #3a4ca3;border-radius:8px;margin-top:4px}
-  .reactions{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap}
-  .react{background:#0e184a;border:1px solid #3f57c1;border-radius:999px;padding:2px 6px;font-size:12px;cursor:pointer}
-  .children{margin-left:22px;margin-top:6px;border-left:1px dashed #2b3a77;padding-left:10px}
+  .meta{color:var(--muted);font-size:12px}
   .composer{border-top:1px solid var(--line);padding:10px;display:grid;grid-template-columns:1fr auto;gap:8px}
-  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-  .tabbar{display:flex;gap:8px}
-  .tab{padding:6px 10px;border:1px solid #2b3a77;border-radius:999px;cursor:pointer;font-size:12px}
-  .tab.active{background:#14225a}
-  .typing{font-size:12px;color:#9cc3ff}
-  .presence{display:flex;gap:6px;flex-wrap:wrap}
-  .dot{width:8px;height:8px;border-radius:50%;background:#4ade80;display:inline-block}
-  .search{display:grid;grid-template-columns:1fr auto;gap:6px}
-  .loadmore{padding:8px 10px;text-align:center;border:1px dashed #2b3a77;border-radius:10px;cursor:pointer;background:#0d1530}
-  .hoverable:hover{background:var(--hover)}
-  @media(max-width:1060px){ .wrap{grid-template-columns:1fr} .msg-wrap{height:50vh} }
+  .reactions{display:flex;gap:6px;margin-top:6px}
+  .chip{display:inline-flex;align-items:center;gap:6px;border:1px dashed #3a4ca3;border-radius:8px;padding:2px 6px}
+  .load{margin:8px 12px;padding:8px;border:1px dashed #3a4ca3;border-radius:10px;text-align:center;cursor:pointer}
+  @media(max-width:980px){.wrap{grid-template-columns:1fr} .msg-wrap{height:52vh}}
 </style>
 </head>
 <body>
 <header>
-  <h1 style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-    Komunikator • ARKON <span class="badge">Netlify Blobs</span>
-  </h1>
-  <div class="tabbar">
-    <a class="tab" href="#/chat">💬 Czat</a>
-    <a class="tab" href="#/contracts">📄 Umowy</a>
-    <a class="tab" href="#/docs">📂 Dokumenty</a>
-    <a class="tab" href="#/tasks">✅ Zadania</a>
+  <div class="row">
+    <strong>ARKON • Chat (Netlify)</strong>
+    <span id="status" class="meta">–</span>
   </div>
 </header>
 
 <div class="wrap">
-  <!-- LEWY PANEL -->
-  <aside class="panel left" id="left">
+  <!-- LEWA -->
+  <aside class="panel">
     <div class="section">
-      <div class="meta">Pokoje prywatne</div>
+      <div class="meta">Pokój</div>
       <div class="row" style="margin-top:6px">
-        <button class="btn ghost" onclick="setRoom('krolowa')">👑 Królowa</button>
-        <button class="btn ghost" onclick="setRoom('adrian')">👤 Adrian</button>
-        <button class="btn ghost" onclick="setRoom('emil')">👤 Emil</button>
-        <button class="btn ghost" onclick="setRoom('global')">🌍 Wspólny</button>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="meta">Wyszukiwanie</div>
-      <div class="search" style="margin-top:6px">
-        <input id="q" placeholder="fraza… (Enter)" />
-        <button class="btn ghost" onclick="searchMessages()">Szukaj</button>
-      </div>
-      <div class="row" style="margin-top:6px">
-        <select id="authorFilter" style="flex:1">
-          <option value="">— Autor —</option>
-          <option>Królowa</option><option>Adrian</option><option>Emil</option><option>Pracownik</option>
+        <select id="roomSel" style="flex:1">
+          <option value="global">global</option>
+          <option value="krolowa">krolowa</option>
+          <option value="adrian">adrian</option>
+          <option value="emil">emil</option>
         </select>
-        <button class="btn ghost" onclick="clearSearch()">Wyczyść</button>
+        <button class="btn" id="saveRoom">Zapisz</button>
       </div>
     </div>
-
     <div class="section">
-      <div class="meta">Online w pokoju</div>
-      <div id="presence" class="presence" style="margin-top:6px"></div>
-      <div id="typing" class="typing" style="margin-top:4px"></div>
-    </div>
-
-    <div class="section">
-      <div class="meta">Eksport</div>
+      <div class="meta">Ja (podpis)</div>
       <div class="row" style="margin-top:6px">
-        <button class="btn ghost" onclick="exportCSV()">CSV</button>
-        <button class="btn ghost" onclick="exportJSON()">JSON</button>
-        <button class="btn ghost" onclick="window.print()">Drukuj</button>
+        <input id="me" placeholder="Twoje imię" />
+        <button class="btn" id="saveMe">Zapisz</button>
       </div>
     </div>
-
     <div class="section">
-      <div class="meta">Ja</div>
+      <div class="meta">Załącznik</div>
       <div class="row" style="margin-top:6px">
-        <span class="pill">Podpis: <b id="meName">—</b></span>
-        <button class="btn ghost" id="btnName">✎ Zmień</button>
+        <input type="file" id="file" />
+        <button class="btn ghost" id="sendFile">Wyślij plik</button>
       </div>
-      <div class="meta" id="conn" style="margin-top:6px">łączenie…</div>
+      <div id="lastFile" class="meta" style="margin-top:6px"></div>
+    </div>
+    <div class="section">
+      <div class="meta">Akcje</div>
+      <div class="row" style="margin-top:6px">
+        <button class="btn ghost" id="reload">Odśwież</button>
+        <button class="btn ghost" id="loadOlder">Starsze…</button>
+      </div>
     </div>
   </aside>
 
-  <!-- PRAWO: STRONY -->
-  <main class="panel" id="page-chat" style="display:flex;flex-direction:column">
-    <div class="topbar">
+  <!-- PRAWA -->
+  <main class="panel" style="display:flex;flex-direction:column">
+    <div class="section">
       <div class="row">
-        <div id="roomTitle"><b>—</b></div>
-        <span id="readBadge" class="badge" title="Lokalne potwierdzenia">✓✓</span>
-      </div>
-      <div class="toolbar">
-        <button class="btn ghost" onclick="toggleEmoji()">😊 Emoji</button>
-        <button class="btn ghost" onclick="document.getElementById('file').click()">📎 Załącz</button>
-        <input id="file" type="file" hidden>
+        <strong>Pokój: <span id="roomTitle">global</span></strong>
       </div>
     </div>
 
-    <div id="msgs" class="msg-wrap" aria-live="polite">
-      <div class="loadmore hoverable" id="older" onclick="loadOlder()">⟲ Załaduj starsze…</div>
-    </div>
+    <div id="msgs" class="msg-wrap" aria-live="polite"></div>
 
     <div class="composer">
-      <div class="row" style="width:100%">
-        <textarea id="txt" placeholder="Napisz wiadomość… (Ctrl+Enter wysyła)" rows="2" style="flex:1"></textarea>
-      </div>
+      <textarea id="txt" rows="2" placeholder="Napisz wiadomość… (Ctrl+Enter wysyła)"></textarea>
       <div class="row">
-        <button id="btnSend" class="btn ok">Wyślij ▶</button>
+        <button class="btn" id="send">Wyślij ▶</button>
       </div>
     </div>
-  </main>
-
-  <main class="panel" id="page-contracts" style="display:none;padding:16px">
-    <h2>📄 Umowy</h2>
-    <p class="meta">Tu możesz podpiąć generowanie/podpisywanie umów (np. fetch do Netlify Functions).</p>
-    <button class="btn" onclick="alert('TODO: generowanie umowy / integracja funkcji')">Nowa umowa</button>
-  </main>
-
-  <main class="panel" id="page-docs" style="display:none;padding:16px">
-    <h2>📂 Dokumenty</h2>
-    <p class="meta">Przegląd i pobieranie plików (Netlify Blobs).</p>
-    <button class="btn" onclick="alert('TODO: lista dokumentów z blobów')">Odśwież listę</button>
-    <div id="docsList" style="margin-top:10px"></div>
-  </main>
-
-  <main class="panel" id="page-tasks" style="display:none;padding:16px">
-    <h2>✅ Zadania</h2>
-    <p class="meta">Prosty moduł zadań przypięty do pokoju (do rozbudowy).</p>
-    <button class="btn" onclick="alert('TODO: CRUD zadań')">Dodaj zadanie</button>
   </main>
 </div>
 
 <script>
 'use strict';
 
-/*** USTAWIENIA ***/
-const API_MESSAGES = '/api/messages'; // Netlify Function
-const API_UPLOAD   = '/api/upload';   // Netlify Function
-
-/*** UTIL ***/
-const $ = s => document.querySelector(s);
-const el = (tag, attrs={}) => Object.assign(document.createElement(tag), attrs);
-const INT = new Intl.DateTimeFormat('pl-PL', { dateStyle:'short', timeStyle:'short' });
-const EMOJI = '😀😁😂🤣😊😉😍😘😎🤩🥰😇🤓🤠🫶👍👏🔥✨🎉🎯🚀🔧💡📎📷🖨📁✅❗❌🤝📝💬🔗📌🕒'.split('');
-
-/*** STAN ***/
-let state = {
-  room: localStorage.getItem('chat_room') || 'global',
-  me:   localStorage.getItem('chat_me')   || 'Pracownik',
-  oldestCursor: null,
-  search:{ q:'', author:'' },
-  messages: [],
-  cache: new Map(),
-  poller: null,
-  typingTimer:null, typingViewTimer:null
+/* ====== PROSTE USTAWIENIA ====== */
+const API = {
+  list:  (room, cursor) => /api/messages?room=${encodeURIComponent(room)}${cursor ? '&before=' + encodeURIComponent(cursor) : ''},
+  add:   /api/messages,
+  patch: /api/messages,
+  del:   (id) => /api/messages?id=${encodeURIComponent(id)},
+  upload: /api/upload
 };
 
-$('#meName').textContent = state.me;
-$('#roomTitle').innerHTML = '<b>'+state.room.toUpperCase()+'</b>';
-$('#conn').textContent = 'łączenie…';
+const $ = sel => document.querySelector(sel);
+const INT = new Intl.DateTimeFormat('pl-PL',{dateStyle:'short', timeStyle:'short'});
 
-/*** ROUTER ***/
-function route(){
-  const hash = location.hash || '#/chat';
-  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.getAttribute('href')===hash));
-  ['chat','contracts','docs','tasks'].forEach(id=>{
-    $('#page-'+id).style.display = (hash==='#/'+id) ? 'block' : 'none';
-  });
-}
-window.addEventListener('hashchange', route); route();
+/* ====== STAN ====== */
+const state = {
+  room: localStorage.getItem('room') || 'global',
+  me:   localStorage.getItem('me')   || 'Pracownik',
+  oldest: null,     // znacznik do paginacji „starsze”
+  cache: new Map(), // id -> message
+  replyTo: null
+};
 
-/*** EMOJI PICKER ***/
-let picker=null;
-function toggleEmoji(){
-  if(picker){ document.body.removeChild(picker); picker=null; return; }
-  picker = el('div');
-  Object.assign(picker.style, {position:'fixed', bottom:'120px', right:'40px', background:'#0e1740', border:'1px solid #2b3a77', padding:'8px', borderRadius:'10px', zIndex:10});
-  picker.innerHTML = EMOJI.map(e => '<span class="emoji" style="font-size:22px;padding:6px;cursor:pointer">'+e+'</span>').join('');
-  picker.addEventListener('click', ev=>{
-    if(ev.target.classList.contains('emoji')){
-      $('#txt').value += ev.target.textContent;
-      document.body.removeChild(picker); picker=null; $('#txt').focus();
-      showTyping(true);
-    }
-  });
-  document.body.appendChild(picker);
-}
+$('#roomSel').value = state.room;
+$('#roomTitle').textContent = state.room;
+$('#me').value = state.me;
 
-/*** RENDER ***/
-const linkify = (t='') => t.replace(/(https?:\/\/\S+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
-function dayDivider(ts){
-  return '<div class="day"><span>'+INT.format(new Date(ts)).split(',')[0]+'</span></div>';
+/* ====== RENDER ====== */
+function bubble(m){
+  const me = m.author === state.me;
+  const when = INT.format(new Date(m.created_at || Date.now()));
+  const file = m.file_url ? <div class="chip">📎 <a href="${m.file_url}" target="_blank">${m.file_url.split('/').pop()}</a></div> : '';
+  const reacts = m.reactions ? Object.entries(m.reactions).map(([k,v])=><button class="btn ghost" onclick="react('${m.id}','${k}')">${k} ${v}</button>).join(' ') : '';
+  return `
+    <div class="msg" id="m-${m.id}">
+      <div class="meta">${me?'Ja':(m.author||'—')}</div>
+      <div class="bubble ${me?'me':''}">
+        ${m.deleted_at ? <i class="meta">[usunięto]</i> : (m.body||'')}
+        ${file}
+        <div class="reactions" style="margin-top:6px">
+          <button class="btn ghost" onclick="startReply('${m.id}')">💬 Odp</button>
+          <button class="btn ghost" onclick="react('${m.id}','👍')">👍</button>
+          <button class="btn ghost" onclick="react('${m.id}','❤')">❤</button>
+          <button class="btn ghost" onclick="react('${m.id}','🔥')">🔥</button>
+          ${me && !m.deleted_at ? `<button class="btn ghost" onclick="editMsg('${m.id}')">✎</button>
+          <button class="btn ghost" onclick="delMsg('${m.id}')">🗑</button>` : ''}
+          <span class="meta" style="margin-left:auto">${when}${m.edited_at?' • ed.':''}</span>
+        </div>
+      </div>
+    </div>
+  `;
 }
-function reactionBadge(emoji, count){ return '<span class="react" data-r="'+emoji+'">'+emoji+' '+count+'</span>'; }
-function fileChip(url){
-  const name = (url||'').split('/').pop();
-  const isImg = /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name);
-  return '<a class="file" href="'+url+'" target="_blank" rel="noopener">📎 '+name+'</a>' + (isImg?('<div style="margin-top:6px"><img src="'+url+'" alt="" style="max-width:280px;border:1px solid #2b3a77;border-radius:10px"></div>'):'');
-}
-function bubbleHtml(m, children){
-  const me = m.author===state.me;
-  const body = linkify(m.body||'');
-  const when = INT.format(new Date(m.created_at||Date.now()));
-  const reactions = (m.reactions && typeof m.reactions==='object') ? Object.entries(m.reactions).filter(([,v])=>v>0) : [];
-  return [
-    '<div class="msg" id="m-'+m.id+'">',
-      '<div class="meta">', (me?'Ja':(m.author||'—')) ,'</div>',
-      '<div class="bubble ', (me?'me':''), '">',
-        (m.deleted_at ? '<i class="meta">[wiadomość usunięta]</i>' : body),
-        (m.file_url ? fileChip(m.file_url) : ''),
-        '<div class="tools">',
-          '<button class="btn-icon" onclick="startReply(\''+m.id+'\')">💬 Odpowiedz</button>',
-          // Reakcje zostawiamy lokalnie (brak serwera do update)
-          '<button class="btn-icon" onclick="localReact(\''+m.id+'\',\'👍\')">👍</button>',
-          '<button class="btn-icon" onclick="localReact(\''+m.id+'\',\'❤\')">❤</button>',
-          '<button class="btn-icon" onclick="localReact(\''+m.id+'\',\'🔥\')">🔥</button>',
-          (me && !m.deleted_at ? '<button class="btn-icon" onclick="localEdit(\''+m.id+'\')">✎ Edytuj</button><button class="btn-icon" onclick="localDelete(\''+m.id+'\')">🗑 Usuń</button>':''),
-          '<span class="meta" style="margin-left:auto">'+when+(me?' <span title="lokalne ✓✓">✓✓</span>':'')+(m.edited_at?' • ed.':'')+'</span>',
-        '</div>',
-        (reactions.length ? '<div class="reactions">'+reactions.map(([emo,c])=>reactionBadge(emo,c)).join(' ')+'</div>' : ''),
-        (children && children.length ? '<div class="children">'+children.map(c=>bubbleHtml(c,[])).join('')+'</div>' : ''),
-      '</div>',
-    '</div>'
-  ].join('');
-}
-function indexByParent(list){
-  const byId=new Map(), children=new Map();
-  list.forEach(m=>{
-    byId.set(m.id,m);
-    if(m.parent_id){
-      if(!children.has(m.parent_id)) children.set(m.parent_id, []);
-      children.get(m.parent_id).push(m);
-    }
-  });
-  return { byId, children };
-}
-function renderMessages(scrollToBottom=true){
+function render(list, append=false){
   const box = $('#msgs');
-  const { children } = indexByParent(state.messages);
-  let out=[], lastDay='';
-  state.messages.filter(m=>!m.parent_id).forEach(m=>{
-    const d=(m.created_at||'').slice(0,10);
-    if(d && d!==lastDay){ out.push(dayDivider(m.created_at)); lastDay=d; }
-    out.push(bubbleHtml(m, children.get(m.id)||[]));
+  if(!append) box.innerHTML = '';
+  const frag = document.createElement('div');
+  list.forEach(m => {
+    state.cache.set(m.id, m);
+    frag.insertAdjacentHTML('beforeend', bubble(m));
   });
-  const older = $('#older').outerHTML;
-  box.innerHTML = older + out.join('');
-  if(scrollToBottom) box.scrollTop = box.scrollHeight;
+  box.appendChild(frag);
+  if(!append) box.scrollTop = box.scrollHeight;
 }
 
-/*** API (Netlify Functions) ***/
-async function apiList(room){
-  const r = await fetch(API_MESSAGES+'?room='+encodeURIComponent(room), { headers:{'Accept':'application/json'} });
-  if(!r.ok) throw new Error('GET /api/messages HTTP '+r.status);
-  const json = await r.json();
-  const arr = Array.isArray(json) ? json : (json.messages || []);
-  // normalizacja
-  return arr.map((m, i)=>({
-    id: m.id || m.key || String(i+1)+'-'+(m.ts||m.date||Date.now()),
-    room_id: m.room || m.room_id || room,
-    author: m.author || m.name || 'Anon',
-    body: m.text || m.body || m.message || '',
-    file_url: m.file_url || m.file || null,
-    created_at: m.created_at || m.date || m.ts || new Date().toISOString(),
-    parent_id: m.parent_id || null,
-    reactions: m.reactions || {}
-  }));
+/* ====== API HELPERS ====== */
+async function apiGet(url){
+  const r = await fetch(url);
+  if(!r.ok) throw new Error(${r.status} ${r.statusText});
+  return r.json();
 }
-async function apiSend(payload){
-  const r = await fetch(API_MESSAGES, {
-    method:'POST',
-    headers:{'Content-Type':'application/json','Accept':'application/json'},
-    body: JSON.stringify({
-      room: payload.room_id,
-      author: payload.author,
-      text: payload.body,
-      file_url: payload.file_url || null,
-      parent_id: payload.parent_id || null
-    })
+async function apiSend(url, method, body, isForm=false){
+  const r = await fetch(url, {
+    method,
+    headers: isForm ? undefined : { 'Content-Type': 'application/json' },
+    body: isForm ? body : JSON.stringify(body)
   });
-  if(!r.ok) throw new Error('POST /api/messages HTTP '+r.status);
-  return await r.json();
-}
-async function apiUpload(file){
-  const fd = new FormData();
-  fd.append('file', file);
-  fd.append('room', state.room);
-  const r = await fetch(API_UPLOAD, { method:'POST', body: fd });
-  if(!r.ok) throw new Error('POST /api/upload HTTP '+r.status);
-  const data = await r.json();
-  const url = data.url || data.publicUrl || data.fileUrl || data.location || '';
-  if(!url) throw new Error('Brak URL z upload');
-  return url;
+  if(!r.ok) throw new Error(${method} ${url} -> ${r.status});
+  return r.json();
 }
 
-/*** HISTORIA + POLLING ***/
-async function loadInitial(){
+/* ====== OPERACJE ====== */
+async function load(initial=false){
+  setStatus('Ładowanie…');
   try{
-    $('#conn').textContent = 'pobieram…';
-    const data = await apiList(state.room);
-    state.messages = data;
-    state.messages.forEach(m=>state.cache.set(m.id,m));
-    if(state.messages.length) state.oldestCursor = state.messages[0].created_at;
-    renderMessages(true);
-    $('#conn').textContent = 'gotowe';
-  }catch(err){
-    console.error(err);
-    $('#conn').textContent = 'błąd listy';
-  }
-}
-function startPolling(){
-  if(state.poller) clearInterval(state.poller);
-  state.poller = setInterval(async ()=>{
-    try{
-      const data = await apiList(state.room);
-      const oldLen = state.messages.length;
-      // prosta detekcja nowych (po id)
-      const known = new Set(state.messages.map(m=>m.id));
-      const merged = [...state.messages];
-      data.forEach(m=>{ if(!known.has(m.id)) merged.push(m); });
-      if(merged.length !== oldLen){
-        state.messages = merged.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
-        renderMessages(true);
-        ding();
-      }
-    }catch(e){ /* cicho, żeby nie spamować */ }
-  }, 3000);
-}
-async function loadOlder(){
-  alert('Paginacja w górę: do wdrożenia po stronie funkcji (parametry before/limit).');
-}
-
-/*** WYSYŁANIE / ODP / REAKCJE LOKALNE ***/
-let replyTo=null;
-function startReply(id){
-  replyTo = id;
-  const m = state.cache.get(id);
-  const preview = '↪ Odp: '+(m?.author||'—')+': '+((m?.body||'').slice(0,80));
-  const t = $('#txt');
-  t.value = (preview+'\n'+t.value).trim()+' ';
-  t.focus();
-}
-function localReact(id, emo){
-  const m = state.cache.get(id);
-  if(!m) return;
-  m.reactions = m.reactions || {};
-  m.reactions[emo] = (m.reactions[emo]||0)+1;
-  renderMessages(false);
-}
-function localEdit(id){
-  const m = state.cache.get(id); if(!m) return;
-  const t = prompt('Edytuj treść:', m.body||''); if(t==null) return;
-  m.body = t; m.edited_at = new Date().toISOString();
-  renderMessages(false);
-}
-function localDelete(id){
-  const m = state.cache.get(id); if(!m) return;
-  if(!confirm('Usunąć wiadomość lokalnie?')) return;
-  m.deleted_at = new Date().toISOString(); m.body='[usunięto]';
-  renderMessages(false);
-}
-async function sendMessage(text, fileUrl){
-  text = (text||'').trim();
-  if(!text && !fileUrl) return;
-  const payload = { room_id: state.room, author: state.me, body: text, file_url: fileUrl||null, parent_id: replyTo };
-  try{
-    await apiSend(payload);
-    replyTo = null;
-    $('#txt').value='';
-    // odśwież listę po zapisie
-    const data = await apiList(state.room);
-    state.messages = data;
-    state.messages.forEach(m=>state.cache.set(m.id,m));
-    renderMessages(true);
-  }catch(err){
-    alert('Błąd wysyłania: '+err.message);
-  }
-}
-
-/*** ZAŁĄCZNIKI ***/
-$('#file').addEventListener('change', async (e)=>{
-  const f=e.target.files[0]; if(!f) return;
-  try{
-    const url = await apiUpload(f);
-    await sendMessage('', url);
-  }catch(err){
-    console.error(err);
-    // awaryjnie: dla małych plików dołącz jako dataURL
-    if(f.size <= 1024*1024){
-      const reader=new FileReader();
-      reader.onload = async ()=>{ await sendMessage('', reader.result); };
-      reader.readAsDataURL(f);
+    const data = await apiGet(API.list(state.room, initial ? null : state.oldest));
+    // Oczekujemy { items:[...], oldest:"ISO" }
+    const items = Array.isArray(data) ? data : (data.items || []);
+    if(initial){
+      state.oldest = (items[0] && items[0].created_at) || null;
+      render(items);
     }else{
-      alert('Nie udało się zapisać pliku (i zbyt duży na dataURL).');
+      if(!items.length){ alert('Brak starszych.'); return; }
+      state.oldest = items[0].created_at || state.oldest;
+      render(items, true);
     }
-  }
-  e.target.value='';
-});
-
-/*** PISANIE (tylko UI) ***/
-function showTyping(on){
-  const key='typing:'+state.room;
-  const set = window._typingSet || new Set();
-  window._typingSet = set;
-  if(on) set.add(state.me); else set.delete(state.me);
-  const names = [...set];
-  let label='';
-  if(names.length===1) label = names[0]+' pisze…';
-  else if(names.length===2) label = names.join(' i ')+' piszą…';
-  else if(names.length>2) label = names.slice(0,2).join(', ')+' i inni piszą…';
-  $('#typing').textContent = label;
-  clearTimeout(state.typingViewTimer);
-  state.typingViewTimer = setTimeout(()=>{ set.clear(); $('#typing').textContent=''; }, 1200);
-}
-$('#txt').addEventListener('input', ()=>{
-  clearTimeout(state.typingTimer);
-  showTyping(true);
-  state.typingTimer = setTimeout(()=>showTyping(false), 800);
-});
-$('#txt').addEventListener('keydown', (e)=>{
-  if(e.key==='Enter' && (e.ctrlKey||e.metaKey)){ e.preventDefault(); $('#btnSend').click(); }
-});
-$('#btnSend').addEventListener('click', async ()=>{ await sendMessage($('#txt').value, null); });
-
-/*** SZUKANIE ***/
-async function searchMessages(){
-  state.search.q = $('#q').value.trim();
-  state.search.author = $('#authorFilter').value.trim();
-  const q=state.search.q, a=state.search.author;
-  let arr = [...state.messages];
-  if(a) arr = arr.filter(m=>m.author===a);
-  if(q){
-    const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i');
-    arr = arr.filter(m=> rx.test(m.body||'') || rx.test(m.file_url||'') );
-  }
-  const bak = state.messages;
-  state.messages = arr;
-  renderMessages(true);
-  // po 10s przywróć pełną listę
-  setTimeout(()=>{ state.messages = bak; renderMessages(false); }, 10000);
-}
-function clearSearch(){
-  $('#q').value=''; $('#authorFilter').value='';
-  state.search={q:'',author:''};
-  renderMessages(true);
-}
-
-/*** EKSPORT ***/
-function exportCSV(){
-  const rows=[['id','author','body','file','time','parent','edited','deleted']].concat(state.messages.map(m=>[
-    m.id, m.author, m.body||'', m.file_url||'', m.created_at, m.parent_id||'', m.edited_at||'', m.deleted_at||''
-  ]));
-  const csv = rows.map(r=>r.map(s=>{s=(s??'').toString(); return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s}).join(';')).join('\n');
-  const a=el('a',{href:URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})), download:'chat.csv'}); a.click();
-}
-function exportJSON(){
-  const a=el('a',{href:URL.createObjectURL(new Blob([JSON.stringify(state.messages,null,2)],{type:'application/json'})), download:'chat.json'}); a.click();
-}
-
-/*** DŹWIĘK ***/
-function ding(){ try{ new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABYAAAABAACAgICAAAAA').play(); }catch{} }
-
-/*** ROOM SWITCH ***/
-async function setRoom(id){
-  if(state.room===id) return;
-  state.room=id; localStorage.setItem('chat_room', id);
-  $('#roomTitle').innerHTML = '<b>'+id.toUpperCase()+'</b>';
-  $('#msgs').scrollTop=0; state.messages=[]; state.oldestCursor=null; renderMessages(false);
-  await loadInitial();
-}
-
-/*** JA (podpis) ***/
-$('#btnName').addEventListener('click', ()=>{
-  const n = prompt('Twój podpis (imię w czacie):', state.me) || state.me;
-  state.me=n; localStorage.setItem('chat_me', n); $('#meName').textContent=n;
-});
-
-/*** START ***/
-(async function init(){
-  try{
-    await loadInitial();
-    startPolling();
-    $('#conn').textContent='gotowe';
+    setStatus('OK');
   }catch(e){
-    console.error(e); $('#conn').textContent='błąd inicjalizacji';
+    setStatus('BŁĄD: '+e.message);
+    showError('GET /api/messages ' + e.message);
   }
-})();
+}
+async function sendMsg(){
+  const body = $('#txt').value.trim();
+  if(!body) return;
+  try{
+    await apiSend(API.add, 'POST', { room: state.room, author: state.me, body, parentId: state.replyTo || null });
+    $('#txt').value = '';
+    state.replyTo = null;
+    await load(true);
+  }catch(e){
+    showError('POST /api/messages ' + e.message);
+  }
+}
+async function react(id, emoji){
+  try{
+    await apiSend(API.patch, 'PATCH', { id, reaction: emoji });
+  }catch(e){
+    showError('PATCH /api/messages ' + e.message);
+  }
+}
+async function editMsg(id){
+  const m = state.cache.get(id); if(!m) return;
+  const t = prompt('Edytuj:', m.body||''); if(t==null) return;
+  try{
+    await apiSend(API.patch, 'PATCH', { id, body: t });
+    await load(true);
+  }catch(e){ showError('PATCH /api/messages ' + e.message); }
+}
+async function delMsg(id){
+  if(!confirm('Usunąć wiadomość?')) return;
+  try{
+    await apiSend(API.del(id), 'DELETE');
+    await load(true);
+  }catch(e){ showError('DELETE /api/messages ' + e.message); }
+}
+function startReply(id){
+  const m = state.cache.get(id);
+  state.replyTo = id;
+  $('#txt').value = ↪ ${m?.author||'—'}: ${(m?.body||'').slice(0,80)}\n + $('#txt').value;
+  $('#txt').focus();
+}
+async function sendFile(){
+  const inp = $('#file'); const f = inp.files[0];
+  if(!f){ alert('Wybierz plik'); return; }
+  const fd = new FormData(); fd.append('file', f);
+  try{
+    const { url } = await apiSend(API.upload, 'POST', fd, true);
+    $('#lastFile').textContent = 'Wysłano: ' + url;
+    // Wyślij wiadomość z linkiem
+    await apiSend(API.add, 'POST', { room: state.room, author: state.me, body: '', parentId: null, fileUrl: url });
+    inp.value = '';
+    await load(true);
+  }catch(e){
+    showError('POST /api/upload ' + e.message);
+  }
+}
+
+/* ====== UI BINDINGS ====== */
+$('#send').addEventListener('click', sendMsg);
+$('#txt').addEventListener('keydown', e=>{
+  if(e.key==='Enter' && (e.ctrlKey||e.metaKey)){ e.preventDefault(); sendMsg(); }
+});
+$('#reload').addEventListener('click', ()=>load(true));
+$('#loadOlder').addEventListener('click', ()=>load(false));
+$('#saveRoom').addEventListener('click', ()=>{
+  state.room = $('#roomSel').value || 'global';
+  localStorage.setItem('room', state.room);
+  $('#roomTitle').textContent = state.room;
+  state.oldest = null;
+  load(true);
+});
+$('#saveMe').addEventListener('click', ()=>{
+  state.me = $('#me').value.trim() || 'Pracownik';
+  localStorage.setItem('me', state.me);
+});
+$('#sendFile').addEventListener('click', sendFile);
+
+/* ====== INFO/ERROR ====== */
+function setStatus(t){ $('#status').textContent = ' ' + t; }
+function showError(t){
+  const box = $('#msgs');
+  const div = document.createElement('div');
+  div.className = 'load';
+  div.style.borderColor = '#7b3341';
+  div.style.color = '#ffb3b3';
+  div.textContent = t;
+  box.prepend(div);
+}
+
+/* ====== START ====== */
+load(true);
 </script>
 </body>
 </html>
