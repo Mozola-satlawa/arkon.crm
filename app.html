@@ -3,204 +3,565 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ARKON • Aplikacje / Hub</title>
-<meta name="description" content="Szybki hub aplikacji ARKON: ostatnie leady, skróty, statusy modułów.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%23121a34'/%3E%3Ctext x='50' y='62' font-size='60' text-anchor='middle' fill='%23fff' font-family='Arial,Helvetica,sans-serif'%3EA%3C/text%3E%3C/svg%3E">
+<title>ARKON — Dokumenty (umowy, oświadczenia, pełnomocnictwa)</title>
+<meta name="description" content="ARKON CRM — moduł Dokumenty: lista, opisy, tagi, ulubione, podgląd PDF, sortowanie, wyszukiwanie, import CSV/JSON, zapis w localStorage.">
 <style>
-:root{
-  --bg:#0b1020; --g1:#0a1028; --g2:#0d1536;
-  --ink:#e8edff; --muted:#aeb8da; --line:#22306a;
-  --card:#0f1636; --chip:#16245a; --accent:#4cc9f0;
-  --ok:#2fbf71; --warn:#ffb84d; --bad:#ff6b6b;
-}
-*{box-sizing:border-box}
-html,body{height:100%}
-body{margin:0;font:15px/1.55 system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,var(--g1),var(--g2));color:var(--ink)}
-a{color:#cfe0ff;text-decoration:none}
-header{padding:18px 16px;border-bottom:1px solid var(--line);background:#0e1534;position:sticky;top:0;z-index:8}
-h1{margin:0;font-size:22px}
-.small{font-size:12px;color:var(--muted)}
-.wrap{max-width:1280px;margin:0 auto;padding:16px}
-.grid{display:grid;gap:14px}
-@media(min-width:1100px){ .cols-2{grid-template-columns:2fr 1fr} .cols-3{grid-template-columns:repeat(3,1fr)} }
-.card{background:linear-gradient(180deg,#0f1636,#0f1a42);border:1px solid var(--line);border-radius:14px;padding:14px}
-.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.right{display:flex;gap:8px;justify-content:flex-end}
-.kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
-.btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
-.btn.ghost{background:transparent;border:1px dashed #3a4ca3}
-.apps{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
-.app{display:block;padding:14px;border-radius:12px;background:#111a42;border:1px solid #2a3a75}
-.app:hover{background:#16235a}
-.status{padding:2px 8px;border:1px solid #2a3a75;border-radius:999px;font-size:12px;background:#0f1a44}
-.status.new{background:#19224e}
-.status.wip{background:#24336b}
-.status.done{background:#1d3d2f}
-table{width:100%;border-collapse:separate;border-spacing:0}
-th,td{padding:8px 6px;border-bottom:1px solid #1a244d;text-align:left;vertical-align:top}
-th{font-size:12px;color:var(--muted)}
-.pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
-.search{min-width:260px}
-input,select{background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:8px 10px;color:var(--ink);font:inherit}
-.tag{display:inline-block;margin:2px 6px 0 0;padding:3px 8px;border:1px solid #3a4ca3;border-radius:999px;font-size:12px}
+  :root{
+    --bg:#0b1020; --p1:#101736; --p2:#0f1a44; --ink:#e8edff; --muted:#aeb8da; --accent:#4cc9f0;
+    --ok:#2b8a57; --bad:#ff6b6b; --warn:#ffb84d; --line:#253166; --grid:#243059;
+    --btn:#243468; --btnb:#3950a5; --card:#0f1533;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:linear-gradient(180deg,#0a0f1e,#0c1230 55%,#0a0f1e);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
+  a{color:#cfe1ff;text-decoration:none}
+  header{padding:16px;background:#11183a;border-bottom:1px solid var(--line)}
+  header h1{margin:0;font-size:22px}
+  .small{font-size:12px;color:var(--muted)}
+  nav{background:#172142;display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:15}
+  nav a{color:#cfe1ff;text-decoration:none;padding:8px 12px;border-radius:999px;border:1px solid #2a3a75}
+  nav a:hover{background:#223160}
+  .wrap{max-width:1360px;margin:auto;padding:16px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+  .btn{background:var(--btn);border:1px solid var(--btnb);color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px dashed var(--btnb)}
+  .btn.bad{background:#3a1f2a;border-color:#7b3341}
+  .btn.ok{background:#194d34;border-color:var(--ok)}
+  input,select,textarea{background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:8px 10px;color:var(--ink);font:inherit}
+  textarea{min-height:70px;resize:vertical}
+  input::placeholder{color:#aeb8da99}
+  .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
+  .tag{display:inline-block;margin:2px 6px 0 0;padding:3px 8px;border:1px solid #3a4ca3;border-radius:999px;font-size:12px}
+  .grid{display:grid;gap:12px}
+  @media(min-width:1200px){ .cols-2{grid-template-columns:2fr 1fr} }
+  .card{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;padding:14px}
+  table{width:100%;border-collapse:separate;border-spacing:0}
+  th,td{padding:10px;border-bottom:1px solid var(--grid);text-align:left;vertical-align:top}
+  th{font-size:13px;color:var(--muted);white-space:nowrap}
+  td .name{display:flex;gap:10px;align-items:center}
+  .ico{width:28px;height:28px;border-radius:6px;background:#0e1538;border:1px solid #293a80;display:grid;place-items:center;font-size:16px}
+  .ico.pdf{background:#2a1830;border-color:#6b2d55}
+  .ico.doc{background:#16233f;border-color:#3950a5}
+  .ico.xls{background:#0f2f28;border-color:#1f6b57}
+  .ico.zip{background:#2c2512;border-color:#7a5f1a}
+  .ico.txt{background:#1f1f2e;border-color:#53537a}
+  .star{cursor:pointer;font-size:18px;line-height:1}
+  .star.on{color:#ffd86b}
+  .right{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+  .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
+  .muted{color:var(--muted)}
+  .list-reset{list-style:none;margin:0;padding:0}
+
+  /* modal preview */
+  .modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:60}
+  .modal.open{display:flex}
+  .modal .box{width:1100px;max-width:95vw;max-height:92vh;display:flex;flex-direction:column;background:linear-gradient(180deg,#10173c,#111b48);border:1px solid #2b3a77;border-radius:12px}
+  .modal .hd{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid #2b3a77}
+  .modal .bd{padding:0;height:80vh}
+  .modal iframe{width:100%;height:100%;border:0;background:#0b1022}
+  .hint{font-size:12px;color:#aeb8da}
+  @media print{ nav,.toolbar,.modal{display:none!important} }
 </style>
 </head>
 <body>
+
 <header>
-  <h1>ARKON • Hub aplikacji</h1>
-  <div class="small">Przegląd modułów i ostatnich rekordów. <span class="kbd">/</span> – szukaj leadu • <a href="lidy.html">pełna lista →</a></div>
+  <h1>Dokumenty • ARKON CRM</h1>
+  <div class="small">Lista umów i oświadczeń. Opisy, tagi, ulubione, podgląd PDF (inline). Import CSV/JSON. Dane pomocnicze w <code>localStorage</code>.</div>
 </header>
 
+<nav>
+  <a href="index.html">Pulpit</a>
+  <a href="klienci.html">Klienci</a>
+  <a href="lidy.html">Lidy</a>
+  <a href="komponenty.html">Komponenty</a>
+  <a href="upload.html">Przesył plików</a>
+  <a href="dokumenty.html" aria-current="page">Dokumenty</a>
+  <a href="chat.html">Komunikator</a>
+  <a href="ustawienia.html">Ustawienia</a>
+  <a href="kalendarz-montaze.html">Kalendarz montaży</a>
+</nav>
+
 <div class="wrap grid cols-2">
-  <section class="grid">
-    <div class="card">
-      <div class="row" style="justify-content:space-between">
-        <b>Ostatnie leady</b>
-        <div class="row">
-          <input id="q" class="search" placeholder="🔎 Imię, telefon, e‑mail, źródło, tag…">
-          <span class="pill">Widocznych: <b id="vis">0</b></span>
-        </div>
-      </div>
-      <div style="overflow:auto;margin-top:8px">
-        <table id="tblLeads">
-          <thead>
-            <tr>
-              <th>Tytuł / Klient</th>
-              <th>Źródło</th>
-              <th>Status</th>
-              <th>Kontakt</th>
-              <th>Tagi</th>
-              <th>Data</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <div class="right" style="margin-top:8px">
-        <a class="btn" href="lidy.html">Otwórz moduł „Lidy”</a>
-        <button id="btnSeed" class="btn ghost" type="button">Dodaj przykładowe</button>
+  <!-- LEWA: lista dokumentów -->
+  <section class="card">
+    <div class="toolbar">
+      <input id="q" placeholder="🔎 Szukaj po nazwie, opisie lub tagu…" style="min-width:260px">
+      <select id="fType" title="Typ pliku">
+        <option value="">Typ: wszystkie</option>
+        <option value="pdf">PDF</option>
+        <option value="doc">DOC/DOCX</option>
+        <option value="xls">XLS/XLSX</option>
+        <option value="txt">TXT</option>
+        <option value="zip">ZIP</option>
+      </select>
+      <select id="sort">
+        <option value="name.asc">Sort: nazwa ↑</option>
+        <option value="name.desc">Sort: nazwa ↓</option>
+        <option value="fav.desc">Sort: ulubione →</option>
+        <option value="mod.desc">Sort: ostatnio modyfikowane</option>
+      </select>
+      <span class="pill">Widocznych: <b id="countVis">0</b></span>
+
+      <div class="right" style="margin-left:auto">
+        <input id="baseHref" placeholder="Katalog bazowy (np. /docs/)" style="min-width:180px">
+        <button id="btnExportCSV" class="btn ghost" type="button">CSV (lista)</button>
+
+        <label class="btn ghost" title="Wczytaj JSON z listą dokumentów (pola: name, href, desc, tags[])">
+          Import JSON<input id="pickJson" type="file" accept="application/json" hidden>
+        </label>
+        <label class="btn ghost" title="Wczytaj CSV (name;href;desc;tags)">
+          Import CSV<input id="pickCsv" type="file" accept=".csv,text/csv" hidden>
+        </label>
+
+        <label class="btn ghost" title="Wczytaj lokalne pliki żeby pobrać ich datę modyfikacji (bez wysyłania)">
+          Metadane<input id="pickMeta" type="file" multiple hidden>
+        </label>
+
+        <label class="btn" title="Eksportuj notatki (opisy/tagi/ulubione)">
+          Eksport notatek<input id="exportNotes" type="button" hidden>
+        </label>
+        <label class="btn ghost" title="Importuj notatki (JSON ze strukturą LS)">
+          Import notatek<input id="importNotes" type="file" accept="application/json" hidden>
+        </label>
+
+        <button id="btnReset" class="btn bad" type="button" title="Czyści tylko opisy/tagi/ulubione w przeglądarce">Wyczyść notatki</button>
       </div>
     </div>
 
-    <div class="card">
-      <b>Skróty</b>
-      <div class="row" style="margin-top:6px">
-        <a class="btn" href="index.html">Pulpit</a>
-        <a class="btn" href="klienci.html">Klienci</a>
-        <a class="btn" href="komponenty.html">Komponenty</a>
-        <a class="btn" href="kalendarz-montaze.html">Kalendarz montaży</a>
-        <a class="btn" href="kalkulator.html" target="_blank" rel="noopener">Kalkulator ↗️</a>
-      </div>
+    <div style="overflow:auto">
+      <table id="tblDocs" role="grid" aria-label="Tabela dokumentów">
+        <thead>
+          <tr>
+            <th>★</th>
+            <th>Nazwa</th>
+            <th>Opis (edytowalny)</th>
+            <th>Tagi</th>
+            <th>Ost. modyfikacja</th>
+            <th>Akcje</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
     </div>
   </section>
 
+  <!-- PRAWA: skróty i pomoc -->
   <aside class="grid">
     <div class="card">
-      <b>Moduły</b>
-      <div class="apps" style="margin-top:8px">
-        <a class="app" href="index.html"><b>📊 Pulpit</b><div class="small">KPI + ostatnie rekordy.</div></a>
-        <a class="app" href="klienci.html"><b>👥 Klienci</b><div class="small">Lista, projekty, umowy.</div></a>
-        <a class="app" href="lidy.html"><b>🧲 Lidy</b><div class="small">Zbieranie i kwalifikacja.</div></a>
-        <a class="app" href="komponenty.html"><b>🧩 Komponenty</b><div class="small">Pompy, piece, PV, ocieplenie, stolarka, bramy.</div></a>
-        <a class="app" href="kalendarz-montaze.html"><b>📅 Kalendarz montaży</b><div class="small">Plan ekip i terminów.</div></a>
-        <a class="app" href="baza.html"><b>🗃 Baza</b><div class="small">Podgląd localStorage/IDB.</div></a>
+      <b>Szybkie filtry</b>
+      <div style="margin-top:8px" class="small">
+        <div class="list-reset" id="quickTags"></div>
       </div>
+      <div class="hint" style="margin-top:8px">Kliknij tag, aby filtrować. Ponowne kliknięcie usuwa filtr.</div>
     </div>
 
     <div class="card">
-      <b>Statystyki (lokalne)</b>
-      <div class="grid cols-3 small" style="margin-top:6px">
-        <div>Leady: <b id="cntLeads">0</b></div>
-        <div>Klienci: <b id="cntClients">0</b></div>
-        <div>Komponenty: <b id="cntCmp">0</b></div>
-      </div>
-      <div class="small" style="margin-top:6px;color:#9fb4ff">Dane są tylko w Twojej przeglądarce.</div>
+      <b>Podpowiedzi</b>
+      <ul class="small">
+        <li>Opis i tagi zapisują się w <code>localStorage</code> (per nazwa pliku).</li>
+        <li>PDF otworzy się w podglądzie. Pliki Word/Excel pobiorą się lub otworzą w systemie.</li>
+        <li><span class="kbd">/</span> — fokus na wyszukiwarce.</li>
+        <li>*Import JSON/CSV* pozwala szybko zasilić listę, np. z Excela.</li>
+        <li>*Katalog bazowy* (prefiks) doklei się do wszystkich linków <i>href</i>.</li>
+      </ul>
     </div>
   </aside>
 </div>
 
+<!-- MODAL PREVIEW -->
+<div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+  <div class="box">
+    <div class="hd">
+      <div id="mTitle"><b>Podgląd</b></div>
+      <div class="right">
+        <a id="mOpen" class="btn ghost" href="#" target="_blank" rel="noopener">Otwórz w nowej karcie</a>
+        <button id="mClose" class="btn" type="button">Zamknij</button>
+      </div>
+    </div>
+    <div class="bd"><iframe id="mFrame" src="" title="Podgląd dokumentu"></iframe></div>
+  </div>
+</div>
+
 <script>
 'use strict';
-const $=s=>document.querySelector(s);
-const INT=new Intl.NumberFormat('pl-PL',{maximumFractionDigits:0});
-const fmt=n=>INT.format(Math.round(Number(n)||0));
-const LS={
-  leads:'arkon_leads_v1',
-  clients:'arkon_clients_v1',
-  cmp:{ pumps:'arkon_cmp_pumps_v1', boilers:'arkon_cmp_boilers_v1', pv:'arkon_cmp_pv_v1', insul:'arkon_cmp_insul_v1', garage:'arkon_cmp_garage_v1' }
+
+/* ===== helpers ===== */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const INT = new Intl.NumberFormat('pl-PL',{maximumFractionDigits:0});
+const fmtDate = ts => ts ? new Date(ts).toLocaleString('pl-PL') : '—';
+const fileExt = n => (n.split('.').pop()||'').toLowerCase();
+const sl = (s) => (s||'').toString().toLowerCase();
+const CSVesc = v => {
+  let s = String(v==null?'':v);
+  return /[\";\n;]/.test(s) ? '"' + s.replace(/\"/g,'""') + '"' : s;
 };
-function load(key, fallback){ try{ return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback)); }catch{ return fallback; } }
-function save(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+const parseCSV = (txt) => {
+  // bardzo prosty parser CSV z separatorem ; i cudzysłowami
+  const lines = txt.split(/\r?\n/).filter(Boolean);
+  const rows = [];
+  for (const ln of lines) {
+    const out=[]; let cur=''; let q=false;
+    for(let i=0;i<ln.length;i++){
+      const c=ln[i];
+      if(q){
+        if(c==='"' && ln[i+1]==='"'){ cur+='"'; i++; }
+        else if(c==="){ q=false; }
+        else cur+=c;
+      }else{
+        if(c==="){ q=true; }
+        else if(c===';'){ out.push(cur); cur=''; }
+        else cur+=c;
+      }
+    }
+    out.push(cur);
+    rows.push(out);
+  }
+  return rows;
+};
 
-/* === SEED (jeśli pusto) === */
-function seedLeads(){
-  let arr=load(LS.leads,[]);
-  if(arr.length) return;
-  arr=[
-    {id:uid(), title:'Pompa 12 kW – Przemków', source:'www', status:'NOWY', name:'Jan Kowalski', email:'jan@kow.pl', phone:'+48 500 000 111', tags:['pompa'], created:Date.now()-86400000*2},
-    {id:uid(), title:'Fotowoltaika 9,9 kWp', source:'FB', status:'W TOKU', name:'Anna Nowak', email:'anna@nowak.pl', phone:'+48 600 100 200', tags:['pv'], created:Date.now()-86400000},
-    {id:uid(), title:'Ocieplenie 180 m²', source:'polecenie', status:'ZAMKNIĘTY', name:'Firma XYZ', email:'biuro@xyz.pl', phone:'+48 700 222 333', tags:['ocieplenie'], created:Date.now()-3600*1000}
-  ];
-  save(LS.leads, arr);
+/* ===== local storage for notes & settings ===== */
+const LS_NOTES = 'arkon_docs_notes_v1'; // { [fileName]: {desc, tags:string[], fav:boolean, mod?:number}}
+const LS_BASEH = 'arkon_docs_basehref_v1';
+let notes = load(LS_NOTES, {});
+let baseHref = load(LS_BASEH, '');
+
+function load(key, fallback){
+  try{ return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }catch{ return fallback; }
 }
-function uid(){ return Math.random().toString(36).slice(2)+Date.now().toString(36); }
+function saveNotes(){
+  localStorage.setItem(LS_NOTES, JSON.stringify(notes));
+  buildQuickTags();
+}
+function saveBaseHref(){
+  localStorage.setItem(LS_BASEH, JSON.stringify(baseHref||''));
+}
 
-/* === render leadów === */
-let leads=[], qtext='';
-function renderLeads(){
-  const tb=$('#tblLeads tbody'); tb.innerHTML='';
-  const rows=leads.slice().sort((a,b)=>(b.created||0)-(a.created||0)).filter(fmatch);
-  $('#vis').textContent=rows.length;
+/* ===== domyślne pliki ===== */
+let SOURCE = [
+  { name: 'OŚWIADCZENIE O DOKONANIU ZAPŁATY.docx', href: 'OŚWIADCZENIE O DOKONANIU ZAPŁATY.docx', desc: 'Oświadczenie potwierdzające dokonanie zapłaty przelewem/na rachunek.', tags: ['oświadczenie','płatność','dotacje'] },
+  { name: 'OŚWIADCZENIE WSPÓŁMAŁŻONKA.docx', href: 'OŚWIADCZENIE WSPÓŁMAŁŻONKA.docx', desc: 'Zgoda współmałżonka na wykonanie zakresu/zgłoszenie.', tags: ['oświadczenie','majątkowe'] },
+  { name: 'OŚWIADCZENIE WSPÓŁWŁAŚCICIELA.docx', href: 'OŚWIADCZENIE WSPÓŁWŁAŚCICIELA.docx', desc: 'Zgoda współwłaściciela nieruchomości na realizację inwestycji.', tags: ['oświadczenie','prawne'] },
+  { name: 'PEŁNOMOCNICTWO.docx', href: 'PEŁNOMOCNICTWO.docx', desc: 'Pełnomocnictwo do reprezentowania w programie/urzędzie.', tags: ['pełnomocnictwo','prawne'] },
+  { name: 'UMOWA Z WYKONAWCĄ arkon.docx', href: 'UMOWA Z WYKONAWCĄ arkon.docx', desc: 'Wzór umowy z Wykonawcą (ARKON) – edytowalny DOCX.', tags: ['umowa','wykonawca','ARKON'] },
+];
+
+/* ===== stan & UI ===== */
+let filter = { q:'', type:'', sort:'name.asc', tag:'' };
+
+$('#q').addEventListener('input', e=>{ filter.q=e.target.value; render(); });
+$('#fType').addEventListener('change', e=>{ filter.type=e.target.value; render(); });
+$('#sort').addEventListener('change', e=>{ filter.sort=e.target.value; render(); });
+$('#btnReset').addEventListener('click', ()=>{
+  if(!confirm('Wyczyścić lokalne opisy, tagi i ulubione?')) return;
+  notes = {}; saveNotes(); render();
+});
+$('#btnExportCSV').addEventListener('click', exportCSV);
+$('#pickMeta').addEventListener('change', handlePickMeta);
+$('#pickJson').addEventListener('change', handlePickJson);
+$('#pickCsv').addEventListener('change', handlePickCsv);
+$('#importNotes').addEventListener('change', handleImportNotes);
+$('#baseHref').value = baseHref||'';
+$('#baseHref').addEventListener('input', e=>{ baseHref = (e.target.value||'').trim(); saveBaseHref(); render(); });
+
+// skrót klawiaturowy do wyszukiwania
+window.addEventListener('keydown', (e)=>{ if(e.key==='/' && !e.metaKey && !e.ctrlKey){ e.preventDefault(); $('#q').focus(); }});
+
+/* ===== render ===== */
+function effectiveHref(href){
+  if(!baseHref) return href;
+  const left = baseHref.replace(/\/+$/,'');
+  const right = (href||'').replace(/^\/+/,'');
+  return left + '/' + right;
+}
+
+function applyFilters(rows){
+  rows = rows.map(r=>{
+    const n = notes[r.name] || {};
+    return Object.assign({}, r, {
+      _href: effectiveHref(r.href||''),
+      _desc: n.desc ?? r.desc ?? '',
+      _tags: Array.isArray(n.tags)? n.tags : (r.tags||[]),
+      _fav: !!n.fav,
+      _mod: n.mod || 0
+    });
+  });
+
+  if(filter.q){
+    const q = sl(filter.q);
+    rows = rows.filter(r => sl(r.name).includes(q) || sl(r._desc).includes(q) || (r._tags||[]).some(t=>sl(t).includes(q)));
+  }
+  if(filter.type){
+    rows = rows.filter(r=>{
+      const ext = fileExt(r.name);
+      if(filter.type==='doc') return ['doc','docx'].includes(ext);
+      if(filter.type==='xls') return ['xls','xlsx'].includes(ext);
+      return ext===filter.type;
+    });
+  }
+  if(filter.tag){
+    const t = sl(filter.tag);
+    rows = rows.filter(r => (r._tags||[]).some(x=>sl(x)===t));
+  }
+
+  rows.sort((a,b)=>{
+    switch(filter.sort){
+      case 'name.asc':  return a.name.localeCompare(b.name,'pl',{sensitivity:'base'});
+      case 'name.desc': return b.name.localeCompare(a.name,'pl',{sensitivity:'base'});
+      case 'fav.desc':  return (b._fav?1:0) - (a._fav?1:0) || a.name.localeCompare(b.name,'pl');
+      case 'mod.desc':  return (b._mod||0) - (a._mod||0) || a.name.localeCompare(b.name,'pl');
+      default: return 0;
+    }
+  });
+  return rows;
+}
+
+function render(){
+  let rows = applyFilters(SOURCE.slice());
+  $('#countVis').textContent = rows.length;
+  const tb = $('#tbody'); tb.innerHTML='';
+
   if(!rows.length){
-    tb.innerHTML='<tr><td colspan="6" class="small">Brak danych. Dodaj w module „Lidy”.</td></tr>';
+    tb.innerHTML = '<tr><td colspan="6" class="small">Brak wyników dla bieżących filtrów.</td></tr>';
     return;
   }
-  rows.slice(0,30).forEach(l=>{
-    const tr=document.createElement('tr');
-    const tags=(l.tags||[]).map(t=>'<span class="tag">'+escape(t)+'</span>').join('');
-    tr.innerHTML = `
-      <td><b>${escape(l.title||'—')}</b><div class="small">${escape(l.name||'')}</div></td>
-      <td>${escape(l.source||'')}</td>
-      <td><span class="status ${cls(l.status)}">${escape(l.status||'')}</span></td>
-      <td>${escape(l.email||'')}<div class="small">${escape(l.phone||'')}</div></td>
-      <td>${tags}</td>
-      <td>${new Date(l.created||Date.now()).toLocaleString('pl-PL')}</td>`;
+
+  rows.forEach(file=>{
+    const tr = document.createElement('tr');
+    // ★ ulubione
+    const tdFav = document.createElement('td');
+    const star = document.createElement('span');
+    star.className = 'star' + (file._fav?' on':'');
+    star.textContent = file._fav ? '★' : '☆';
+    star.title = file._fav ? 'Usuń z ulubionych' : 'Dodaj do ulubionych';
+    star.addEventListener('click', ()=>{
+      const n = notes[file.name] || {};
+      n.fav = !file._fav;
+      notes[file.name] = n; saveNotes(); render();
+    });
+    tdFav.appendChild(star);
+
+    // Nazwa + ikonka
+    const tdName = document.createElement('td');
+    const box = document.createElement('div'); box.className='name';
+    const ico = document.createElement('div');
+    const ext = fileExt(file.name);
+    ico.className = 'ico ' + (ext==='pdf'?'pdf': (['doc','docx'].includes(ext)?'doc': (['xls','xlsx'].includes(ext)?'xls': (ext==='zip'?'zip': (ext==='txt'?'txt':'')))));
+    ico.textContent = ext==='pdf'?'📄': (['doc','docx'].includes(ext)?'📝': (['xls','xlsx'].includes(ext)?'📊': (ext==='zip'?'🗜':'📄')));
+    const a = document.createElement('a'); a.href=file._href; a.textContent=file.name; a.title='Otwórz';
+    a.addEventListener('click', (e)=>{
+      if(fileExt(file.name)==='pdf'){
+        e.preventDefault();
+        openPreview({ name:file.name, href:file._href });
+      }
+    });
+    box.appendChild(ico); box.appendChild(a);
+    tdName.appendChild(box);
+
+    // Opis (edytowalny) + autosave
+    const tdDesc = document.createElement('td');
+    const ta = document.createElement('textarea'); ta.placeholder='Opis dokumentu…'; ta.value=file._desc||'';
+    ta.addEventListener('input', debounce(()=>{ setNote(file.name, {desc:ta.value}); }, 200));
+    tdDesc.appendChild(ta);
+
+    // Tagi (edytowalne, po przecinku)
+    const tdTags = document.createElement('td');
+    const inpTags = document.createElement('input'); inpTags.placeholder='np. umowa, prawne'; inpTags.value=(file._tags||[]).join(', ');
+    inpTags.addEventListener('input', debounce(()=>{
+      const tags = inpTags.value.split(',').map(s=>s.trim()).filter(Boolean);
+      setNote(file.name, {tags});
+    }, 200));
+    tdTags.appendChild(inpTags);
+
+    // Ost. modyfikacja (z local metadanych jeśli wczytane)
+    const tdMod = document.createElement('td');
+    tdMod.textContent = file._mod ? fmtDate(file._mod) : '—';
+
+    // Akcje
+    const tdAct = document.createElement('td');
+    tdAct.className='right';
+    const btnOpen = document.createElement('a');
+    btnOpen.className='btn ghost'; btnOpen.href=file._href; btnOpen.target='_blank'; btnOpen.rel='noopener';
+    btnOpen.textContent = 'Otwórz';
+    btnOpen.addEventListener('click', (e)=>{
+      if(fileExt(file.name)==='pdf'){ e.preventDefault(); openPreview({ name:file.name, href:file._href }); }
+    });
+    const btnDl = document.createElement('a');
+    btnDl.className='btn'; btnDl.href=file._href; btnDl.download=file.name; btnDl.textContent='Pobierz';
+
+    tdAct.appendChild(btnOpen);
+    tdAct.appendChild(btnDl);
+
+    tr.appendChild(tdFav);
+    tr.appendChild(tdName);
+    tr.appendChild(tdDesc);
+    tr.appendChild(tdTags);
+    tr.appendChild(tdMod);
+    tr.appendChild(tdAct);
+
     tb.appendChild(tr);
   });
 }
-function fmatch(l){
-  if(!qtext) return true;
-  const q=qtext.toLowerCase();
-  return ['title','name','email','phone','source','status'].some(k=>(l[k]||'').toString().toLowerCase().includes(q)) ||
-         (l.tags||[]).some(t=>t.toLowerCase().includes(q));
-}
-function cls(s){
-  s=(s||'').toUpperCase();
-  if(s==='NOWY'||s==='LEAD') return 'new';
-  if(s==='W TOKU') return 'wip';
-  if(s==='ZAMKNIĘTY'||s==='KLIENT') return 'done';
-  return '';
-}
-function escape(s){ return (s==null?'':String(s)).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
 
-/* === KPI === */
-function refreshKPI(){
-  $('#cntLeads').textContent = load(LS.leads,[]).length;
-  const cc = load('arkon_clients_v2', null) || load(LS.clients, []);
-  $('#cntClients').textContent = (Array.isArray(cc)?cc.length:0);
-  const cmp = ['pumps','boilers','pv','insul','garage'].map(k=>load(LS.cmp[k],[]).length).reduce((a,b)=>a+b,0);
-  $('#cntCmp').textContent = cmp;
+/* ===== tag chmura ===== */
+function buildQuickTags(){
+  const box = $('#quickTags'); box.innerHTML='';
+  const map = new Map();
+  SOURCE.forEach(f=>{ (f.tags||[]).forEach(t=> map.set(t, (map.get(t)||0)+1)); });
+  Object.values(notes).forEach(n=>{ (n.tags||[]).forEach(t=> map.set(t, (map.get(t)||0)+1)); });
+  if(map.size===0){ box.innerHTML='<div class="muted">Brak tagów. Dodaj w tabeli.</div>'; return; }
+
+  const sorted = [...map.entries()].sort((a,b)=> b[1]-a[1]);
+  sorted.slice(0,30).forEach(([tag,count])=>{
+    const btn = document.createElement('button');
+    btn.className='tag';
+    btn.type='button';
+    btn.textContent = tag + ' ('+count+')';
+    btn.addEventListener('click', ()=>{
+      filter.tag = (filter.tag===tag ? '' : tag);
+      render();
+    });
+    if(filter.tag===tag){ btn.style.background='#1a2a66'; btn.style.borderColor='#4b65d2'; }
+    box.appendChild(btn);
+  });
 }
 
-/* === init === */
+/* ===== notatki - merge partial ===== */
+function setNote(name, part){
+  const n = notes[name] || {};
+  Object.assign(n, part);
+  notes[name] = n;
+  saveNotes();
+}
+
+/* ===== preview modal (PDF) ===== */
+const modal = $('#modal'), mFrame = $('#mFrame'), mOpen = $('#mOpen'), mTitle = $('#mTitle');
+$('#mClose').addEventListener('click', closePreview);
+function openPreview(file){
+  mTitle.textContent = file.name;
+  mFrame.src = file.href;
+  mOpen.href = file.href;
+  modal.classList.add('open');
+}
+function closePreview(){
+  mFrame.src = 'about:blank';
+  modal.classList.remove('open');
+}
+
+/* ===== wczytaj metadane z lokalnych plików (tylko po nazwie) ===== */
+async function handlePickMeta(e){
+  const files = Array.from(e.target.files||[]);
+  if(!files.length) return;
+  let changed = 0;
+  files.forEach(f=>{
+    const match = SOURCE.find(x=>x.name===f.name);
+    if(!match) return;
+    const n = notes[match.name] || {};
+    n.mod = f.lastModified || Date.now();
+    notes[match.name] = n;
+    changed++;
+  });
+  saveNotes();
+  if(changed===0) alert('Nie dopasowano nazw — upewnij się, że wybierasz te same pliki.');
+  render();
+  e.target.value = '';
+}
+
+/* ===== import listy JSON ===== */
+async function handlePickJson(e){
+  const f=e.target.files?.[0]; if(!f) return;
+  try{
+    const txt=await f.text();
+    const arr=JSON.parse(txt);
+    if(!Array.isArray(arr)) throw new Error('JSON nie jest tablicą.');
+    // normalizacja
+    SOURCE = arr.map(x=>({
+      name: String(x.name||'').trim(),
+      href: String(x.href||'').trim(),
+      desc: String(x.desc||''),
+      tags: Array.isArray(x.tags) ? x.tags : (String(x.tags||'').split(',').map(s=>s.trim()).filter(Boolean))
+    })).filter(x=>x.name && x.href);
+    buildQuickTags(); render();
+  }catch(err){ alert('Błąd JSON: '+(err?.message||err)); }
+  e.target.value='';
+}
+
+/* ===== import listy CSV (name;href;desc;tags) ===== */
+async function handlePickCsv(e){
+  const f=e.target.files?.[0]; if(!f) return;
+  try{
+    const txt=await f.text();
+    const rows=parseCSV(txt);
+    const out=[];
+    for(const r of rows){
+      const [name,href,desc,tagsRaw] = [r[0]||'',r[1]||'',r[2]||'',r[3]||''];
+      if(!name || !href) continue;
+      const tags = String(tagsRaw).split(',').map(s=>s.trim()).filter(Boolean);
+      out.push({ name:name.trim(), href:href.trim(), desc:desc||'', tags });
+    }
+    if(!out.length) throw new Error('Brak poprawnych wierszy.');
+    SOURCE = out;
+    buildQuickTags(); render();
+  }catch(err){ alert('Błąd CSV: '+(err?.message||err)); }
+  e.target.value='';
+}
+
+/* ===== eksport CSV (widok) ===== */
+function exportCSV(){
+  const rows = applyFilters(SOURCE.slice());
+  const out = [['Ulubione','Nazwa','Opis','Tagi','Ost. modyfikacja','Ścieżka']];
+  rows.forEach(r=>{
+    out.push([
+      r._fav?'TAK':'NIE',
+      r.name,
+      (r._desc||'').replace(/\s+/g,' ').trim(),
+      (r._tags||[]).join('|'),
+      r._mod? new Date(r._mod).toISOString() : '',
+      r._href
+    ]);
+  });
+  const csv = out.map(line=>line.map(CSVesc).join(';')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'arkon_dokumenty.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* ===== eksport/import NOTATEK ===== */
+document.querySelector('label:has(#exportNotes)').addEventListener('click', ()=>{
+  const blob=new Blob([JSON.stringify(notes,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='arkon_docs_notes.json'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1200);
+});
+async function handleImportNotes(e){
+  const f=e.target.files?.[0]; if(!f) return;
+  try{
+    const txt=await f.text();
+    const obj=JSON.parse(txt);
+    if(!obj || typeof obj!=='object') throw new Error('Nieprawidłowy JSON.');
+    notes = obj;
+    saveNotes(); render();
+  }catch(err){ alert('Błąd importu notatek: '+(err?.message||err)); }
+  e.target.value='';
+}
+
+/* ===== debounce util ===== */
+function debounce(fn,ms){ let t; return function(){ const a=arguments; clearTimeout(t); t=setTimeout(()=>fn.apply(null,a), ms||180); }; }
+
+/* ===== init ===== */
 function init(){
-  seedLeads(); // tylko gdy pusto
-  leads = load(LS.leads, []);
-  refreshKPI();
-  renderLeads();
-  $('#q').addEventListener('input', e=>{ qtext=e.target.value.trim(); renderLeads(); });
-  window.addEventListener('keydown', e=>{ if(e.key==='/'){ e.preventDefault(); $('#q').focus(); } });
-  $('#btnSeed').addEventListener('click', ()=>{ seedLeads(); leads=load(LS.leads,[]); refreshKPI(); renderLeads(); });
+  // zasiej domyślne opisy/tagi jeśli nie ma notatek
+  SOURCE.forEach(f=>{
+    if(!notes[f.name]){
+      notes[f.name] = { desc:f.desc||'', tags:(f.tags||[]), fav:false };
+    }
+  });
+  saveNotes();
+  buildQuickTags();
+  render();
 }
 init();
 </script>
