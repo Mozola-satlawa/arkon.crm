@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Kalkulator Czyste Powietrze – ARKON</title>
-<meta name="description" content="Kalkulator dotacji Czyste Powietrze 2025: źródło ciepła, ocieplenie, stolarka, limity dotacji na m2, VAT 8/23%, zapis, CSV, druk.">
+<meta name="description" content="Kalkulator dotacji Czyste Powietrze 2025: źródło ciepła, ocieplenie, stolarka, limity dotacji na m2/mb, VAT 8/23%, zapis, CSV, druk.">
 <style>
   :root{ --bg:#0b1020; --p1:#121a34; --p2:#172142; --ink:#e8edff; --muted:#aeb8da; --accent:#4cc9f0; --ok:#2b8a57; --grid:#243059; }
   *{box-sizing:border-box}
@@ -73,9 +73,9 @@
     #tab-main th:nth-child(8){width:90px}
     #tab-main th:nth-child(9){width:95px}
     #tab-env th:nth-child(2){width:210px}
-    #tab-env th:nth-child(3){width:70px}
-    #tab-env th:nth-child(4){width:110px}
-    #tab-env th:nth-child(5){width:110px}
+    #tab-env th:nth-child(3){width:90px}
+    #tab-env th:nth-child(4){width:140px}
+    #tab-env th:nth-child(5){width:130px}
     #tab-env th:nth-child(6){width:95px}
     #tab-env th:nth-child(7){width:95px}
     #tab-env th:nth-child(8){width:95px}
@@ -95,7 +95,7 @@
   <header>
     <div>
       <h1>Kalkulator dotacji • Czyste Powietrze 2025</h1>
-      <div class="muted">Źródło ciepła + ocieplenie/stolarka. Jedno źródło ciepła, limity m², VAT <span id="vatLive">8</span>%, zapis/CSV/druk.</div>
+      <div class="muted">Źródło ciepła + ocieplenie/stolarka. Jedno źródło ciepła, limity m²/mb, VAT <span id="vatLive">8</span>%, zapis/CSV/druk.</div>
     </div>
   </header>
 
@@ -205,10 +205,10 @@
     </section>
   </section>
 
-  <!-- OCIEPLENIE / STOLARKA -->
+  <!-- OCIEPLENIE / STOLARKA / DODATKI -->
   <section id="tab-env" class="hidden" role="tabpanel" aria-labelledby="tabbtn-env">
     <section class="panel">
-      <div class="muted">Dotacja = min( koszt NETTO × % , pow_m2 × stawka_dotacji_netto_na_m2 ). Ceny brutto liczone z VAT <span id="vatLive2">8</span>%.</div>
+      <div class="muted">Dotacja = min( koszt NETTO × % , ilość × stawka_dotacji_netto_na_jednostkę ). Jednostka: m² lub mb. Ceny brutto liczone z VAT <span id="vatLive2">8</span>%.</div>
     </section>
     <section class="panel">
       <div class="right" style="margin-bottom:6px">
@@ -222,11 +222,11 @@
             <tr>
               <th scope="col">Wybierz</th>
               <th scope="col">Pozycja</th>
-              <th scope="col" class="num">Pow. [m2]</th>
-              <th scope="col" class="num">Twoja cena / m2 (NETTO/BRUTTO)</th>
-              <th scope="col" class="num">Maks. dotacja / m2 (NETTO)</th>
+              <th scope="col" class="num">Ilość [m²/mb]</th>
+              <th scope="col" class="num">Twoja cena / m² / mb (NETTO/BRUTTO)</th>
+              <th scope="col" class="num">Maks. dotacja / m² / mb (NETTO)</th>
               <th scope="col" class="num">Koszt NETTO</th>
-              <th scope="col" class="num">Limit z m2</th>
+              <th scope="col" class="num">Limit z ilości</th>
               <th scope="col" class="num">Dotacja</th>
               <th scope="col" class="num">Koszt BRUTTO</th>
               <th scope="col" class="num">Dopłata (brutto)</th>
@@ -235,7 +235,7 @@
           <tbody id="tbodyEnv"></tbody>
           <tfoot>
             <tr>
-              <td colspan="7" class="num"><b>SUMA (ocieplenie/stolarka)</b></td>
+              <td colspan="7" class="num"><b>SUMA (ocieplenie/stolarka + dodatki)</b></td>
               <td class="num" id="sumEnvGrant">0</td>
               <td class="num" id="sumEnvGross">0</td>
               <td class="num" id="sumEnvCopay">0</td>
@@ -252,8 +252,8 @@
   <div class="inner">
     <div class="f-text">
       <b>ARKON – Przedsiębiorstwo Wielobranżowe</b><br>
-      59‑170 Przemków • ul. Fabryczna 12 C • NIP: 5020038830 • KRS: 0000255361<br>
-      tel. 76 831 90 30 • e‑mail: biuro@arkon.com.pl
+      59-170 Przemków • ul. Fabryczna 12 C • NIP: 5020038830 • KRS: 0000255361<br>
+      tel. 76 831 90 30 • e-mail: biuro@arkon.com.pl
     </div>
   </div>
 </footer>
@@ -434,40 +434,62 @@ function buildMain(){
 }
 function debRecalcMainRow(i){ return debounce(function(){ recalcMainRow(i); },140); }
 
-/* ===== ocieplenie/stolarka ===== */
-var RATES_M2 = {
-  sciany: { P:180, M:210, T:250 },
-  strop:  { P: 80, M:140, T:200 },
-  podloga:{ P: 80, M:100, T:150 },
-  okna:   { P:650, M:1050, T:1500 },
-  drzwi:  { P:2000, M:2500, T:3000 },
-  bramy:  { P: 600, M:1050, T:1500 }
+/* ===== OCIEPLENIE / STOLARKA / DODATKI ===== */
+/* Maksymalne stawki dotacji na jednostkę (NETTO).
+   m2: standardowe pozycje; mb: dodatki.
+   Parapety: 120 zł/mb (dla wszystkich poziomów: P/M/T).
+   Skuwanie parapetów i opierzenie/rynny: dotacja 0 (limit 0) — koszt liczony do dopłaty. */
+var RATES_PER = {
+  sciany:  { unit:'m2', P:180, M:210, T:250 },
+  strop:   { unit:'m2', P: 80, M:140, T:200 },
+  podloga: { unit:'m2', P: 80, M:100, T:150 },
+  okna:    { unit:'m2', P:650, M:1050, T:1500 },
+  drzwi:   { unit:'m2', P:2000,M:2500, T:3000 },
+  bramy:   { unit:'m2', P: 600,M:1050, T:1500 },
+
+  // DODATKI (mb)
+  parapety:{ unit:'mb', P:120, M:120, T:120 }, // max dotacja 120 zł/mb
+  skuwanie:{ unit:'mb', P:  0, M:  0, T:  0 }, // brak dotacji
+  rynny:   { unit:'mb', P:  0, M:  0, T:  0 }  // brak dotacji
 };
+function unitForKey(key){ return (RATES_PER[key]||{}).unit || 'm2'; }
 function rateForKey(key){
-  if (state.level.name==='PODSTAWOWY') return (RATES_M2[key]||{}).P||0;
-  if (state.level.name==='PODWYŻSZONY') return (RATES_M2[key]||{}).M||0;
-  if (state.level.name==='NAJWYŻSZY')   return (RATES_M2[key]||{}).T||0;
+  var k=RATES_PER[key]||{};
+  if (state.level.name==='PODSTAWOWY') return k.P||0;
+  if (state.level.name==='PODWYŻSZONY') return k.M||0;
+  if (state.level.name==='NAJWYŻSZY')   return k.T||0;
   return 0;
 }
+
+/* Lista pozycji środowiskowych (kolejność w tabeli) */
 var DATA_ENV = [
-  {key:'sciany', name:'Ocieplenie ścian zewnętrznych'},
-  {key:'strop',  name:'Ocieplenie dachu / stropodachu'},
-  {key:'podloga',name:'Ocieplenie podłogi na gruncie'},
-  {key:'okna',   name:'Stolarka okienna'},
-  {key:'drzwi',  name:'Drzwi zewnętrzne'},
-  {key:'bramy',  name:'Brama garażowa'}
+  {key:'sciany',   name:'Ocieplenie ścian zewnętrznych'},
+  {key:'strop',    name:'Ocieplenie dachu / stropodachu'},
+  {key:'podloga',  name:'Ocieplenie podłogi na gruncie'},
+  {key:'okna',     name:'Stolarka okienna'},
+  {key:'drzwi',    name:'Drzwi zewnętrzne'},
+  {key:'bramy',    name:'Brama garażowa'},
+
+  // Dodatki (mb)
+  {key:'parapety', name:'Parapety zewnętrzne (mb) – limit 120 zł/mb'},
+  {key:'skuwanie', name:'Skuwanie parapetów (mb) – bez dotacji'},
+  {key:'rynny',    name:'Opierzenie / rynny (mb) – bez dotacji'}
 ];
+
 function buildEnv(){
   var tb=q('#tbodyEnv'); tb.innerHTML=''; state.envRows=[];
   DATA_ENV.forEach(function(it,idx){
     var tr=document.createElement('tr');
-    var r={ key:it.key, sel:false, m2:0, ownRate:0, costNet:0, _grant:0,_gross:0,_copay:0,_hit:false, els:{}, tr:tr };
+    var r={ key:it.key, unit:unitForKey(it.key), sel:false, qty:0, ownRate:0, costNet:0, _grant:0,_gross:0,_copay:0,_hit:false, els:{}, tr:tr };
 
     var tdSel=document.createElement('td'); var sel=document.createElement('input'); sel.type='checkbox'; sel.setAttribute('aria-label','Wybierz pozycję'); tdSel.appendChild(sel);
     var tdName=document.createElement('td'); tdName.textContent=it.name;
 
-    var tdM2=document.createElement('td'); tdM2.className='num'; var m2=document.createElement('input'); m2.className='num'; m2.inputMode='decimal'; m2.placeholder='0'; m2.setAttribute('aria-label','Powierzchnia m2'); tdM2.appendChild(m2);
-    var tdOwn=document.createElement('td'); tdOwn.className='num'; var own=document.createElement('input'); own.className='num'; own.inputMode='decimal'; own.placeholder='0'; own.setAttribute('aria-label','Twoja cena za m2'); tdOwn.appendChild(own);
+    var tdQty=document.createElement('td'); tdQty.className='num';
+    var qtyInp=document.createElement('input'); qtyInp.className='num'; qtyInp.inputMode='decimal'; qtyInp.placeholder='0'; qtyInp.setAttribute('aria-label', r.unit==='mb'?'Długość [mb]':'Powierzchnia [m2]'); tdQty.appendChild(qtyInp);
+
+    var tdOwn=document.createElement('td'); tdOwn.className='num';
+    var own=document.createElement('input'); own.className='num'; own.inputMode='decimal'; own.placeholder='0'; own.setAttribute('aria-label', r.unit==='mb'?'Twoja cena / mb':'Twoja cena / m2'); tdOwn.appendChild(own);
 
     var tdRate=document.createElement('td'); tdRate.className='num';
     var tdCost=document.createElement('td'); tdCost.className='num';
@@ -476,10 +498,11 @@ function buildEnv(){
     var tdGross=document.createElement('td'); tdGross.className='num';
     var tdCopay=document.createElement('td'); tdCopay.className='num';
 
-    tr.appendChild(tdSel); tr.appendChild(tdName); tr.appendChild(tdM2); tr.appendChild(tdOwn); tr.appendChild(tdRate); tr.appendChild(tdCost); tr.appendChild(tdCap); tr.appendChild(tdGrant); tr.appendChild(tdGross); tr.appendChild(tdCopay);
+    tr.appendChild(tdSel); tr.appendChild(tdName); tr.appendChild(tdQty); tr.appendChild(tdOwn); tr.appendChild(tdRate);
+    tr.appendChild(tdCost); tr.appendChild(tdCap); tr.appendChild(tdGrant); tr.appendChild(tdGross); tr.appendChild(tdCopay);
     tb.appendChild(tr);
 
-    r.els={sel:sel,m2:m2,ownRate:own,tdRateMax:tdRate,tdCostNet:tdCost,tdLimit:tdCap,tdGrant:tdGrant,tdGross:tdGross,tdCopay:tdCopay};
+    r.els={sel:sel,qty:qtyInp,ownRate:own,tdRateMax:tdRate,tdCostNet:tdCost,tdLimit:tdCap,tdGrant:tdGrant,tdGross:tdGross,tdCopay:tdCopay};
     state.envRows.push(r);
 
     function syncSelectedClass(){ tr.classList.toggle('is-selected', r.sel); }
@@ -490,8 +513,8 @@ function buildEnv(){
       updateAggregates();
       autosave();
     });
-    m2.addEventListener('input', function(){
-      r.m2=toNum(m2.value);
+    qtyInp.addEventListener('input', function(){
+      r.qty=toNum(qtyInp.value);
       debRecalcEnvRow(idx)();
       debUpdateAggregates();
     });
@@ -500,7 +523,7 @@ function buildEnv(){
       debRecalcEnvRow(idx)();
       debUpdateAggregates();
     });
-    m2.addEventListener('change', autosave);
+    qtyInp.addEventListener('change', autosave);
     own.addEventListener('change', autosave);
   });
 }
@@ -543,8 +566,8 @@ function recalcEnvRow(i){
   r.els.tdRateMax.textContent = fmt(per);
 
   var ownNet = state.priceMode==='BRUTTO' ? (r.ownRate/(1+VAT)) : r.ownRate;
-  var costNet = (r.m2||0) * (ownNet||0);
-  var cap = (r.m2||0) * per;
+  var costNet = (r.qty||0) * (ownNet||0);
+  var cap = (r.qty||0) * per;
 
   var res = calcGrant(costNet, state.level.pct, cap);
   r.costNet=costNet; r._grant=res.grant; r._gross=res.gross; r._copay=res.copay; r._hit=res.hit;
@@ -605,7 +628,7 @@ function renderSummary(){
   var m = getTotalsMain();
   var e = getTotalsEnv();
 
-  // 1) Ocieplenie/Stolarka – limit sekcji
+  // 1) Ocieplenie/Stolarka/Dodatki – limit sekcji
   var envRawGrant = e.sumGrant || 0;
   var envCap      = ENV_CAPS[state.level.name] || 0;
   var envGrant    = envCap ? Math.min(envRawGrant, envCap) : envRawGrant;
@@ -642,7 +665,7 @@ function renderSummary(){
   });
   state.envRows.forEach(function(r){
     if(r.sel && state.level.pct>0){
-      var capRow = (r.m2||0) * (rateForKey(r.key)||0);
+      var capRow = (r.qty||0) * (rateForKey(r.key)||0);
       need += Math.ceil(capRow/state.level.pct);
     }
   });
@@ -679,7 +702,7 @@ function presetMain(){
 function presetEnv(){
   state.envRows.forEach(function(r,i){
     r.sel=false; r.els.sel.checked=false; r.tr.classList.remove('is-selected');
-    r.m2=0; r.els.m2.value='';
+    r.qty=0; r.els.qty.value='';
     r.ownRate=0; r.els.ownRate.value='';
     recalcEnvRow(i);
   });
@@ -704,9 +727,9 @@ function autoNeedEnv(){
   state.envRows.forEach(function(r,i){
     if(!r.sel) return;
     var per = rateForKey(r.key)||0;
-    if(state.level.pct>0){
-      var needPerM2Net = per/(state.level.pct||1);
-      r.ownRate = Math.round(state.priceMode==='BRUTTO' ? needPerM2Net*(1+VAT) : needPerM2Net);
+    if(state.level.pct>0 && per>0){
+      var needPerUnitNet = per/(state.level.pct||1);
+      r.ownRate = Math.round(state.priceMode==='BRUTTO' ? needPerUnitNet*(1+VAT) : needPerUnitNet);
       r.els.ownRate.value = String(r.ownRate);
       recalcEnvRow(i);
     }
@@ -735,10 +758,22 @@ function exportCSVMain(){
   downloadCSV('cp2025_glowne_'+todayStr(), out);
 }
 function exportCSVEnv(){
-  var out=[['Wybrany','Pozycja','Pow m2 x cena_m2','Koszt netto','Limit z m2','Dotacja','Koszt brutto (VAT '+Math.round(VAT*100)+'%)','Dopłata','Limit użyty?']];
+  var out=[['Wybrany','Pozycja','Ilość x cena_jedn.','Koszt netto','Limit z ilości','Dotacja','Koszt brutto (VAT '+Math.round(VAT*100)+'%)','Dopłata','Limit użyty?']];
   state.envRows.forEach(function(r,i){
-    var base=DATA_ENV[i]; var cap=Math.round((r.m2||0)*(rateForKey(r.key)||0));
-    out.push([ r.sel?'TAK':'NIE', base.name, String(r.m2||0)+' m2 x '+String(r.ownRate||0), Math.round(r.costNet||0), cap, Math.round(r._grant||0), Math.round(r._gross||0), Math.round(r._copay||0), r._hit?'TAK':'NIE' ]);
+    var base=DATA_ENV[i]; var per=rateForKey(r.key)||0;
+    var cap=Math.round((r.qty||0)*per);
+    var unit=unitForKey(r.key);
+    out.push([
+      r.sel?'TAK':'NIE',
+      base.name,
+      String(r.qty||0)+' '+unit+' x '+String(r.ownRate||0)+' zł/'+unit,
+      Math.round(r.costNet||0),
+      cap,
+      Math.round(r._grant||0),
+      Math.round(r._gross||0),
+      Math.round(r._copay||0),
+      r._hit?'TAK':'NIE'
+    ]);
   });
   downloadCSV('cp2025_ocieplenie_'+todayStr(), out);
 }
@@ -749,8 +784,9 @@ function exportCSVAll(){
     out.push(['Glowne', comp.name, v.label, Math.round(r._costNet||0), lim, Math.round(r._grant||0), Math.round(r._gross||0), Math.round(r._copay||0), r._hit?'TAK':'NIE']);
   });
   state.envRows.forEach(function(r,i){
-    var base=DATA_ENV[i], cap=Math.round((r.m2||0)*(rateForKey(r.key)||0));
-    out.push(['Ocieplenie', base.name, String(r.m2||0)+' m2 x '+String(r.ownRate||0), Math.round(r.costNet||0), cap, Math.round(r._grant||0), Math.round(r._gross||0), Math.round(r._copay||0), r._hit?'TAK':'NIE']);
+    var base=DATA_ENV[i], per=rateForKey(r.key)||0, cap=Math.round((r.qty||0)*per);
+    var unit=unitForKey(r.key);
+    out.push(['Ocieplenie', base.name, String(r.qty||0)+' '+unit+' x '+String(r.ownRate||0)+' zł/'+unit, Math.round(r.costNet||0), cap, Math.round(r._grant||0), Math.round(r._gross||0), Math.round(r._copay||0), r._hit?'TAK':'NIE']);
   });
   downloadCSV('cp2025_laczny_'+todayStr(), out);
 }
@@ -761,7 +797,7 @@ function saveAll(){
     typ:q('#typ').value, mies:q('#doch_mies').value, roczny:q('#doch_roczny').value, swiad:q('#swiadczenia').value,
     pm:state.priceMode, vat:VAT,
     main: state.mainRows.map(function(r){ return {sel:r.sel, vIdx:r.vIdx, cost:r.costInput}; }),
-    env:  state.envRows.map(function(r){ return {sel:r.sel, m2:r.m2, ownRate:r.ownRate}; })
+    env:  state.envRows.map(function(r){ return {sel:r.sel, qty:r.qty, ownRate:r.ownRate, key:r.key}; })
   };
   localStorage.setItem('cp2025_arkon', JSON.stringify(data));
 }
@@ -788,7 +824,7 @@ function loadAll(){
     d.env.forEach(function(e,i){
       var r=state.envRows[i]; if(!r) return;
       r.sel=!!e.sel; r.els.sel.checked=r.sel; r.tr.classList.toggle('is-selected', r.sel);
-      r.m2=toNum(e.m2); r.els.m2.value=r.m2?String(r.m2):'';
+      r.qty=toNum(e.qty); r.els.qty.value=r.qty?String(r.qty):'';
       r.ownRate=toNum(e.ownRate); r.els.ownRate.value=r.ownRate?String(r.ownRate):'';
       recalcEnvRow(i);
     });
