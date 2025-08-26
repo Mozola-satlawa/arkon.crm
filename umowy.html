@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ARKON — Edytor umów (merge z danymi klienta)</title>
-<meta name="description" content="Edytor instancji umowy: wczytaj szablon, podstaw dane klienta, zapisz do klienta i do Upload, wydrukuj.">
+<meta name="description" content="Edytor instancji umowy: wczytaj szablon, podstaw dane klienta, zapisz do klienta i do Upload (lokalnie + chmura), wydrukuj.">
 <style>
   :root{ --bg:#0b1020; --p1:#121a34; --p2:#172142; --ink:#e8edff; --muted:#aeb8da; --accent:#4cc9f0; --ok:#2b8a57; --grid:#243059; --card:#0f1533; --line:#1c2750; --bad:#ff6b6b; }
   *{box-sizing:border-box}
@@ -38,9 +38,9 @@
 </head>
 <body>
   <nav>
-    <a href="index.html">← Menu główne</a>
-    <a href="klienci.html">Klienci</a>
-    <a href="upload.html">Upload</a>
+    <a href="index.html">← Pulpit</a>
+    <a href="baza.html">Baza klientów</a>
+    <a href="upload.html">Przesył dokumentów</a>
     <a href="umowa_arkon_szablon.html" target="_blank" rel="noopener">Szablon ↗</a>
   </nav>
 
@@ -95,23 +95,40 @@
         Parametry z URL: <code>?clientId=…&projectId=…&template=…</code><br>
         Dane klienta pobierane są z <code>localStorage['arkon_clients_v1']</code>.
       </p>
+      <span id="cloudState" class="pill">Chmura: sprawdzanie…</span>
     </aside>
   </div>
 
+<!-- Supabase UMD -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
 'use strict';
+
+/* ===== SUPABASE ===== */
+const SB_URL = 'https://phxxjirqlktzcwnygaha.supabase.co';
+const SB_KEY = 'sb_publishable_iOXdu9fUGGko3MqPmltAag_ZbPUxp4r';
+const supa = supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession:false } });
+const CLOUD = { ok:false, bucket:'crm' };
+function setCloudState(txt, ok){
+  const el = document.getElementById('cloudState');
+  el.textContent = txt;
+  el.style.borderColor = ok ? '#2e925e' : '#7b3341';
+  el.style.background = ok ? '#0f2c22' : '#2e1117';
+}
+async function supaPing(){
+  try{
+    const { error } = await supa.storage.from(CLOUD.bucket).list('', { limit: 1 });
+    if(error) throw error; CLOUD.ok = true; setCloudState('Chmura: gotowe ✓', true);
+  }catch{ CLOUD.ok = false; setCloudState('Chmura: niedostępna', false); }
+}
 
 /* ===== helpers ===== */
 const $ = s => document.querySelector(s);
 const INT = new Intl.NumberFormat('pl-PL',{maximumFractionDigits:0});
-
-function getParams(){
-  const u = new URL(location.href);
-  return Object.fromEntries(u.searchParams.entries());
-}
+function getParams(){ const u = new URL(location.href); return Object.fromEntries(u.searchParams.entries()); }
 function fmtDate(ts){ return new Date(ts).toLocaleDateString('pl-PL'); }
 
-/* ===== load client/project ===== */
+/* ===== clients ===== */
 const LS_CLIENTS = 'arkon_clients_v1';
 let clients = [];
 try{ clients = JSON.parse(localStorage.getItem(LS_CLIENTS)||'[]'); }catch{ clients = []; }
@@ -121,19 +138,15 @@ if(params.clientId) $('#f_clientId').value = params.clientId;
 if(params.projectId) $('#f_projectId').value = params.projectId;
 if(params.template)  $('#templateSelect').value = params.template;
 
-/* ===== map danych do tagów ===== */
+/* ===== data map ===== */
 function buildDataMap(){
   const client = (clients||[]).find(c=>c.id === $('#f_clientId').value) || {};
   const project = (client.projects||[]).find(p=>p.id === $('#f_projectId').value) || {};
-  const map = {
+  return {
     today: new Date().toLocaleDateString('pl-PL'),
     city: $('#f_city').value || '',
-    client: {
-      name: client.name||'', address: client.address||'', email: client.email||'', phone: client.phone||''
-    },
-    project: {
-      name: project.name||'', stage: project.stage||''
-    },
+    client: { name: client.name||'', address: client.address||'', email: client.email||'', phone: client.phone||'' },
+    project: { name: project?.name||'', stage: project?.stage||'' },
     company: { nip:'', regon:'', address:'' },
     contract: { no: $('#f_no').value||'', value: $('#f_value').value||'', date: $('#f_date').value||'' },
     payments: { deposit: $('#f_deposit').value||'', deposit_date: $('#f_deposit_date').value||'' },
@@ -141,33 +154,26 @@ function buildDataMap(){
     warranty: { months: $('#f_warranty').value||'' },
     custom: client.custom || {}
   };
-  return map;
 }
-
-/* ===== merge tagów ===== */
 function mergeTemplate(html, data){
   return html.replace(/{{\s*([\w\.]+)\s*}}/g, (_, path)=>{
-    const parts = path.split('.');
-    let cur = data;
+    const parts = path.split('.'); let cur = data;
     for(const p of parts){ if(cur && typeof cur==='object' && p in cur){ cur = cur[p]; } else { return ''; } }
     return cur==null? '' : String(cur);
   });
 }
 
-/* ===== IO: szablon ===== */
+/* ===== template IO ===== */
 async function loadTemplate(src){
   try{
     const res = await fetch(src, {cache:'no-store'});
     if(!res.ok) throw 0;
     return await res.text();
   }catch(e){
-    // fallback minimalny
-    return `
-      <h2 style="text-align:center">UMOWA (demo)</h2>
+    return `<h2 style="text-align:center">UMOWA (demo)</h2>
       <p>Miejscowość: {{city}}, dnia {{today}}</p>
       <p>Klient: {{client.name}}, {{client.address}}, {{client.email}}, {{client.phone}}</p>
-      <p>Projekt: {{project.name}} — Umowa nr {{contract.no}} z dnia {{contract.date}} na kwotę {{contract.value}} zł.</p>
-    `;
+      <p>Umowa nr {{contract.no}} z dnia {{contract.date}} na kwotę {{contract.value}} zł.</p>`;
   }
 }
 
@@ -175,8 +181,17 @@ async function loadTemplate(src){
 let db;
 function dbOpen(){
   return new Promise((resolve,reject)=>{
-    const r = indexedDB.open('arkonCRM_local', 2);
-    r.onupgradeneeded = ()=>{ const d=r.result; if(!d.objectStoreNames.contains('files')) d.createObjectStore('files',{keyPath:'id'}); };
+    const r = indexedDB.open('arkonCRM_local', 3);
+    r.onupgradeneeded = ()=>{ const d=r.result;
+      let store;
+      if(!d.objectStoreNames.contains('files')){
+        store=d.createObjectStore('files',{keyPath:'id'});
+      }else{
+        store=r.transaction.objectStore('files');
+      }
+      if(!store.indexNames.contains('byClient')) store.createIndex('byClient','clientId',{unique:false});
+      if(!store.indexNames.contains('byDate'))   store.createIndex('byDate','at',{unique:false});
+    };
     r.onsuccess = ()=>{ db=r.result; resolve(); };
     r.onerror   = ()=>reject(r.error);
   });
@@ -196,48 +211,33 @@ $('#btnLoad').addEventListener('click', async()=>{
   const html = await loadTemplate(src);
   $('#doc').innerHTML = html;
 });
-
 $('#btnMerge').addEventListener('click', ()=>{
   const data = buildDataMap();
   const html = mergeTemplate($('#doc').innerHTML, data);
   $('#doc').innerHTML = html;
 });
 
+async function uploadHtmlToCloud({clientId, name, html}){
+  const blob = new Blob([html], {type:'text/html'});
+  const file = new File([blob], name, {type:'text/html'});
+  const meta = { category:'Umowa (wygenerowana)', tags:'umowa,html', kind:'file' };
+  const path = `clients/${clientId||'bez-klienta'}/${(new Date().toISOString().slice(0,7))}/${Date.now()}_${name.replace(/[^\w.\-]+/g,'_')}`;
+  const { error } = await supa.storage.from(CLOUD.bucket).upload(path, file, { upsert:false, contentType:'text/html', cacheControl:'3600', metadata:meta });
+  if(error) throw error;
+  return supa.storage.from(CLOUD.bucket).getPublicUrl(path).data.publicUrl;
+}
+
 $('#btnSaveUpload').addEventListener('click', async()=>{
-  await dbOpen();
+  await dbOpen(); await supaPing();
+  const docHtml = '<!doctype html><meta charset="utf-8">'+$('#doc').innerHTML;
   const name = `Umowa_${($('#f_no').value||'bez-nr').replace(/\s+/g,'_')}.html`;
-  const blob = new Blob([`<!doctype html><meta charset="utf-8">`+$('#doc').innerHTML], {type:'text/html'});
+  const blob = new Blob([docHtml], {type:'text/html'});
   const clientId = $('#f_clientId').value || null;
   const clientName = (clients.find(c=>c.id===clientId)||{}).name || '';
-  const rec = { id:'ID_'+Date.now().toString(36), name, type:'text/html', size: blob.size, blob, at:Date.now(), category:'Umowy', clientId, clientName, origin:'umowy' };
+  const rec = { id:'ID_'+Date.now().toString(36), name, type:'text/html', size: blob.size, blob, at:Date.now(), category:'Umowa z firmą', clientId, clientName, origin:'umowy' };
   await dbPut(rec);
-  alert('Zapisano w Upload → kategoria „Umowy”.');
-});
 
-$('#btnSaveClient').addEventListener('click', ()=>{
-  const cid = $('#f_clientId').value; if(!cid){ alert('Brak clientId.'); return; }
-  const i = clients.findIndex(c=>c.id===cid); if(i<0){ alert('Nie znaleziono klienta.'); return; }
-  const html = $('#doc').innerHTML;
-  clients[i].contracts = clients[i].contracts||[];
-  clients[i].contracts.unshift({
-    id: 'C_'+Date.now().toString(36),
-    no: $('#f_no').value||'',
-    date: $('#f_date').value||'',
-    value: Number($('#f_value').value||0),
-    savedAt: Date.now(),
-    projectId: $('#f_projectId').value||'',
-    html
-  });
-  localStorage.setItem(LS_CLIENTS, JSON.stringify(clients));
-  alert('Zapisano szkic umowy przy kliencie.');
-});
-
-// auto‑boot from params
-(async function boot(){
-  if(params.template){ $('#templateSelect').value = params.template; }
-  if($('#templateSelect').value) $('#btnLoad').click();
-  if(params.clientId){ $('#btnMerge').click(); }
-})();
-</script>
-</body>
-</html>
+  if(CLOUD.ok){
+    try{
+      const url = await uploadHtmlToCloud({clientId, name, html: docHtml});
+      await dbPut({...rec,
