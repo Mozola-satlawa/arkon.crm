@@ -1,0 +1,992 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARKON — Przesył dokumentów / Oferty / Ulotki (Supabase Storage)</title>
+<meta name="description" content="Upload plików powiązanych z klientem, baza ofert i ulotek. Integracja z komponentami (pompy, piece, PV, ocieplenie, stolarka).">
+<style>
+  :root{
+    --bg:#0b1020;--p1:#0f1533;--p2:#121a38;--ink:#e7ecff;--muted:#aeb8da;--line:#223066;
+    --accent:#4cc9f0;--ok:#2fbf71;--bad:#ff6b6b;--warn:#ffb84d;
+    --chip:#0d1530;--chip2:#152056;--field:#0e1330;
+  }
+  *{box-sizing:border-box} html,body{margin:0;height:100%}
+  body{background:linear-gradient(180deg,#0a0f1e,#0c1230 60%,#0a0f1e);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
+  a{color:#cfe1ff;text-decoration:none}
+  header{padding:16px;background:#11183a;border-bottom:1px solid var(--line)}
+  header h1{margin:0;font-size:22px}
+  nav{background:#172142;display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line)}
+  nav a{color:#cfe1ff;text-decoration:none;padding:8px 12px;border-radius:999px;border:1px solid #2a3a75}
+  nav a:hover{background:#223160}
+  .wrap{max-width:1280px;margin:auto;padding:16px}
+  .grid{display:grid;gap:12px}
+  @media(min-width:1100px){ .cols-2{grid-template-columns:1.3fr 1fr} .cols-3{grid-template-columns:1fr 1fr 1fr} }
+  .card{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;padding:14px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .right{display:flex;gap:8px;justify-content:flex-end}
+  .small{font-size:12px;color:var(--muted)}
+  .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
+  .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px dashed #3a4ca3}
+  .btn.ok{background:#194d34;border-color:#2e925e}
+  .btn.bad{background:#3a1f2a;border-color:#7b3341}
+  .btn.warn{background:#4a361e;border-color:#8a6b30}
+  input,select,textarea{background:var(--field);border:1px solid #28356c;border-radius:10px;padding:8px 10px;color:var(--ink);font:inherit}
+  input::placeholder{color:#aeb8da99}
+  textarea{min-height:80px;resize:vertical}
+  .table{width:100%;border-collapse:separate;border-spacing:0}
+  .table th,.table td{padding:9px;border-bottom:1px solid #22325f;text-align:left;vertical-align:top}
+  .scroll{overflow:auto}
+  .drop{border:2px dashed #2a3777;border-radius:10px;padding:14px;text-align:center;cursor:pointer;background:#0c1230}
+  .drop.drag{background:#10183b}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px}
+  .tabs .tab{padding:6px 10px;border-radius:999px;border:1px solid #2a3a75;cursor:pointer}
+  .tabs .tab[aria-selected="true"]{background:#1b2550;border-color:#67a1ff}
+  .bar{height:6px;border-radius:999px;background:#12204f;border:1px solid #2b3f86;overflow:hidden}
+  .bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#4583ff,#4cc9f0)}
+  .empty{opacity:.8;border:1px dashed #2b3a77;border-radius:10px;padding:10px;text-align:center}
+  @media print{ nav,.btn,.drop,.tabs,.right{display:none!important} .wrap{padding:0} }
+</style>
+</head>
+<body>
+<header>
+  <h1>Przesył dokumentów • ARKON CRM</h1>
+  <div class="small">Powiąż pliki z klientami, buduj <b>oferty</b>, prowadź bazę <b>ulotek</b>. Integracja z komponentami (Pompy, Piece, PV, Ocieplenie, Stolarka).</div>
+</header>
+
+<nav>
+  <a href="index.html">Pulpit</a>
+  <a href="klienci.html">Klienci</a>
+  <a href="komponenty-pompy.html">Pompy</a>
+  <a href="komponenty-piece.html">Piece</a>
+  <a href="komponenty-fotowoltaika.html">Fotowoltaika</a>
+  <a href="komponenty-ocieplenie.html">Ocieplenie</a>
+  <a href="komponenty-stolarka.html">Stolarka</a>
+  <a href="chat.html">Komunikator</a>
+  <a href="ustawienia.html">Ustawienia</a>
+</nav>
+
+<div class="wrap grid cols-2">
+  <!-- LEWA: PLIKI -->
+  <section class="card">
+    <h2 style="margin:0 0 8px">Pliki klienta (IndexedDB + Supabase Storage)</h2>
+    <div class="row">
+      <select id="selClient" title="Klient" style="min-width:280px"></select>
+      <select id="selCat">
+        <option>Umowa z firmą</option><option>Audyt</option><option>Dokument do audytu Czyste Powietrze</option>
+        <option>Audyt rozprowadzenia instalacji</option><option>Pomiary budynku</option><option>Rzut budynku</option>
+        <option>Zdjęcia kotłowni</option><option>Faktura za prąd</option><option>Zdjęcia falownika</option>
+        <option>Zdjęcia budynku</option><option>Oferta (PDF)</option><option>Ulotka</option><option>Inne</option>
+      </select>
+      <input id="tags" placeholder="tagi, przecinkami">
+      <label class="btn">Dodaj pliki… <input id="inFiles" type="file" multiple hidden></label>
+
+      <label class="pill" style="cursor:pointer;margin-left:6px">
+        <input id="toCloud" type="checkbox" checked> Wyślij do chmury (Supabase)
+      </label>
+      <label class="pill" style="cursor:pointer">
+        <input id="allowOverwrite" type="checkbox"> Nadpisuj jeśli istnieje
+      </label>
+      <span id="cloudState" class="pill">Chmura: sprawdzanie…</span>
+
+      <button id="btnRefresh" class="btn ghost">Odśwież</button>
+    </div>
+
+    <div class="drop" id="drop" style="margin-top:10px">Przeciągnij i upuść pliki tutaj lub kliknij „Dodaj pliki…”</div>
+
+    <div class="card" style="padding:10px;margin-top:12px">
+      <div class="row" style="margin-bottom:6px">
+        <input id="qFiles" placeholder="🔎 filtr: nazwa/typ/kategoria/tag/klient…" style="min-width:260px">
+        <select id="fCat"><option value="">Kategoria (wszystkie)</option></select>
+        <button id="btnClear" class="btn ghost">Wyczyść filtr</button>
+        <span class="pill">Widocznych: <b id="filesVis">0</b></span>
+      </div>
+      <div class="scroll" style="max-height:360px">
+        <table class="table" id="tblFiles">
+          <thead><tr>
+            <th>Akcje</th><th>Nazwa</th><th>Klient</th><th>Kategoria</th><th>Tagi</th>
+            <th>Typ</th><th>Rozmiar</th><th>Data</th>
+          </tr></thead>
+          <tbody id="tbFiles"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- CHMURA -->
+    <div class="card" style="padding:10px;margin-top:12px">
+      <div class="row" style="margin-bottom:6px">
+        <b>Pliki w chmurze (Supabase Storage)</b>
+        <select id="cloudClient" title="Klient (prefiks)">
+          <option value="">— wszyscy klienci —</option>
+        </select>
+        <input id="cloudPrefix" placeholder="Dodatkowy prefiks (np. 2025-08)">
+        <button id="btnCloudList" class="btn">Odśwież chmurę</button>
+        <span class="pill">Znalezionych: <b id="cloudCount">0</b></span>
+      </div>
+      <div class="scroll" style="max-height:260px">
+        <table class="table">
+          <thead><tr><th>Akcje</th><th>Ścieżka</th><th>Rozmiar</th><th>Zmodyfikowano</th></tr></thead>
+          <tbody id="cloudBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MIGRACJA -->
+    <div class="card" style="padding:10px;margin-top:12px">
+      <div class="row" style="margin-bottom:6px">
+        <b>Migracja / narzędzia (IndexedDB ↔ Supabase, bucket <code>crm</code>)</b>
+      </div>
+      <div class="row" style="margin-bottom:6px">
+        <button id="btnMigrateAll" class="btn ok">Migruj WSZYSTKIE lokalne → chmura</button>
+        <button id="btnMigrateMissing" class="btn">Migruj tylko brakujące</button>
+        <button id="btnCleanNetlify" class="btn warn">Wyczyść stare ślady Netlify</button>
+      </div>
+      <div class="row" style="margin-bottom:6px">
+        <button id="btnPullFromCloud" class="btn">Pobierz z chmury → lokalnie (prefiks)</button>
+        <button id="btnBulkDeleteCloud" class="btn bad">Usuń z chmury wg prefiksu (NIEODWRACALNE)</button>
+      </div>
+      <div class="bar"><i id="migBar"></i></div>
+      <div class="small" id="migStats" style="margin-top:6px">Gotowe.</div>
+      <div id="migLog" class="small" style="margin-top:6px;max-height:120px;overflow:auto;border:1px dashed #2b3a77;padding:6px;border-radius:8px;background:#0d1530"></div>
+    </div>
+  </section>
+
+  <!-- PRAWA: OFERTY + ULOTKI -->
+  <section class="grid">
+    <div class="card">
+      <h2 style="margin:0 0 8px">Oferty klienta</h2>
+      <div class="row">
+        <select id="offClient" style="min-width:280px"></select>
+        <input id="offTitle" placeholder="Tytuł oferty (np. PV 6 kWp + magazyn 10 kWh)">
+        <button id="offNew" class="btn ok">+ Nowa oferta</button>
+        <button id="offExport" class="btn ghost">Eksport JSON</button>
+        <label class="btn ghost">Import JSON <input id="offImport" type="file" accept="application/json" hidden></label>
+      </div>
+
+      <div class="tabs" role="tablist" aria-label="Źródła pozycji">
+        <button class="tab" data-tab="builder" aria-selected="true">🔧 Edytor pozycji</button>
+        <button class="tab" data-tab="components">📦 Komponenty (z innych stron)</button>
+        <button class="tab" data-tab="list">📑 Lista ofert</button>
+      </div>
+
+      <div id="tab-builder">
+        <div class="row small"><span class="pill">Pozycje: <b id="cntItems">0</b></span><span class="pill">Suma: <b id="sumItems">0 zł</b></span></div>
+        <div class="scroll" style="max-height:260px">
+          <table class="table">
+            <thead><tr><th>Akcje</th><th>Kategoria</th><th>Marka/Model</th><th>Specyfikacja</th><th>Ilość</th><th>Cena netto [zł]</th><th>Rabat %</th><th>Razem [zł]</th></tr></thead>
+            <tbody id="offBody"></tbody>
+          </table>
+        </div>
+        <div class="right" style="margin-top:6px">
+          <button id="offAddRow" class="btn">+ Pozycja</button>
+          <button id="offSave" class="btn ok">💾 Zapisz ofertę</button>
+        </div>
+      </div>
+
+      <div id="tab-components" hidden>
+        <div class="row">
+          <select id="compCat">
+            <option value="pv">Fotowoltaika</option><option value="pumps">Pompy ciepła</option>
+            <option value="boilers">Piece / kotły</option><option value="insul">Ocieplenie</option><option value="windows">Stolarka</option>
+          </select>
+          <input id="compQ" placeholder="🔎 szukaj w komponentach">
+          <button id="compAddSel" class="btn">+ Dodaj zaznaczone do oferty</button>
+          <span class="pill">Widocznych: <b id="compVis">0</b></span>
+        </div>
+        <div class="scroll" style="max-height:260px;margin-top:6px">
+          <table class="table"><thead><tr><th>+</th><th>Marka</th><th>Model</th><th>Spec</th><th>Cena</th></tr></thead><tbody id="compBody"></tbody></table>
+        </div>
+        <div class="small">Źródła danych: LocalStorage z poszczególnych stron komponentów. Obsługiwane klucze: <code>arkon_cmp_*.json</code> lub zgodne.</div>
+      </div>
+
+      <div id="tab-list" hidden>
+        <div class="row" style="margin-bottom:6px">
+          <input id="offQ" placeholder="🔎 filtruj po tytule/kliencie">
+          <button id="offClear" class="btn ghost">Wyczyść</button>
+          <span class="pill">Łącznie: <b id="cntOffers">0</b></span>
+        </div>
+        <div class="scroll" style="max-height:240px">
+          <table class="table"><thead><tr><th>Akcje</th><th>Tytuł</th><th>Klient</th><th>Pozycji</th><th>Suma [zł]</th><th>Data</th></tr></thead><tbody id="offList"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin:0 0 8px">Ulotki z ofertami</h2>
+      <div class="row">
+        <select id="flyClient" style="min-width:280px"></select>
+        <input id="flyTitle" placeholder="Tytuł ulotki / kampanii">
+        <input id="flySource" placeholder="Kanał (np. FB, Google, druk)">
+        <label class="btn">Dodaj plik ulotki… <input id="flyFile" type="file" accept=".pdf,image/*" hidden></label>
+        <button id="flyAdd" class="btn ok">+ Dodaj ulotkę</button>
+      </div>
+      <div class="small" style="margin:6px 0">Ulotka zapisuje się lokalnie i (jeśli chmura aktywna) trafia do bucketa <b>crm</b>.</div>
+      <div class="scroll" style="max-height:260px">
+        <table class="table">
+          <thead><tr><th>Akcje</th><th>Ulotka</th><th>Klient</th><th>Kanał</th><th>Plik</th><th>Chmura</th><th>Data</th></tr></thead>
+          <tbody id="flyBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- Supabase UMD -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+'use strict';
+
+/* ===== SUPABASE: ustaw swoje dane ===== */
+const SB_URL = 'https://phxxjirqlktzcwnygaha.supabase.co';
+const SB_KEY = 'sb_publishable_iOXdu9fUGGko3MqPmltAag_ZbPUxp4r';
+const supa = supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession:false } });
+
+/* ===== helpers ===== */
+const $=s=>document.querySelector(s);
+const $$=s=>Array.from(document.querySelectorAll(s));
+const INT0=new Intl.NumberFormat('pl-PL',{maximumFractionDigits:0});
+const fmt=n=>isFinite(n)?INT0.format(Math.round(n)):'—';
+const bytes=n=>n<1024? n+' B' : n<1048576? (n/1024).toFixed(1)+' KB' : n<1073741824? (n/1048576).toFixed(1)+' MB' : (n/1073741824).toFixed(1)+' GB';
+const uid=()=> 'ID_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2);
+function esc(s){return (s||'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function debounce(fn,ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms||180); }; }
+
+/* ===== clients ===== */
+function loadClients(){
+  let a=[];
+  try{ a = JSON.parse(localStorage.getItem('arkon_clients_v1')||'[]'); }catch{}
+  if(!Array.isArray(a) || !a.length){
+    try{ a = JSON.parse(localStorage.getItem('arkon_clients_v2')||'[]'); }catch{}
+  }
+  return Array.isArray(a)?a:[];
+}
+
+/* ===== components sources ===== */
+const CMP_KEYS = {
+  pv:['arkon_cmp_pv_v1','cmp_pv','arkon_components_pv'],
+  pumps:['arkon_cmp_pumps_v1','cmp_pumps','arkon_components_pumps'],
+  boilers:['arkon_cmp_boilers_v1','cmp_boilers','arkon_components_boilers','cmp_piece'],
+  insul:['arkon_cmp_insul_v1','cmp_insul','arkon_components_insul','cmp_ocieplenie'],
+  windows:['arkon_cmp_windows_v1','cmp_windows','arkon_components_windows','cmp_stolarka']
+};
+function loadComponents(cat){
+  const keys = CMP_KEYS[cat]||[];
+  for(const k of keys){
+    try{ const v = JSON.parse(localStorage.getItem(k)||'[]'); if(Array.isArray(v) && v.length) return v; }catch{}
+  }
+  return [];
+}
+
+/* ===== IndexedDB: files ===== */
+let db;
+function dbOpen(){
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open('arkonCRM_local',2);
+    r.onupgradeneeded=()=>{const d=r.result; if(!d.objectStoreNames.contains('files')) d.createObjectStore('files',{keyPath:'id'});};
+    r.onsuccess=()=>{db=r.result; res();};
+    r.onerror=()=>rej(r.error);
+  });
+}
+function dbPut(o){return new Promise((res,rej)=>{const tx=db.transaction('files','readwrite'); tx.objectStore('files').put(o); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error);});}
+function dbGet(id){return new Promise((res,rej)=>{const tx=db.transaction('files','readonly'); const rq=tx.objectStore('files').get(id); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error);});}
+function dbAll(){return new Promise((res,rej)=>{const tx=db.transaction('files','readonly'); const rq=tx.objectStore('files').getAll(); rq.onsuccess=()=>res(rq.result||[]); rq.onerror=()=>rej(rq.error);});}
+function dbDel(id){return new Promise((res,rej)=>{const tx=db.transaction('files','readwrite'); tx.objectStore('files').delete(id); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error);});}
+
+/* ===== Supabase Storage ===== */
+const CLOUD = { ok:false, msg:'Chmura: sprawdzanie…', bucket:'crm' };
+
+function setCloudState(txt, ok){
+  const el = $('#cloudState');
+  if(!el) return;
+  el.textContent = txt;
+  el.style.borderColor = ok ? '#2e925e' : '#7b3341';
+  el.style.background = ok ? '#0f2c22' : '#2e1117';
+}
+
+async function supaPing(){
+  try{
+    const { error } = await supa.storage.from(CLOUD.bucket).list('', { limit: 1 });
+    if(error) throw error;
+    CLOUD.ok = true; CLOUD.msg = 'Chmura: gotowe ✓ (Supabase Storage)';
+  }catch(e){
+    CLOUD.ok = false; CLOUD.msg = 'Chmura: bucket "crm" niedostępny';
+  }
+  setCloudState(CLOUD.msg, CLOUD.ok);
+
+  const clients = loadClients();
+  const cc = $('#cloudClient');
+  cc.innerHTML = '<option value="">— wszyscy klienci —</option>' + clients.map(c=>`<option value="${esc(c.id)}">${esc(c.name||'')}</option>`).join('');
+}
+
+const safeName = (name='plik') =>
+  String(name).normalize('NFKD').replace(/[^\w.\-]+/g,'_').toLowerCase();
+
+function ymPrefix(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  return `${y}-${m}`;
+}
+
+function buildRemotePath({clientId, file, kind}){
+  const who = (clientId||'bez-klienta').toLowerCase();
+  const ts  = new Date().toISOString().replace(/[:.]/g,'-');
+  const base = kind==='flyer' ? 'flyers' : 'clients';
+  return `${base}/${who}/${ymPrefix()}/${ts}_${safeName(file.name)}`;
+}
+
+/* Upload: signed → fallback direct */
+async function supaUploadDirect(path, file, meta, upsert){
+  return supa.storage.from(CLOUD.bucket).upload(path, file, {
+    upsert: !!upsert,
+    contentType: file.type || 'application/octet-stream',
+    cacheControl: '3600',
+    metadata: meta||{}
+  });
+}
+async function supaUploadSigned(path, file, meta, upsert){
+  const { data:sign, error:err1 } = await supa.storage.from(CLOUD.bucket)
+    .createSignedUploadUrl(path, { contentType: file.type || 'application/octet-stream', upsert: !!upsert });
+  if(err1) throw err1;
+  const { error } = await supa.storage.from(CLOUD.bucket)
+    .uploadToSignedUrl(path, sign.token, file, { metadata: meta||{} });
+  if(error) throw error;
+}
+async function uploadToSupabase({file, clientId, clientName, category, tags, kind, allowOverwrite, onProgress}){
+  const path = buildRemotePath({clientId, file, kind});
+  const meta = { 'client-id':clientId||'', 'client-name':clientName||'', category:category||'', tags:tags||'', kind:kind||'file' };
+  try{
+    if(onProgress) onProgress(5);
+    await supaUploadSigned(path, file, meta, allowOverwrite);
+    if(onProgress) onProgress(100);
+  }catch(e1){
+    if(onProgress) onProgress(10);
+    const up = await supaUploadDirect(path, file, meta, allowOverwrite);
+    if(up.error) throw up.error;
+    if(onProgress) onProgress(100);
+  }
+  const pub = supa.storage.from(CLOUD.bucket).getPublicUrl(path);
+  return { path, url: pub.data.publicUrl };
+}
+async function deleteFromCloud(path){
+  if(!path) throw new Error('Brak ścieżki');
+  const { error } = await supa.storage.from(CLOUD.bucket).remove([path]);
+  if(error) throw error;
+}
+
+/* ===== Wysyłka pojedyncza (UI) ===== */
+let fileFilter={q:'',cat:''};
+
+async function handleFiles(files){
+  const clientId   = $('#selClient').value || '';
+  const clientName = clientId ? (loadClients().find(c=>c.id===clientId)?.name||'') : '';
+  const category   = $('#selCat').value || 'Inne';
+  const tags       = $('#tags').value || '';
+  const toCloud    = !!$('#toCloud')?.checked;
+  const allowOverwrite = !!$('#allowOverwrite')?.checked;
+
+  for(const f of Array.from(files||[])){
+    const id=uid();
+    await dbPut({ id, name:f.name, type:f.type||'application/octet-stream', size:f.size, blob:f, at:Date.now(),
+      category, clientId, clientName, origin:'upload', tags });
+
+    if(toCloud && CLOUD.ok){
+      const row = document.createElement('div');
+      row.className='row';
+      row.innerHTML = `<span class="pill" style="min-width:200px">${esc(f.name)}</span>
+                       <div class="bar" style="flex:1;min-width:200px"><i></i></div>
+                       <span class="small" id="pct">0%</span>`;
+      $('#drop').insertAdjacentElement('afterend', row);
+      const bar = row.querySelector('i'); const pct=row.querySelector('#pct');
+
+      try{
+        const up = await uploadToSupabase({
+          file:f, clientId, clientName, category, tags, kind:'file', allowOverwrite,
+          onProgress:(p)=>{ bar.style.width=p+'%'; pct.textContent=p+'%'; }
+        });
+        bar.style.width='100%'; pct.textContent='100%';
+        row.insertAdjacentHTML('beforeend', '<span class="pill" style="background:#0f2c22;border-color:#2e925e">OK</span>');
+        const rec = await dbGet(id);
+        await dbPut({...rec, cloudUrl: up.url, cloudPath: up.path});
+        await renderCloudList(); // natychmiast
+      }catch(e){
+        row.insertAdjacentHTML('beforeend', '<span class="pill" style="background:#2e1117;border-color:#7b3341">Błąd</span>');
+        console.warn('Upload error:', e);
+      }
+    }
+  }
+  renderFiles();
+}
+
+/* ===== Lista lokalnych plików ===== */
+async function renderFiles(){
+  const list = await dbAll();
+  const q=(fileFilter.q||'').toLowerCase();
+  const cat = fileFilter.cat||'';
+  const tb = $('#tbFiles'); tb.innerHTML='';
+  const cats = new Set();
+    list.sort((a,b)=>(b.at||0)-(a.at||0)).forEach(rec=>cats.add(rec.category||''));
+    $('#fCat').innerHTML = '<option value="">Kategoria (wszystkie)</option>' + Array.from(cats).filter(Boolean).map(c => `<option value="${esc(c)}" ${cat===c ? 'selected' : ''}>${esc(c)}</option>`).join('');
+    let vis=0;
+    list.filter(x=>{
+      if(cat && (x.category||'')!==cat) return false;
+      const hay=[x.name,x.clientName,x.category,x.type,x.tags].join(' ').toLowerCase();
+      return !q || hay.includes(q);
+    }).forEach(rec=>{
+      vis++;
+      const tr=document.createElement('tr');
+      const when=rec.at? new Date(rec.at).toLocaleString('pl-PL'):'';
+      const urlBusted = rec.cloudUrl ? (rec.cloudUrl + '?v=' + Date.now()) : '';
+      const cloudLink = rec.cloudUrl ? `<a class="btn ghost" href="${esc(urlBusted)}" target="_blank" rel="noopener">Link</a>` : '';
+      const cloudDel  = rec.cloudPath ? `<button class="btn bad" data-delcloud="${esc(rec.cloudPath)}">Usuń z chmury</button>` : '';
+      tr.innerHTML = `
+        <td class="row">
+          <button class="btn ghost" data-dl="${rec.id}">Pobierz</button>
+          ${cloudLink}
+          ${cloudDel}
+          <button class="btn" data-edit="${rec.id}">Edytuj</button>
+          <button class="btn bad" data-del="${rec.id}">Usuń lokalnie</button>
+        </td>
+        <td>${esc(rec.name)}</td>
+        <td>${esc(rec.clientName||'')}</td>
+        <td>${esc(rec.category||'')}</td>
+        <td>${esc(rec.tags||'')}</td>
+        <td>${esc(rec.type||'')}</td>
+        <td>${bytes(rec.size||0)}</td>
+        <td>${when}</td>`;
+    tb.appendChild(tr);
+  });
+  $('#filesVis').textContent = vis;
+
+  tb.querySelectorAll('[data-dl]').forEach(b=>b.addEventListener('click', async ()=>{
+    const rec=await dbGet(b.dataset.dl); if(!rec){ alert('Plik niedostępny.'); return; }
+    const url=URL.createObjectURL(rec.blob); const a=document.createElement('a'); a.href=url; a.download=rec.name; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1500);
+  }));
+  tb.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', async ()=>{
+    if(!confirm('Usunąć plik lokalnie?')) return; await dbDel(b.dataset.del); renderFiles();
+  }));
+  tb.querySelectorAll('[data-delcloud]').forEach(b=>b.addEventListener('click', async ()=>{
+    const path=b.dataset.delcloud;
+    if(!confirm(`Usunąć z chmury?\n${path}`)) return;
+    try{ await deleteFromCloud(path); alert('Usunięto z chmury.'); }catch(e){ alert('Błąd usuwania: '+(e?.message||e)); }
+    renderCloudList();
+  }));
+  tb.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click', async ()=>{
+    const rec=await dbGet(b.dataset.edit); if(!rec){ alert('Brak pliku.'); return; }
+    const newName = prompt('Nowa nazwa pliku', rec.name) || rec.name;
+    const newCat = prompt('Kategoria', rec.category||'') || rec.category||'';
+    const newTags = prompt('Tagi (przecinkami)', rec.tags||'') || rec.tags||'';
+    const clientId = prompt('ID klienta (puste = bez przypisania)', rec.clientId||'') || '';
+    const clientName = clientId ? (loadClients().find(c=>c.id===clientId)?.name||'') : '';
+    await dbPut({...rec, name:newName, category:newCat, tags:newTags, clientId, clientName });
+    renderFiles();
+  }));
+}
+
+/* ===== Lista chmury ===== */
+function currentPrefix(){
+  const clientPref = $('#cloudClient').value || '';
+  const extraPref  = ($('#cloudPrefix').value||'').trim().replace(/^\/+|\/+$/g,'');
+  let prefix = '';
+  if(clientPref){ prefix = `clients/${clientPref}/`; }
+  if(extraPref){ prefix += extraPref.endsWith('/') ? extraPref : (extraPref + '/'); }
+  return prefix; // może być pusty: UWAŻAJ przy kasowaniu!
+}
+
+async function renderCloudList(){
+  if(!CLOUD.ok){ $('#cloudBody').innerHTML='<tr><td colspan="4">Chmura niedostępna</td></tr>'; $('#cloudCount').textContent='0'; return; }
+  const prefix = currentPrefix();
+
+  const { data, error } = await supa.storage.from(CLOUD.bucket).list(prefix, { limit: 1000, offset: 0, sortBy:{ column:'name', order:'asc' } });
+  const body = $('#cloudBody'); body.innerHTML='';
+  if(error){ body.innerHTML = `<tr><td colspan="4">Błąd listowania: ${esc(error.message||String(error))}</td></tr>`; $('#cloudCount').textContent='0'; return; }
+  let count=0;
+  for(const it of (data||[])){
+    if(it.id){
+      count++;
+      const fullPath = (prefix? prefix : '') + it.name;
+      const url = supa.storage.from(CLOUD.bucket).getPublicUrl(fullPath).data.publicUrl + '?v=' + Date.now();
+      const tr=document.createElement('tr');
+      tr.innerHTML = `
+        <td class="row">
+          <a class="btn ghost" href="${url}" target="_blank" rel="noopener">Link</a>
+          <button class="btn bad" data-cloud-del="${esc(fullPath)}">Usuń</button>
+        </td>
+        <td>${esc(fullPath)}</td>
+        <td>${bytes(it.metadata?.size || 0)}</td>
+        <td>${new Date(it.updated_at || Date.now()).toLocaleString('pl-PL')}</td>`;
+      body.appendChild(tr);
+    }
+  }
+  if(count===0){
+    body.innerHTML = `<tr><td colspan="4">Brak plików dla prefixu: <code>${esc(prefix||'/')}</code></td></tr>`;
+  }
+  $('#cloudCount').textContent = String(count);
+  body.querySelectorAll('[data-cloud-del]').forEach(b=>b.addEventListener('click', async ()=>{
+    const p=b.dataset.cloudDel;
+    if(!confirm(`Usunąć z chmury?\n${p}`)) return;
+    try{ await deleteFromCloud(p); }catch(e){ alert('Błąd usuwania: '+(e?.message||e)); }
+    renderCloudList();
+  }));
+}
+
+/* ===== MIGRACJA — wspólne log/progress ===== */
+function migLog(msg, isErr){
+  const box = $('#migLog');
+  const line = document.createElement('div');
+  line.textContent = (isErr? '✖ ' : '✓ ') + msg;
+  line.style.color = isErr ? '#ff8b8b' : '#aee6c5';
+  box.appendChild(line);
+  box.scrollTop = box.scrollHeight;
+}
+function migProgress(cur, total){
+  const pct = total ? Math.round((cur/total)*100) : 0;
+  $('#migBar').style.width = pct+'%';
+  $('#migStats').textContent = `Postęp: ${cur}/${total} (${pct}%)`;
+}
+
+/* ===== MIGRACJA: lokalne → chmura ===== */
+async function migrateLocalToCloud({onlyMissing=false}={}){
+  if(!CLOUD.ok){ alert('Chmura niedostępna (bucket crm).'); return; }
+  const allowOverwrite = !!$('#allowOverwrite')?.checked;
+  const all = await dbAll();
+  const list = onlyMissing ? all.filter(r=>!r.cloudPath) : all.slice();
+  if(list.length===0){ $('#migStats').textContent='Brak plików do migracji.'; return; }
+
+  $('#migLog').innerHTML=''; migProgress(0, list.length);
+  let ok=0, err=0, i=0;
+
+  for(const rec of list){
+    i++;
+    if(!(rec && rec.blob instanceof Blob)){
+      migLog(`Pominięto ${rec.name} — brak Blob`, true);
+      err++; migProgress(i, list.length); continue;
+    }
+    const clientId = rec.clientId || '';
+    const clientName = rec.clientName || '';
+    try{
+      const up = await uploadToSupabase({
+        file: rec.blob,
+        clientId, clientName,
+        category: rec.category||'Inne',
+        tags: rec.tags||'',
+        kind:'file',
+        allowOverwrite
+      });
+      await dbPut({...rec, cloudUrl: up.url, cloudPath: up.path});
+      migLog(`OK: ${rec.name} → ${up.path}`);
+      ok++;
+    }catch(e){
+      migLog(`Błąd: ${rec.name} — ${e?.message||e}`, true);
+      err++;
+    }
+    migProgress(i, list.length);
+  }
+
+  $('#migStats').textContent = `Zakończono: OK ${ok}, błędów ${err}.`;
+  await renderFiles();
+  await renderCloudList();
+}
+
+/* ===== NOWOŚĆ: Migracja odwrotna — chmura → lokalnie (wg prefiksu) ===== */
+async function pullCloudToLocalByPrefix(){
+  if(!CLOUD.ok){ alert('Chmura niedostępna.'); return; }
+  const prefix = currentPrefix();
+  if(!prefix){ if(!confirm('Prefiks jest pusty – pobierzesz CAŁĄ chmurę (maks. 1000 w katalogu root). Kontynuować?')) return; }
+
+  $('#migLog').innerHTML=''; migProgress(0, 0);
+  migLog(`Pobieranie listy z chmury dla prefixu: ${prefix||'/'}`);
+
+  const { data, error } = await supa.storage.from(CLOUD.bucket).list(prefix, { limit: 1000, offset: 0, sortBy:{ column:'name', order:'asc' } });
+  if(error){ migLog('Błąd listowania: '+(error.message||String(error)), true); return; }
+
+  const files = (data||[]).filter(it=>it.id).map(it=>{
+    const fullPath = (prefix? prefix : '') + it.name;
+    return { fullPath, meta: it.metadata||{} };
+  });
+
+  if(files.length===0){ migLog('Brak plików w wybranym prefiksie.'); migProgress(0,0); return; }
+
+  migProgress(0, files.length);
+  let i=0, ok=0, err=0;
+
+  for(const f of files){
+    i++;
+    try{
+      const pub = supa.storage.from(CLOUD.bucket).getPublicUrl(f.fullPath).data.publicUrl;
+      const res = await fetch(pub, { cache:'no-store' });
+      if(!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+
+      const name = f.fullPath.split('/').pop() || 'plik';
+      const clientId = (f.fullPath.split('/')[1]||'').trim(); // clients/<clientId>/...
+      const clientName = loadClients().find(c=>c.id===clientId)?.name || '';
+      const rec = {
+        id: uid(),
+        name,
+        type: blob.type || 'application/octet-stream',
+        size: blob.size || 0,
+        blob,
+        at: Date.now(),
+        category: f.meta?.category || 'Import z chmury',
+        clientId,
+        clientName,
+        origin:'cloud-pull',
+        tags: f.meta?.tags || '',
+        cloudUrl: pub,
+        cloudPath: f.fullPath
+      };
+      await dbPut(rec);
+      migLog(`OK: ${name}`);
+      ok++;
+    }catch(e){
+      migLog(`Błąd pobierania ${f.fullPath}: ${e?.message||e}`, true);
+      err++;
+    }
+    migProgress(i, files.length);
+  }
+
+  $('#migStats').textContent = `Import z chmury zakończony: OK ${ok}, błędów ${err}.`;
+  await renderFiles();
+}
+
+/* ===== NOWOŚĆ: Hurtowe kasowanie z chmury wg prefiksu ===== */
+async function bulkDeleteCloudByPrefix(){
+  if(!CLOUD.ok){ alert('Chmura niedostępna.'); return; }
+  const prefix = currentPrefix();
+  if(!prefix){ alert('Dla bezpieczeństwa wskaż prefiks (klient i/lub dodatkowy). Nie kasuję root.'); return; }
+
+  if(!confirm(`USUNĄĆ WSZYSTKO w:\n${prefix}\n\nOperacja jest NIEODWRACALNA.`)) return;
+
+  $('#migLog').innerHTML=''; migProgress(0,0);
+  migLog(`Pobieranie listy do usunięcia w prefixie: ${prefix}`);
+
+  const { data, error } = await supa.storage.from(CLOUD.bucket).list(prefix, { limit: 1000, offset: 0 });
+  if(error){ migLog('Błąd listowania: '+(error.message||String(error)), true); return; }
+
+  const paths = (data||[]).filter(it=>it.id).map(it => (prefix? prefix : '') + it.name);
+  if(paths.length===0){ migLog('Nic do usunięcia.'); return; }
+
+  // Supabase remove() przyjmuje tablicę ścieżek, ale 1000 na stronę – mamy już limit listy
+  const { error: delErr } = await supa.storage.from(CLOUD.bucket).remove(paths);
+  if(delErr){ migLog('Błąd usuwania: '+(delErr.message||String(delErr)), true); return; }
+
+  migLog(`Usunięto ${paths.length} plików z chmury.`);
+  await renderCloudList();
+}
+
+/* ===== Czyszczenie dawnych pól Netlify w lokalu ===== */
+async function cleanNetlifyShadows(){
+  const all = await dbAll();
+  let touched=0;
+  for(const rec of all){
+    const had = ('netlifyUrl' in rec) || ('netlifyPath' in rec) || ('netlify_meta' in rec);
+    if(had){
+      const copy = {...rec};
+      delete copy.netlifyUrl; delete copy.netlifyPath; delete copy.netlify_meta;
+      await dbPut(copy); touched++;
+    }
+  }
+  $('#migLog').innerHTML='';
+  migLog(`Usunięto ślady Netlify z ${touched} rekordów.`);
+  $('#migStats').textContent = `Czyszczenie zakończone. Dotknięte rekordy: ${touched}.`;
+  await renderFiles();
+}
+
+/* ===== OFFERS ===== */
+const LS_OFFERS = 'arkon_offers_v1';
+function loadOffers(){ try{ return JSON.parse(localStorage.getItem(LS_OFFERS)||'[]'); }catch{ return []; } }
+function saveOffers(list){ localStorage.setItem(LS_OFFERS, JSON.stringify(list)); }
+
+let offers = loadOffers();
+let curItems = [];
+let curOfferId = null;
+
+function offerSum(items){ return items.reduce((a,it)=> a + ((+it.price||0) * (+it.qty||0) * (1 - (+it.disc||0)/100)), 0); }
+function refreshOfferCounters(){ $('#cntItems').textContent = curItems.length; $('#sumItems').textContent = fmt(offerSum(curItems))+' zł'; }
+
+function renderOfferEditor(){
+  const tb = $('#offBody'); tb.innerHTML='';
+  curItems.forEach((it,i)=>{
+    const lineTotal = ( (+it.price||0) * (+it.qty||0) * (1-(+it.disc||0)/100) );
+    const tr=document.createElement('tr');
+    tr.innerHTML = `
+      <td class="row">
+        <button class="btn ghost" data-up="${i}">↑</button>
+        <button class="btn ghost" data-down="${i}">↓</button>
+        <button class="btn bad" data-del="${i}">Usuń</button>
+      </td>
+      <td><select data-k="cat" data-i="${i}">
+        ${['PV','Pompa','Piec','Ocieplenie','Stolarka','Inne'].map(x=>`<option ${it.cat===x?'selected':''}>${x}</option>`).join('')}
+      </select></td>
+      <td><input data-k="mm" data-i="${i}" placeholder="Marka/Model" value="${esc(it.mm||'')}"></td>
+      <td><input data-k="spec" data-i="${i}" placeholder="Specyfikacja" value="${esc(it.spec||'')}"></td>
+      <td><input data-k="qty" data-i="${i}" type="number" step="1" min="0" value="${it.qty||1}"></td>
+      <td><input data-k="price" data-i="${i}" type="number" step="1" min="0" value="${it.price||0}"></td>
+      <td><input data-k="disc" data-i="${i}" type="number" step="0.1" min="0" value="${it.disc||0}"></td>
+      <td>${fmt(lineTotal)} zł</td>`;
+    tb.appendChild(tr);
+  });
+  refreshOfferCounters();
+  tb.querySelectorAll('input,select').forEach(el=>{
+    const i=+el.dataset.i, k=el.dataset.k;
+    el.addEventListener('input', debounce(()=>{
+      let v=el.value; if(['qty','price','disc'].includes(k)) v=Number(v)||0;
+      if(k==='mm'){ curItems[i].mm=v; }
+      else if(k==='spec'){ curItems[i].spec=v; }
+      else curItems[i][k]=v;
+      renderOfferEditor();
+    },120));
+  });
+  tb.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{ curItems.splice(+b.dataset.del,1); renderOfferEditor(); }));
+  tb.querySelectorAll('[data-up]').forEach(b=>b.addEventListener('click',()=>{ const i=+b.dataset.up; if(i>0){[curItems[i-1],curItems[i]]=[curItems[i],curItems[i-1]]; renderOfferEditor(); }}));
+  tb.querySelectorAll('[data-down]').forEach(b=>b.addEventListener('click',()=>{ const i=+b.dataset.down; if(i<curItems.length-1){[curItems[i+1],curItems[i]]=[curItems[i],curItems[i+1]]; renderOfferEditor(); }}));
+}
+function newOffer(){ curOfferId = null; curItems = []; $('#offTitle').value = $('#offTitle').value || 'Oferta'; renderOfferEditor(); }
+function saveOffer(){
+  const clientId = $('#offClient').value || '';
+  const title = $('#offTitle').value.trim() || 'Oferta';
+  if(!clientId){ alert('Wybierz klienta.'); return; }
+  const rec = { id: curOfferId || uid(), clientId, title, at: Date.now(), items: curItems.slice() };
+  const i = offers.findIndex(o=>o.id===rec.id);
+  if(i>=0) offers[i]=rec; else offers.unshift(rec);
+  saveOffers(offers);
+  curOfferId = rec.id;
+  renderOfferList();
+  alert('Zapisano ofertę.');
+}
+function renderOfferList(){
+  const q=($('#offQ')?.value||'').toLowerCase();
+  const tb=$('#offList'); if(!tb) return; tb.innerHTML='';
+  const clients=loadClients();
+  const clientName = id => clients.find(c=>c.id===id)?.name||'';
+  const rows = offers.filter(o=> !q || (o.title||'').toLowerCase().includes(q) || clientName(o.clientId).toLowerCase().includes(q) );
+  $('#cntOffers').textContent = offers.length;
+  rows.sort((a,b)=>(b.at||0)-(a.at||0)).forEach(o=>{
+    const sum = offerSum(o.items||[]);
+    const tr=document.createElement('tr');
+    tr.innerHTML = `
+      <td class="row">
+        <button class="btn" data-open="${o.id}">Otwórz</button>
+        <button class="btn ghost" data-json="${o.id}">JSON</button>
+        <button class="btn bad" data-del="${o.id}">Usuń</button>
+      </td>
+      <td>${esc(o.title||'Oferta')}</td>
+      <td>${esc(clientName(o.clientId))}</td>
+      <td>${(o.items||[]).length}</td>
+      <td>${fmt(sum)} zł</td>
+      <td>${new Date(o.at||Date.now()).toLocaleString('pl-PL')}</td>`;
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',()=>{
+    const o=offers.find(x=>x.id===b.dataset.open); if(!o) return;
+    curOfferId=o.id; $('#offClient').value=o.clientId; $('#offTitle').value=o.title||'Oferta'; curItems = (o.items||[]).map(x=>({...x})); selectTab('builder'); renderOfferEditor();
+  }));
+  tb.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{
+    if(!confirm('Usunąć ofertę?')) return; offers=offers.filter(x=>x.id!==b.dataset.del); saveOffers(offers); renderOfferList();
+  }));
+  tb.querySelectorAll('[data-json]').forEach(b=>b.addEventListener('click',()=>{
+    const o=offers.find(x=>x.id===b.dataset.json); if(!o) return;
+    const a=document.createElement('a'); const blob=new Blob([JSON.stringify(o,null,2)],{type:'application/json'});
+    a.href=URL.createObjectURL(blob); a.download=(o.title||'oferta')+'.json'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1200);
+  }));
+}
+
+/* ===== Components picker ===== */
+let compState={cat:'pv',q:''};
+function renderComponents(){
+  const list = loadComponents(compState.cat);
+  const q=(compState.q||'').toLowerCase();
+  const tb=$('#compBody'); if(!tb) return; tb.innerHTML='';
+  let vis=0;
+  list.filter(r=> JSON.stringify(r).toLowerCase().includes(q) ).forEach((r,i)=>{
+    vis++;
+    const brand = r.brand||r.marka||'';
+    const model = r.model||'';
+    const spec = r.spec || r.power || r.watt || r.size || r.tech || r.note || '';
+    const price = Number(r.price || r.cena || r.price_m2 || 0) || 0;
+    const tr=document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="checkbox" data-i="${i}"></td>
+      <td>${esc(brand)}</td>
+      <td>${esc(model)}</td>
+      <td>${esc(spec)}</td>
+      <td>${fmt(price)} zł</td>`;
+    tb.appendChild(tr);
+  });
+  $('#compVis').textContent=vis;
+}
+$('#compCat')?.addEventListener('change',e=>{ compState.cat=e.target.value; renderComponents(); });
+$('#compQ')?.addEventListener('input',e=>{ compState.q=e.target.value.trim(); renderComponents(); });
+$('#compAddSel')?.addEventListener('click',()=>{
+  const list = loadComponents(compState.cat);
+  $$('#compBody input[type="checkbox"]:checked').forEach(ch=>{
+    const r=list[+ch.dataset.i]; if(!r) return;
+    const brand=r.brand||r.marka||''; const model=r.model||'';
+    const spec=r.spec||r.power||r.watt||r.size||r.tech||r.note||'';
+    const price=Number(r.price||r.cena||r.price_m2||0)||0;
+    const catMap={pv:'PV',pumps:'Pompa',boilers:'Piec',insul:'Ocieplenie',windows:'Stolarka'};
+    curItems.push({cat:catMap[compState.cat]||'Inne', mm:(brand+' '+model).trim(), spec:String(spec), qty:1, price, disc:0});
+  });
+  selectTab('builder'); renderOfferEditor();
+});
+
+/* ===== Tabs ===== */
+function selectTab(key){
+  $$('.tabs .tab').forEach(b=>b.setAttribute('aria-selected','false'));
+  const t = document.querySelector(`.tabs .tab[data-tab="${key}"]`);
+  if(t) t.setAttribute('aria-selected','true');
+  ['builder','components','list'].forEach(id=>{
+    const el = document.getElementById(`tab-${id}`);
+    if(el) el.hidden = (id !== key);
+  });
+}
+$$('.tabs .tab').forEach(b=>b.addEventListener('click',()=>selectTab(b.dataset.tab)));
+
+/* ===== Flyers (ulotki) ===== */
+const LS_FLY = 'arkon_flyers_v1';
+function loadFlyers(){ try{ return JSON.parse(localStorage.getItem(LS_FLY)||'[]'); }catch{ return []; } }
+function saveFlyers(list){ localStorage.setItem(LS_FLY, JSON.stringify(list)); }
+
+let flyers = loadFlyers();
+let flyerPendingFile = null;
+$('#flyFile')?.addEventListener('change',e=>{
+  const f=e.target.files[0]; flyerPendingFile = f || null;
+});
+async function addFlyer(){
+  const clientId = $('#flyClient').value || '';
+  const title = $('#flyTitle').value.trim() || 'Ulotka';
+  const source = $('#flySource').value.trim() || '';
+  let fileId='', fileName='', cloudUrl='', cloudPath='';
+  if(flyerPendingFile){
+    fileId = uid();
+    fileName = flyerPendingFile.name;
+    await dbPut({ id:fileId, name:fileName, type: flyerPendingFile.type||'application/octet-stream', size: flyerPendingFile.size, blob: flyerPendingFile, at: Date.now(), category:'Ulotka', clientId, clientName: clientId? (loadClients().find(c=>c.id===clientId)?.name||'') : '', origin:'flyer', tags:'ulotka' });
+    if(CLOUD.ok){
+      try{
+        const up = await uploadToSupabase({ file: flyerPendingFile, clientId, clientName: (loadClients().find(c=>c.id===clientId)?.name||''), category:'Ulotka', tags:'ulotka', kind:'flyer', allowOverwrite:false });
+        cloudUrl = up.url; cloudPath = up.path;
+      }catch(e){ console.warn('Upload ulotki do chmury nieudany:', e); }
+    }
+    flyerPendingFile = null; $('#flyFile').value='';
+  }
+  const rec = { id:uid(), clientId, title, source, at:Date.now(), fileId, fileName, cloudUrl, cloudPath };
+  flyers.unshift(rec); saveFlyers(flyers); renderFlyers();
+  $('#flyTitle').value=''; $('#flySource').value='';
+}
+function renderFlyers(){
+  const tb=$('#flyBody'); if(!tb) return; tb.innerHTML='';
+  const clients=loadClients();
+  const name=id=> clients.find(c=>c.id===id)?.name||'';
+    flyers.forEach(f=>{
+    const urlBusted = f.cloudUrl ? f.cloudUrl + '?v=' + Date.now() : '';
+    const cloudLink = f.cloudUrl ? `<a class="btn ghost" href="${esc(urlBusted)}" target="_blank" rel="noopener">Link</a>` : '';
+    const cloudDel  = f.cloudPath ? `<button class="btn bad" data-fly-delcloud="${esc(f.cloudPath)}">Usuń z chmury</button>` : '';
+    const tr=document.createElement('tr');
+    tr.innerHTML = `
+      <td class="row">
+        <button class="btn" data-open="${f.id}">Edytuj</button>
+        <button class="btn ghost" data-dl="${f.fileId||''}" ${f.fileId?'':'disabled'}>Pobierz lokalnie</button>
+        <button class="btn bad" data-del="${f.id}">Usuń rekord</button>
+      </td>
+      <td>${esc(f.title)}</td>
+      <td>${esc(name(f.clientId))}</td>
+      <td>${esc(f.source||'')}</td>
+      <td>${esc(f.fileName||'—')}</td>
+      <td class="row">${cloudLink} ${cloudDel}</td>
+      <td>${new Date(f.at||Date.now()).toLocaleString('pl-PL')}</td>`;
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{
+    if(!confirm('Usunąć wpis ulotki?')) return;
+    flyers = flyers.filter(x=>x.id!==b.dataset.del);
+    saveFlyers(flyers); renderFlyers();
+  }));
+  tb.querySelectorAll('[data-dl]').forEach(b=>b.addEventListener('click', async ()=>{
+    const id=b.dataset.dl; if(!id) return;
+    const rec=await dbGet(id); if(!rec){ alert('Plik lokalny niedostępny.'); return; }
+    const url=URL.createObjectURL(rec.blob); const a=document.createElement('a'); a.href=url; a.download=rec.name; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1500);
+  }));
+  tb.querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',()=>{
+    const f=flyers.find(x=>x.id===b.dataset.open); if(!f) return;
+    const title=prompt('Tytuł', f.title)||f.title;
+    const source=prompt('Kanał', f.source||'')||f.source||'';
+    const clientId=prompt('ID klienta (puste = bez przypisania)', f.clientId||'')||'';
+    flyers = flyers.map(x=> x.id===f.id ? {...x, title, source, clientId} : x);
+    saveFlyers(flyers); renderFlyers();
+  }));
+  tb.querySelectorAll('[data-fly-delcloud]').forEach(b=>b.addEventListener('click', async ()=>{
+    const path=b.dataset.flyDelcloud;
+    if(!confirm(`Usunąć ulotkę z chmury?\n${path}`)) return;
+    try{ await deleteFromCloud(path); alert('Ulotka usunięta z chmury.'); }catch(e){ alert('Błąd: '+(e?.message||e)); }
+    renderCloudList();
+  }));
+}
+$('#flyAdd')?.addEventListener('click', addFlyer);
+
+/* ===== INIT ===== */
+(async function init(){
+  await dbOpen();
+  const clients = loadClients();
+  ['selClient','offClient','flyClient'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.innerHTML = '<option value="">(bez przypisania)</option>' + clients.map(c=>`<option value="${esc(c.id)}">${esc(c.name||'')}</option>`).join('');
+  });
+
+  const dz = $('#drop');
+  dz.addEventListener('click',()=>$('#inFiles').click());
+  dz.addEventListener('dragover',e=>{e.preventDefault(); dz.classList.add('drag');});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+  dz.addEventListener('drop',e=>{e.preventDefault(); dz.classList.remove('drag'); handleFiles(e.dataTransfer.files);});
+
+  $('#inFiles')?.addEventListener('change',e=>{ handleFiles(e.target.files); e.target.value=''; });
+  $('#btnRefresh')?.addEventListener('click',()=>{ renderFiles(); renderCloudList(); });
+  $('#qFiles')?.addEventListener('input', e=>{ fileFilter.q=e.target.value.trim(); renderFiles(); });
+  $('#btnClear')?.addEventListener('click',()=>{ fileFilter={q:'',cat:''}; $('#qFiles').value=''; $('#fCat').value=''; renderFiles(); });
+  $('#fCat')?.addEventListener('change', e=>{ fileFilter.cat=e.target.value||''; renderFiles(); });
+
+  // Chmura
+  $('#btnCloudList')?.addEventListener('click', renderCloudList);
+  $('#cloudClient')?.addEventListener('change', renderCloudList);
+  $('#cloudPrefix')?.addEventListener('input', debounce(renderCloudList, 250));
+
+  // Migracja
+  $('#btnMigrateAll')?.addEventListener('click', ()=>migrateLocalToCloud({onlyMissing:false}));
+  $('#btnMigrateMissing')?.addEventListener('click', ()=>migrateLocalToCloud({onlyMissing:true}));
+  $('#btnCleanNetlify')?.addEventListener('click', cleanNetlifyShadows);
+  $('#btnPullFromCloud')?.addEventListener('click', pullCloudToLocalByPrefix);
+  $('#btnBulkDeleteCloud')?.addEventListener('click', bulkDeleteCloudByPrefix);
+
+  // Oferty
+  $('#offAddRow')?.addEventListener('click', ()=>{ curItems.push({cat:'Inne',mm:'',spec:'',qty:1,price:0,disc:0}); renderOfferEditor(); });
+  $('#offSave')?.addEventListener('click', saveOffer);
+  $('#offNew')?.addEventListener('click', newOffer);
+  $('#offExport')?.addEventListener('click', ()=>{
+    const a=document.createElement('a'); const blob=new Blob([JSON.stringify(offers,null,2)],{type:'application/json'});
+    a.href=URL.createObjectURL(blob); a.download='offers.json'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1200);
+  });
+  $('#offImport')?.addEventListener('change', async (e)=>{
+    const f=e.target.files[0]; if(!f) return; const txt=await f.text();
+    try{ const arr=JSON.parse(txt); if(Array.isArray(arr)){ offers=arr; saveOffers(offers); renderOfferList(); } }catch{}
+    e.target.value='';
+  });
+
+  renderOfferEditor();
+  renderOfferList();
+  renderComponents();
+
+  document.addEventListener('keydown',e=>{
+    if(e.key==='/' && !/input|textarea|select/i.test(e.target.tagName)){ e.preventDefault(); $('#qFiles')?.focus(); }
+    if(e.altKey && e.key.toLowerCase()==='n'){ e.preventDefault(); newOffer(); }
+    if(e.altKey && e.key.toLowerCase()==='s'){ e.preventDefault(); saveOffer(); }
+  });
+
+  await supaPing();
+  renderFiles();
+  renderCloudList();
+})();
+</script>
+</body>
+</html>
