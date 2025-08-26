@@ -1,4 +1,5 @@
-const netlifyToml = `[build]
+// Export Netlify TOML content as a string to avoid JS parse errors (consider renaming this file to `netlify.toml`)
+module.exports = `[build]
   publish = "."
   node_bundler = "esbuild"
 
@@ -49,6 +50,3 @@ const netlifyToml = `[build]
   to   = "/.netlify/functions/upload"
   status = 200
 `;
-
-// Export the TOML string so other scripts can write it to a .toml file or use it as needed.
-module.exports = netlifyToml;
