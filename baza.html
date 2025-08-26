@@ -1,10 +1,11 @@
+
 <!doctype html>
 <html lang="pl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ARKON — Baza klientów</title>
-<meta name="description" content="Baza klientów ARKON CRM: podgląd, dodawanie, edycja, wyszukiwanie, import/eksport. Współdzieli dane z klienci.html.">
+<meta name="description" content="Baza klientów ARKON CRM: podgląd, edycja, wyszukiwanie, import/eksport + dokumenty klienta (per-klient). Supabase.">
 <style>
   :root{ --bg:#0b1020; --p1:#121a34; --p2:#172142; --ink:#e8edff; --muted:#aeb8da; --accent:#4cc9f0; --ok:#2b8a57; --grid:#243059; --card:#0f1533; --line:#1c2750; --bad:#ff6b6b; }
   *{box-sizing:border-box}
@@ -15,7 +16,6 @@
   nav a{color:#cfe1ff;text-decoration:none;padding:8px 12px;border-radius:999px;border:1px solid #2a3a75}
   nav a:hover{background:#223160}
   .wrap{max-width:1280px;margin:auto;padding:16px}
-
   .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
   .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
   .btn.ghost{background:transparent;border:1px dashed #3a4ca3}
@@ -24,43 +24,40 @@
   input,select,textarea{background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:8px 10px;color:var(--ink);font:inherit}
   input::placeholder{color:#aeb8da99}
   textarea{min-height:80px;resize:vertical}
-
   .card{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;padding:14px}
   table{width:100%;border-collapse:separate;border-spacing:0}
   th,td{padding:10px;border-bottom:1px solid var(--grid);text-align:left;vertical-align:top}
   th{font-size:13px;color:var(--muted)}
   .small{font-size:12px;color:#aeb8da}
   .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
-
   /* Drawer */
-  .drawer{position:fixed;right:0;top:0;height:100%;width:520px;max-width:100%;background:linear-gradient(180deg,#0e1433,#0e173d);border-left:1px solid #2b3a77;box-shadow:-20px 0 60px #0008;transform:translateX(100%);transition:.25s;z-index:50;overflow:auto}
+  .drawer{position:fixed;right:0;top:0;height:100%;width:620px;max-width:100%;background:linear-gradient(180deg,#0e1433,#0e173d);border-left:1px solid #2b3a77;box-shadow:-20px 0 60px #0008;transform:translateX(100%);transition:.25s;z-index:50;overflow:auto}
   .drawer.open{transform:none}
   .drawer .hd{position:sticky;top:0;background:#101a45;border-bottom:1px solid #2b3a77;padding:12px}
   .drawer .bd{padding:12px}
   .drawer h3{margin:0 0 6px 0}
-  .kv{display:grid;grid-template-columns:140px 1fr;gap:10px;align-items:center}
+  .kv{display:grid;grid-template-columns:160px 1fr;gap:10px;align-items:center}
   .kv label{font-size:13px;color:#aeb8da}
   .kv input,.kv select,.kv textarea{width:100%}
-
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .table{width:100%;border-collapse:separate;border-spacing:0}
+  .table th,.table td{padding:9px;border-bottom:1px solid #22325f;text-align:left;vertical-align:top}
+  .scroll{overflow:auto}
+  .tag{display:inline-block;margin:2px 6px 0 0;padding:3px 8px;border:1px solid #3a4ca3;border-radius:999px;font-size:12px}
   @media print{ nav,.toolbar,.drawer{display:none!important} }
 </style>
 </head>
 <body>
 <header>
   <h1>Baza klientów • ARKON CRM</h1>
-  <div class="small">Ta strona współdzieli dane z <b>klienci.html</b> (localStorage: <code>arkon_clients_v1</code>).</div>
+  <div class="small">Współdzieli dane z <b>klienci.html</b> (localStorage: <code>arkon_clients_v1</code>). Dokumenty klienta są w IndexedDB (<code>files</code>) oraz (opcjonalnie) w chmurze Supabase.</div>
 </header>
 
 <nav>
   <a href="index.html">Pulpit</a>
-  <a href="kalkulator.html" target="_blank" rel="noopener">Kalkulator</a>
-  <a href="komponenty.html">Komponenty</a>
-  <a href="dokumenty.html">Dokumenty</a>
-  <a href="upload.html">Przesył plików</a>
-  <a href="chat.html">Komunikator</a>
-  <a href="ustawienia.html">Ustawienia</a>
-  <a href="lidy.html">Lidy</a>
-  <a href="klienci.html">Klienci (zaaw.)</a>
+  <a href="upload.html">Przesył dokumentów</a>
+  <a href="edytor-umowy.html">Edytor umów</a>
+  <a href="dokumenty.html">Wzory dokumentów</a>
 </nav>
 
 <div class="wrap">
@@ -94,18 +91,21 @@
 </div>
 
 <!-- Drawer -->
-<aside id="drawer" class="drawer">
+<aside id="drawer" class="drawer" aria-label="Edycja klienta i dokumenty">
   <div class="hd">
     <div style="display:flex;gap:8px;justify-content:space-between;align-items:center">
       <h3 style="margin:0">Edycja klienta</h3>
-      <div>
-        <button id="btnClose" class="btn ghost" type="button">Zamknij</button>
+      <div class="row">
+        <a id="btnToUpload" class="btn ghost" href="#" target="_blank">Przesył (dla tego klienta)</a>
+        <button id="btnClose" class="btn" type="button">Zamknij</button>
         <button id="btnDel" class="btn bad" type="button">Usuń</button>
       </div>
     </div>
   </div>
+
   <div class="bd">
-    <div class="kv">
+    <!-- Dane klienta -->
+    <div class="kv card">
       <label>Nazwa</label><input id="e_name" placeholder="np. Jan Kowalski / Firma XYZ">
       <label>Status</label>
       <select id="e_status">
@@ -117,23 +117,130 @@
       <label>Tagi (po przecinku)</label><input id="e_tags" placeholder="pompa, fotowoltaika">
       <label>Notatki</label><textarea id="e_notes" placeholder="Ważne uzgodnienia, terminy, itp."></textarea>
     </div>
+
+    <!-- Dokumenty klienta -->
+    <div class="card" style="margin-top:12px">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <h3 style="margin:0">Dokumenty klienta</h3>
+        <span id="cloudState" class="pill">Chmura: sprawdzanie…</span>
+      </div>
+
+      <div class="row" style="margin-top:8px">
+        <select id="c_cat" title="Kategoria">
+          <optgroup label="Umowy i formalne">
+            <option>Umowa z firmą</option>
+            <option>Oświadczenie</option>
+            <option>Dokument CP</option>
+          </optgroup>
+          <optgroup label="Instalacja">
+            <option>Zdjęcia falownika</option>
+            <option>Zdjęcia kotłowni</option>
+            <option>Pomiary</option>
+            <option>Rzut</option>
+          </optgroup>
+          <optgroup label="Handlowe">
+            <option>Oferta (PDF)</option>
+            <option>Ulotka</option>
+          </optgroup>
+          <option>Inne</option>
+        </select>
+        <input id="c_tags" placeholder="tagi, przecinkami">
+        <label class="btn">Dodaj pliki… <input id="c_files" type="file" multiple hidden></label>
+        <input id="c_q" placeholder="🔎 filtr nazwa/kategoria/tag">
+        <select id="c_fcat"><option value="">Kategoria (wszystkie)</option></select>
+        <span class="pill">Widocznych: <b id="c_vis">0</b></span>
+      </div>
+
+      <div class="scroll" style="max-height:320px;margin-top:6px">
+        <table class="table">
+          <thead><tr><th>Akcje</th><th>Nazwa</th><th>Kategoria</th><th>Tagi</th><th>Typ</th><th>Rozmiar</th><th>Data</th><th>Chmura</th></tr></thead>
+          <tbody id="c_body"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </aside>
 
+<!-- Supabase UMD -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
 'use strict';
 
-/* helpers */
+/* ===== SUPABASE ===== */
+const SB_URL = 'https://phxxjirqlktzcwnygaha.supabase.co';
+const SB_KEY = 'sb_publishable_iOXdu9fUGGko3MqPmltAag_ZbPUxp4r';
+const supa = supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession:false } });
+const CLOUD = { ok:false, bucket:'crm' };
+function setCloudState(txt, ok){
+  const el = document.getElementById('cloudState');
+  el.textContent = txt;
+  el.style.borderColor = ok ? '#2e925e' : '#7b3341';
+  el.style.background = ok ? '#0f2c22' : '#2e1117';
+}
+async function supaPing(){
+  try{
+    const { error } = await supa.storage.from(CLOUD.bucket).list('', { limit: 1 });
+    if(error) throw error; CLOUD.ok = true; setCloudState('Chmura: gotowe ✓', true);
+  }catch{ CLOUD.ok = false; setCloudState('Chmura: niedostępna', false); }
+}
+const safeName = (name='plik') => String(name).normalize('NFKD').replace(/[^\w.\-]+/g,'_').toLowerCase();
+const ymPrefix = () => { const d=new Date(),y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'); return `${y}-${m}`; };
+function buildRemotePath({clientId, file}){
+  const ts=new Date().toISOString().replace(/[:.]/g,'-');
+  return `clients/${clientId||'bez-klienta'}/${ymPrefix()}/${ts}_${safeName(file.name)}`;
+}
+async function uploadToSupabase({file, clientId, meta={}, upsert=false}){
+  const path = buildRemotePath({clientId, file});
+  const { error } = await supa.storage.from(CLOUD.bucket).upload(path, file, {
+    upsert, contentType: file.type || 'application/octet-stream', cacheControl: '3600', metadata: meta
+  });
+  if(error) throw error;
+  const pub = supa.storage.from(CLOUD.bucket).getPublicUrl(path).data.publicUrl;
+  return { path, url: pub };
+}
+
+/* ===== helpers ===== */
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 const fmtDate = ts => new Date(ts).toLocaleString('pl-PL');
 const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const bytes=n=>n<1024? n+' B' : n<1048576? (n/1024).toFixed(1)+' KB' : n<1073741824? (n/1048576).toFixed(1)+' MB' : (n/1073741824).toFixed(1)+' GB';
+const debounce=(fn,ms)=>{let t;return function(){ const a=arguments; clearTimeout(t); t=setTimeout(()=>fn.apply(null,a),ms||180); }};
 
-/* storage keys (wspólne z klienci.html) */
+/* ===== storage keys ===== */
 const LS = { clients:'arkon_clients_v1' };
 
-/* state */
+/* ===== IndexedDB (shared) ===== */
+let db;
+function dbOpen(){
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open('arkonCRM_local',3);
+    r.onupgradeneeded=()=>{const d=r.result;
+      let store;
+      if(!d.objectStoreNames.contains('files')){
+        store=d.createObjectStore('files',{keyPath:'id'});
+      }else{
+        store=r.transaction.objectStore('files');
+      }
+      if(!store.indexNames.contains('byClient')) store.createIndex('byClient','clientId',{unique:false});
+      if(!store.indexNames.contains('byDate'))   store.createIndex('byDate','at',{unique:false});
+    };
+    r.onsuccess=()=>{db=r.result; res()};
+    r.onerror=()=>rej(r.error);
+  });
+}
+function dbPut(o){return new Promise((res,rej)=>{const tx=db.transaction('files','readwrite'); tx.objectStore('files').put(o); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error);});}
+function dbGet(id){return new Promise((res,rej)=>{const tx=db.transaction('files','readonly'); const rq=tx.objectStore('files').get(id); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error);});}
+function dbDel(id){return new Promise((res,rej)=>{const tx=db.transaction('files','readwrite'); tx.objectStore('files').delete(id); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error);});}
+function dbAllForClient(clientId){
+  return new Promise((res,rej)=>{
+    const tx=db.transaction('files','readonly'); const st=tx.objectStore('files'); const idx=st.index('byClient');
+    const rq=idx.getAll(IDBKeyRange.only(clientId||'')); rq.onsuccess=()=>res(rq.result||[]); rq.onerror=()=>rej(rq.error);
+  });
+}
+
+/* ===== clients state ===== */
 let clients = load(LS.clients, []);
 let filter = { q:'', status:'' };
 let openId = null;
@@ -147,7 +254,7 @@ if(!clients.length){
   save();
 }
 
-/* init UI */
+/* UI init */
 $('#btnAdd').addEventListener('click', ()=>{ createClient(); });
 $('#btnExport').addEventListener('click', exportJSON);
 $('#fileIn').addEventListener('change', e=>{ const f=e.target.files[0]; if(f) importJSON(f); e.target.value=''; });
@@ -177,18 +284,19 @@ function render(){
   rows.sort((a,b)=> (b.created||0)-(a.created||0));
 
   rows.forEach(c=>{
+    const tagsHtml=(c.tags||[]).map(t=>'<span class="tag">'+esc(t)+'</span>').join('');
     const tr=document.createElement('tr');
-    const tagsHtml=(c.tags||[]).map(t=>'<span class="pill">'+esc(t)+'</span>').join('');
-    tr.innerHTML = \`
-      <td>
-        <button class="btn ghost open" data-id="\${c.id}" type="button">Edytuj</button>
+    tr.innerHTML = `
+      <td class="row">
+        <button class="btn ghost open" data-id="${c.id}" type="button">Edytuj</button>
+        <a class="btn" href="upload.html?client=${encodeURIComponent(c.id)}" target="_blank" rel="noopener">Przesył (dla tego klienta)</a>
       </td>
-      <td><b>\${esc(c.name||'—')}</b><div class="small">\${fmtDate(c.created||Date.now())}</div></td>
-      <td>\${esc(c.status||'—')}</td>
-      <td>\${esc(c.email||'')}<div class="small">\${esc(c.phone||'')}</div></td>
-      <td>\${esc(c.address||'')}</td>
-      <td>\${tagsHtml}</td>
-    \`;
+      <td><b>${esc(c.name||'—')}</b><div class="small">${fmtDate(c.created||Date.now())}</div></td>
+      <td>${esc(c.status||'—')}</td>
+      <td>${esc(c.email||'')}<div class="small">${esc(c.phone||'')}</div></td>
+      <td>${esc(c.address||'')}</td>
+      <td>${tagsHtml}</td>
+    `;
     tr.querySelector('.open').addEventListener('click', ()=>openDrawer(c.id));
     tb.appendChild(tr);
   });
@@ -219,7 +327,10 @@ function openDrawer(id){
   $('#e_tags').value   = (c.tags||[]).join(', ');
   $('#e_notes').value  = c.notes||'';
 
+  $('#btnToUpload').href = 'upload.html?client=' + encodeURIComponent(c.id);
+
   bindEditor();
+  refreshClientFiles();
 }
 function closeDrawer(){ drawer.classList.remove('open'); openId=null; }
 
@@ -228,7 +339,13 @@ function bindEditor(){
     const el=$(sel); el.oninput = debounce(saveEditor,150);
   });
   $('#e_status').onchange = saveEditor;
+
+  // Document controls
+  $('#c_files').onchange = e => { addClientFiles(e.target.files); e.target.value=''; };
+  $('#c_q').oninput = ()=> refreshClientFiles();
+  $('#c_fcat').onchange = ()=> refreshClientFiles();
 }
+
 function saveEditor(){
   if(!openId) return;
   const c = clients.find(x=>x.id===openId); if(!c) return;
@@ -240,6 +357,78 @@ function saveEditor(){
   c.tags   = $('#e_tags').value.split(',').map(s=>s.trim()).filter(Boolean);
   c.notes  = $('#e_notes').value;
   save();
+}
+
+/* ==== Dokumenty klienta (w Drawerze) ==== */
+async function addClientFiles(files){
+  if(!openId){ alert('Najpierw otwórz klienta.'); return; }
+  const client = clients.find(c=>c.id===openId);
+  const clientName = client?.name || '';
+  const category = $('#c_cat').value||'Inne';
+  const tags = $('#c_tags').value||'';
+
+  for(const f of Array.from(files||[])){
+    const id='ID_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2);
+    await dbPut({ id, clientId: openId, clientName, name:f.name, type:f.type||'application/octet-stream', size:f.size, blob:f, at: Date.now(), category, tags });
+
+    if(CLOUD.ok){
+      try{
+        const up = await uploadToSupabase({ file:f, clientId: openId, meta:{category,tags}, upsert:false });
+        const rec = await dbGet(id); await dbPut({...rec, cloudUrl: up.url, cloudPath: up.path});
+      }catch(e){ console.warn('Upload do chmury nieudany:', e); }
+    }
+  }
+  refreshClientFiles();
+}
+
+async function refreshClientFiles(){
+  if(!openId){ $('#c_body').innerHTML='<tr><td colspan="8" class="small">Brak klienta</td></tr>'; $('#c_vis').textContent='0'; return; }
+  const list = await dbAllForClient(openId);
+  const tb = $('#c_body'); tb.innerHTML='';
+  const q = ($('#c_q').value||'').toLowerCase(); const cat=$('#c_fcat').value||'';
+
+  // Kategorię dropdown wypełniamy dynamicznie
+  const cats = [...new Set(list.map(r=>r.category||'').filter(Boolean))];
+  $('#c_fcat').innerHTML = '<option value="">Kategoria (wszystkie)</option>' + cats.map(c=>`<option ${c===cat?'selected':''}>${esc(c)}</option>`).join('');
+
+  let vis=0;
+  list.sort((a,b)=>(b.at||0)-(a.at||0))
+      .filter(x=>{
+        if(cat && x.category!==cat) return false;
+        const hay=[x.name,x.category,x.tags].join(' ').toLowerCase();
+        return !q || hay.includes(q);
+      })
+      .forEach(rec=>{
+        vis++;
+        const when=rec.at? new Date(rec.at).toLocaleString('pl-PL') : '';
+        const cloud = rec.cloudUrl ? `<a class="btn ghost" href="${esc(rec.cloudUrl)}" target="_blank" rel="noopener">Link</a>` : '<span class="small">—</span>';
+        const tr=document.createElement('tr');
+        tr.innerHTML=`
+          <td class="row">
+            <button class="btn ghost" data-dl="${rec.id}">Pobierz</button>
+            <button class="btn bad" data-del="${rec.id}">Usuń</button>
+          </td>
+          <td>${esc(rec.name)}</td>
+          <td>${esc(rec.category||'')}</td>
+          <td>${esc(rec.tags||'')}</td>
+          <td>${esc(rec.type||'')}</td>
+          <td>${bytes(rec.size||0)}</td>
+          <td>${when}</td>
+          <td>${cloud}</td>`;
+        tb.appendChild(tr);
+      });
+
+  if(!vis){ tb.innerHTML='<tr><td colspan="8" class="small">Brak plików. Dodaj powyżej (np. „Umowa z firmą” lub „Zdjęcia falownika”).</td></tr>'; }
+  $('#c_vis').textContent=String(vis);
+
+  tb.querySelectorAll('[data-dl]').forEach(b=>b.addEventListener('click',async ()=>{
+    const rec=await dbGet(b.dataset.dl); if(!rec){ alert('Plik niedostępny.'); return; }
+    const url=URL.createObjectURL(rec.blob); const a=document.createElement('a'); a.href=url; a.download=rec.name; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1200);
+  }));
+  tb.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',async ()=>{
+    if(!confirm('Usunąć plik z bazy lokalnej?')) return;
+    await dbDel(b.dataset.del); refreshClientFiles();
+  }));
 }
 
 /* export/import */
@@ -255,8 +444,15 @@ async function importJSON(file){
   }catch(e){ alert('Błąd importu: '+(e.message||e)); }
 }
 
-/* debounce */
-function debounce(fn,ms){ let t; return function(){ const a=arguments; clearTimeout(t); t=setTimeout(()=>fn.apply(null,a),ms||180); }; }
+/* boot */
+(async function(){
+  await dbOpen();
+  await supaPing();
+  // Focus & shortcuts
+  document.addEventListener('keydown',e=>{
+    if(e.key==='/' && !/input|textarea|select/i.test(e.target.tagName)){ e.preventDefault(); $('#q').focus(); }
+  });
+})();
 </script>
 </body>
 </html>
