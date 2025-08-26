@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="pl">
 <head>
@@ -175,8 +176,8 @@
 'use strict';
 
 /*** USTAWIENIA ***/
-const API_MESSAGES = '/api/messages'; // Netlify Function
-const API_UPLOAD   = '/api/upload';   // Netlify Function
+const API_MESSAGES = '/api/messages'; // Netlify Function (masz: netlify/functions/messages.js)
+const API_UPLOAD   = '/api/upload';   // Netlify Function (masz: netlify/functions/upload.js)
 
 /*** UTIL ***/
 const $ = s => document.querySelector(s);
@@ -251,7 +252,6 @@ function bubbleHtml(m, children){
         (m.file_url ? fileChip(m.file_url) : ''),
         '<div class="tools">',
           '<button class="btn-icon" onclick="startReply(\''+m.id+'\')">💬 Odpowiedz</button>',
-          // Reakcje zostawiamy lokalnie (brak serwera do update)
           '<button class="btn-icon" onclick="localReact(\''+m.id+'\',\'👍\')">👍</button>',
           '<button class="btn-icon" onclick="localReact(\''+m.id+'\',\'❤\')">❤</button>',
           '<button class="btn-icon" onclick="localReact(\''+m.id+'\',\'🔥\')">🔥</button>',
@@ -291,38 +291,43 @@ function renderMessages(scrollToBottom=true){
 
 /*** API (Netlify Functions) ***/
 async function apiList(room){
-  const r = await fetch(API_MESSAGES+'?room='+encodeURIComponent(room), { headers:{'Accept':'application/json'} });
+  const r = await fetch(API_MESSAGES+'?room='+encodeURIComponent(room), {
+    headers:{'Accept':'application/json'}
+  });
   if(!r.ok) throw new Error('GET /api/messages HTTP '+r.status);
   const json = await r.json();
-  const arr = Array.isArray(json) ? json : (json.messages || []);
-  // normalizacja
+  // Twoja funkcja messages.js zwraca { items: [...] }
+  const arr = Array.isArray(json) ? json : (json.items || json.messages || []);
   return arr.map((m, i)=>({
     id: m.id || m.key || String(i+1)+'-'+(m.ts||m.date||Date.now()),
-    room_id: m.room || m.room_id || room,
+    room_id: m.room_id || m.room || room,
     author: m.author || m.name || 'Anon',
-    body: m.text || m.body || m.message || '',
+    body: m.body || m.text || m.message || '',
     file_url: m.file_url || m.file || null,
     created_at: m.created_at || m.date || m.ts || new Date().toISOString(),
-    parent_id: m.parent_id || null,
+    parent_id: m.parent_id || m.parentId || null,
     reactions: m.reactions || {}
   }));
 }
 async function apiSend(payload){
+  // DOPASOWANIE DO messages.js:
+  // Oczekuje: { room, author, body, parentId, fileUrl }
   const r = await fetch(API_MESSAGES, {
     method:'POST',
     headers:{'Content-Type':'application/json','Accept':'application/json'},
     body: JSON.stringify({
       room: payload.room_id,
       author: payload.author,
-      text: payload.body,
-      file_url: payload.file_url || null,
-      parent_id: payload.parent_id || null
+      body: payload.body,
+      parentId: payload.parent_id || null,
+      fileUrl: payload.file_url || null
     })
   });
   if(!r.ok) throw new Error('POST /api/messages HTTP '+r.status);
   return await r.json();
 }
 async function apiUpload(file){
+  // Twój upload.js: multipart "file" -> { ok:true, url }
   const fd = new FormData();
   fd.append('file', file);
   fd.append('room', state.room);
@@ -339,7 +344,7 @@ async function loadInitial(){
   try{
     $('#conn').textContent = 'pobieram…';
     const data = await apiList(state.room);
-    state.messages = data;
+    state.messages = data.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
     state.messages.forEach(m=>state.cache.set(m.id,m));
     if(state.messages.length) state.oldestCursor = state.messages[0].created_at;
     renderMessages(true);
@@ -354,21 +359,20 @@ function startPolling(){
   state.poller = setInterval(async ()=>{
     try{
       const data = await apiList(state.room);
-      const oldLen = state.messages.length;
-      // prosta detekcja nowych (po id)
-      const known = new Set(state.messages.map(m=>m.id));
-      const merged = [...state.messages];
-      data.forEach(m=>{ if(!known.has(m.id)) merged.push(m); });
-      if(merged.length !== oldLen){
-        state.messages = merged.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+      // scal po id
+      const map = new Map(state.messages.map(m=>[m.id,m]));
+      for(const m of data){ map.set(m.id, m); }
+      const merged = [...map.values()].sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+      if(merged.length !== state.messages.length){
+        state.messages = merged;
         renderMessages(true);
         ding();
       }
-    }catch(e){ /* cicho, żeby nie spamować */ }
+    }catch(e){/* cicho */}
   }, 3000);
 }
 async function loadOlder(){
-  alert('Paginacja w górę: do wdrożenia po stronie funkcji (parametry before/limit).');
+  alert('Paginacja w górę: potrzebny parametr before/limit w funkcji messages.js (TODO).');
 }
 
 /*** WYSYŁANIE / ODP / REAKCJE LOKALNE ***/
@@ -408,9 +412,9 @@ async function sendMessage(text, fileUrl){
     await apiSend(payload);
     replyTo = null;
     $('#txt').value='';
-    // odśwież listę po zapisie
+    // szybkie odświeżenie po zapisie
     const data = await apiList(state.room);
-    state.messages = data;
+    state.messages = data.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
     state.messages.forEach(m=>state.cache.set(m.id,m));
     renderMessages(true);
   }catch(err){
@@ -426,7 +430,6 @@ $('#file').addEventListener('change', async (e)=>{
     await sendMessage('', url);
   }catch(err){
     console.error(err);
-    // awaryjnie: dla małych plików dołącz jako dataURL
     if(f.size <= 1024*1024){
       const reader=new FileReader();
       reader.onload = async ()=>{ await sendMessage('', reader.result); };
@@ -440,7 +443,6 @@ $('#file').addEventListener('change', async (e)=>{
 
 /*** PISANIE (tylko UI) ***/
 function showTyping(on){
-  const key='typing:'+state.room;
   const set = window._typingSet || new Set();
   window._typingSet = set;
   if(on) set.add(state.me); else set.delete(state.me);
@@ -477,7 +479,6 @@ async function searchMessages(){
   const bak = state.messages;
   state.messages = arr;
   renderMessages(true);
-  // po 10s przywróć pełną listę
   setTimeout(()=>{ state.messages = bak; renderMessages(false); }, 10000);
 }
 function clearSearch(){
