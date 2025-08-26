@@ -1,17 +1,171 @@
+#############################################
+# Netlify configuration for ARKON project
+# - Static multi-page site (HTML files)
+# - Serverless Functions: /api/messages, /api/upload, /api/hello
+# - No build step (publish from repo root)
+#############################################
+
 [build]
-  # nie budujemy frameworka – publikujemy root
-  publish = "/"
+  # katalog z plikami do deployu (Twoje .html są w root)
+  publish = "."
+  # brak komendy build (statyczne pliki)
+  command = ""
 
+  [build.environment]
+    NODE_VERSION = "20"
+    # Jeśli używasz wtyczki chromium lub puppeteer, cache npm przyspieszy:
+    NPM_FLAGS = "--prefer-offline --no-audit"
+    # Zostaw puste lub ustaw własne jeśli potrzebujesz:
+    # CLOUDFLARE_API_TOKEN = ""
+    # CLOUDFLARE_ZONE_ID = ""
+    # CLOUDINARY_CLOUD_NAME = ""
+    # NETLIFY_DATABASE_URL = ""
+    # NETLIFY_DATABASE_URL_UNPOOLED = ""
+
+#############################################
+# Functions (serverless)
+#############################################
 [functions]
+  # katalog z funkcjami
+  directory    = "netlify/functions"
   node_bundler = "esbuild"
+  # region możesz ustawić bliżej użytkowników (opcjonalnie):
+  # external_node_modules = ["@netlify/blobs"]
+  # included_files = [] # dołącz, jeśli funkcje czytają jakieś lokalne pliki
 
-# Proxy do funkcji
+# Konfiguracja konkretnych funkcji
+[functions."messages"]
+  # limity wg potrzeb (opcjonalnie):
+  timeout = 10
+  memory  = 256
+  # regions = ["eu-central-1"] # opcjonalnie
+
+[functions."upload"]
+  timeout = 20
+  memory  = 512
+  # regions = ["eu-central-1"] # opcjonalnie
+
+[functions."hello"]
+  timeout = 5
+  memory  = 128
+
+#############################################
+# Plugins (opcjonalne)
+#############################################
+# Jeśli faktycznie potrzebujesz headless Chromium (masz to w ustawieniach UI),
+# zostaw wpis poniżej. W przeciwnym razie możesz go usunąć.
+[[plugins]]
+  package = "netlify-plugin-chromium"
+
+#############################################
+# Redirects: mapowanie ścieżek API → Functions
+#############################################
+# Ping/demo
 [[redirects]]
   from = "/api/hello"
-  to = "/.netlify/functions/hello"
+  to   = "/.netlify/functions/hello"
   status = 200
 
+# Czat: wiadomości
 [[redirects]]
   from = "/api/messages"
-  to = "/.netlify/functions/messages"
+  to   = "/.netlify/functions/messages"
   status = 200
+
+# Upload plików (jeśli używasz funkcji upload.js)
+[[redirects]]
+  from = "/api/upload"
+  to   = "/.netlify/functions/upload"
+  status = 200
+
+#############################################
+# Security headers (global)
+#############################################
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = """
+      geolocation=(),
+      microphone=(),
+      camera=(),
+      payment=()
+    """
+    # Uwaga: poniższa CSP jest dość liberalna dla funkcji i obrazów.
+    # Dostosuj, jeśli chcesz zaostrzyć.
+    Content-Security-Policy = """
+      default-src 'self';
+      img-src 'self' data: https:;
+      media-src 'self' data: https:;
+      script-src 'self' 'unsafe-inline';
+      style-src 'self' 'unsafe-inline';
+      connect-src 'self' https:;
+      object-src 'none';
+      base-uri 'self';
+      form-action 'self'
+    """
+
+#############################################
+# CORS dla endpointów API (dostosuj origin)
+#############################################
+# Jeśli chcesz pozwolić na wywołania z dowolnego pochodzenia:
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PATCH, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+    Access-Control-Max-Age = "86400"
+
+# Jeśli wolisz ograniczyć do konkretnej domeny (zamień gwiazdkę):
+# [[headers]]
+#   for = "/api/*"
+#   [headers.values]
+#     Access-Control-Allow-Origin = "https://twoja-domena.netlify.app"
+#     Access-Control-Allow-Methods = "GET, POST, PATCH, DELETE, OPTIONS"
+#     Access-Control-Allow-Headers = "Content-Type, Authorization"
+#     Access-Control-Max-Age = "86400"
+
+#############################################
+# Cache statycznych zasobów (opcjonalnie)
+#############################################
+# Pliki długotrwale cache’owane (pod warunkiem bustowania nazwą pliku)
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Krótszy cache dla HTML
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=60"
+
+#############################################
+# Konteksty (profile) — różne ustawienia dla środowisk
+#############################################
+[context.production]
+  # opcjonalnie: inne ENV tylko dla produkcji
+  [context.production.environment]
+    NODE_ENV = "production"
+
+[context.deploy-preview]
+  # ENV tylko dla Deploy Preview (PR)
+  [context.deploy-preview.environment]
+    NODE_ENV = "development"
+
+[context.branch-deploy]
+  # ENV tylko dla Branch Deploy
+  [context.branch-deploy.environment]
+    NODE_ENV = "development"
+
+#############################################
+# (Opcjonalnie) Fallback dla SPA
+# Jeśli kiedyś zrobisz SPA na jednym pliku, odkomentuj:
+# [[redirects]]
+#   from = "/*"
+#   to   = "/index.html"
+#   status = 200
+#############################################
