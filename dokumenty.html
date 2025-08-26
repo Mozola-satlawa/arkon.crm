@@ -7,46 +7,109 @@
 <meta name="description" content="Lista dokumentów ARKON z podziałem na ogólne, prefinansowanie i dofinansowanie.">
 <style>
   :root{
-    --bg:#0b1020; --p1:#101736; --p2:#0f1a44; --ink:#e8edff; --muted:#aeb8da; --accent:#4cc9f0;
-    --ok:#2b8a57; --bad:#ff6b6b; --warn:#ffb84d; --line:#253166; --grid:#243059;
-    --btn:#243468; --btnb:#3950a5; --card:#0f1533;
+    --bg:#0a0f1e; --p1:#0f1533cc; --p2:#0c1230cc; --ink:#e9eeff; --muted:#aeb8da; --accent:#4cc9f0;
+    --ok:#2b8a57; --bad:#ff6b6b; --warn:#ffb84d; --line:#27336a; --grid:#22305f;
+    --btn:#253772; --btnb:#3c54ad; --card:#0f1533;
+    --shadow: 0 10px 30px rgba(10,15,30,.35), inset 0 1px 0 rgba(255,255,255,.03);
+    --radius: 16px;
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#f6f8ff; --p1:#ffffffcc; --p2:#f7f9ffcc; --ink:#0e1533; --muted:#536191;
+      --line:#dae2ff; --grid:#e8edff; --btn:#254a90; --btnb:#3f6ad6;
+    }
+    body{background:#eef2ff}
   }
   *{box-sizing:border-box}
   html,body{margin:0;height:100%}
-  body{background:linear-gradient(180deg,#0a0f1e,#0c1230 55%,#0a0f1e);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
-  a{color:#cfe1ff;text-decoration:none}
-  header{padding:16px;background:#11183a;border-bottom:1px solid var(--line)}
-  header h1{margin:0;font-size:22px}
+  body{
+    background:
+      radial-gradient(1200px 600px at 10% -10%, #1a2250 0%, transparent 60%),
+      radial-gradient(1200px 600px at 110% 10%, #13224a 0%, transparent 55%),
+      linear-gradient(180deg,#0a0f1e,#0c1230 55%,#0a0f1e);
+    color:var(--ink);
+    font:15px/1.55 system-ui, Segoe UI, Roboto, Arial;
+    letter-spacing: .2px;
+  }
+  a{color:#d5e4ff;text-decoration:none;transition:.2s ease color}
+  a:hover{color:#ffffff}
+  header{
+    padding:18px 16px;
+    background:linear-gradient(180deg,#11183a,#0f1533);
+    border-bottom:1px solid var(--line);
+    position:sticky;top:0;z-index:20;
+    backdrop-filter:saturate(120%) blur(8px);
+  }
+  header h1{margin:0;font-size:22px;letter-spacing:.3px}
   .small{font-size:12px;color:var(--muted)}
-  nav{background:#172142;display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:15}
-  nav a, nav button{color:#cfe1ff;text-decoration:none;padding:8px 12px;border-radius:999px;border:1px solid #2a3a75;background:transparent;cursor:pointer}
-  nav a:hover, nav button:hover{background:#223160}
+  nav{
+    background:linear-gradient(180deg,#151d44,#121a3b);
+    display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px;
+    border-bottom:1px solid var(--line);position:sticky;top:62px;z-index:19;
+    backdrop-filter:saturate(120%) blur(8px);
+  }
+  nav a, nav button{
+    color:#d5e4ff;padding:8px 14px;border-radius:999px;border:1px solid #2a3a75;
+    background:linear-gradient(180deg,#19255a,#14214e);
+    cursor:pointer;transition:.2s ease transform,.2s ease background,.2s ease border-color,.2s ease box-shadow;
+    box-shadow: 0 2px 0 rgba(0,0,0,.25);
+  }
+  nav a[aria-current="page"]{border-color:#5a73ff;box-shadow:0 0 0 2px #5a73ff33 inset}
+  nav a:hover, nav button:hover{background:#223160; transform:translateY(-1px)}
+  nav a:focus-visible, nav button:focus-visible{outline:3px solid #7bb8ff88; outline-offset:2px}
   .wrap{max-width:1360px;margin:auto;padding:16px}
-  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
-  .btn{background:var(--btn);border:1px solid var(--btnb);color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
-  .btn.ghost{background:transparent;border:1px dashed var(--btnb)}
-  .btn.bad{background:#3a1f2a;border-color:#7b3341}
-  .btn.ok{background:#194d34;border-color:var(--ok)}
-  input,select,textarea{background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:8px 10px;color:var(--ink);font:inherit}
-  textarea{min-height:70px;resize:vertical}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0}
+  .btn{
+    background:linear-gradient(180deg,#26407c,#21356a);
+    border:1px solid var(--btnb);color:#fff;border-radius:12px;padding:9px 14px;cursor:pointer;
+    transition:.2s ease transform,.2s ease box-shadow,.2s ease background;
+    box-shadow: var(--shadow);
+  }
+  .btn:hover{transform:translateY(-1px)}
+  .btn:active{transform:translateY(0)}
+  .btn.ghost{
+    background:linear-gradient(180deg,#101b44,#0c1537);
+    border:1px dashed var(--btnb);box-shadow:none;color:#d5e4ff
+  }
+  .btn.bad{background:linear-gradient(180deg,#4a2331,#3a1f2a);border-color:#7b3341}
+  .btn.ok{background:linear-gradient(180deg,#1b5b3a,#12442a);border-color:var(--ok)}
+  input,select,textarea{
+    background:#0d1530;border:1px solid #2b3a77;border-radius:12px;padding:9px 12px;color:var(--ink);font:inherit;
+    transition:.2s ease border-color,.2s ease box-shadow; min-height:38px
+  }
   input::placeholder{color:#aeb8da99}
+  input:focus-visible, select:focus-visible, textarea:focus-visible{outline:none;border-color:#7bb8ff; box-shadow:0 0 0 3px #7bb8ff33}
+  textarea{min-height:74px;resize:vertical}
   .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
-  .tag{display:inline-block;margin:2px 6px 0 0;padding:3px 8px;border:1px solid #3a4ca3;border-radius:999px;font-size:12px}
-  .grid{display:grid;gap:12px}
+  .tag{display:inline-block;margin:4px 8px 0 0;padding:6px 10px;border:1px solid #3a4ca3;border-radius:999px;font-size:12px;cursor:pointer}
+  .tag:hover{background:#1a2a66;border-color:#5a73ff}
+  .grid{display:grid;gap:14px}
   @media(min-width:1200px){ .cols-2{grid-template-columns:2fr 1fr} }
-  .card{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;padding:14px}
-  table{width:100%;border-collapse:separate;border-spacing:0}
-  th,td{padding:10px;border-bottom:1px solid var(--grid);text-align:left;vertical-align:top}
-  th{font-size:13px;color:var(--muted);white-space:nowrap}
-  td .name{display:flex;gap:10px;align-items:center}
-  .ico{width:28px;height:28px;border-radius:6px;background:#0e1538;border:1px solid #293a80;display:grid;place-items:center;font-size:16px}
+  .card{
+    background:linear-gradient(180deg,var(--p1),var(--p2));
+    border:1px solid var(--line);border-radius:var(--radius);padding:14px;
+    box-shadow: var(--shadow);
+  }
+  table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border-radius:12px}
+  thead th{
+    position:sticky; top:0; background:#121a3f; color:#c6d0ff; text-transform:uppercase; letter-spacing:.05em; font-size:12px;
+    border-bottom:1px solid var(--grid);
+  }
+  th,td{padding:11px 10px;border-bottom:1px solid var(--grid);text-align:left;vertical-align:top}
+  tbody tr:nth-child(odd){background:#0e1431}
+  tbody tr:hover{background:#121a3f}
+  th:first-child, td:first-child{padding-left:14px}
+  th:last-child, td:last-child{padding-right:14px}
+  td .name{display:flex;gap:10px;align-items:center;min-width:240px}
+  .ico{width:28px;height:28px;border-radius:8px;background:#0e1538;border:1px solid #293a80;display:grid;place-items:center;font-size:16px;box-shadow:inset 0 1px 0 #ffffff14}
   .ico.pdf{background:#2a1830;border-color:#6b2d55}
   .ico.doc{background:#16233f;border-color:#3950a5}
   .ico.xls{background:#0f2f28;border-color:#1f6b57}
   .ico.zip{background:#2c2512;border-color:#7a5f1a}
   .ico.txt{background:#1f1f2e;border-color:#53537a}
-  .star{cursor:pointer;font-size:18px;line-height:1}
-  .star.on{color:#ffd86b}
+  .star{cursor:pointer;font-size:18px;line-height:1;transition:.15s ease transform}
+  .star.on{color:#ffd86b;text-shadow:0 0 10px #ffd86b66}
+  .star:hover{transform:scale(1.1)}
   .right{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
   .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
   .muted{color:var(--muted)}
@@ -54,11 +117,14 @@
   .hint{font-size:12px;color:#aeb8da}
   .modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:60}
   .modal.open{display:flex}
-  .modal .box{width:1100px;max-width:95vw;max-height:92vh;display:flex;flex-direction:column;background:linear-gradient(180deg,#10173c,#111b48);border:1px solid #2b3a77;border-radius:12px}
+  .modal .box{
+    width:1100px;max-width:95vw;max-height:92vh;display:flex;flex-direction:column;
+    background:linear-gradient(180deg,#10173c,#111b48);border:1px solid #2b3a77;border-radius:14px; box-shadow: var(--shadow)
+  }
   .modal .hd{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid #2b3a77}
   .modal .bd{padding:0;height:80vh}
-  .modal iframe{width:100%;height:100%;border:0;background:#0b1022}
-  @media print{ nav,.toolbar,.modal{display:none!important} }
+  .modal iframe{width:100%;height:100%;border:0;background:#0b1022;border-bottom-left-radius:14px;border-bottom-right-radius:14px}
+  @media print{ nav,.toolbar,.modal{display:none!important} .card{box-shadow:none;border-color:#dde5ff} body{background:#fff} }
 </style>
 </head>
 <body>
@@ -69,19 +135,19 @@
 </header>
 
 <nav>
-  <a href="app.htm">Hub</a>
+  <a href="pulpit.html">Pulpit</a>
   <a href="dokumenty.html" aria-current="page">Dokumenty</a>
-  <button id="btnAll">Wszystkie</button>
-  <button id="btnGen">Ogólne</button>
-  <button id="btnPref">Prefinansowanie</button>
-  <button id="btnDofi">Dofinansowanie</button>
+  <button id="btnAll" type="button">Wszystkie</button>
+  <button id="btnGen" type="button">Ogólne</button>
+  <button id="btnPref" type="button">Prefinansowanie</button>
+  <button id="btnDofi" type="button">Dofinansowanie</button>
 </nav>
 
 <div class="wrap grid cols-2">
   <section class="card">
     <div class="toolbar">
-      <input id="q" placeholder="🔎 Szukaj po nazwie, opisie lub tagu…" style="min-width:260px">
-      <select id="fType" title="Typ pliku">
+      <input id="q" placeholder="🔎 Szukaj po nazwie, opisie lub tagu…" style="min-width:260px" aria-label="Szukaj dokumentów">
+      <select id="fType" title="Typ pliku" aria-label="Filtr typu pliku">
         <option value="">Typ: wszystkie</option>
         <option value="pdf">PDF</option>
         <option value="doc">DOC/DOCX</option>
@@ -89,13 +155,13 @@
         <option value="txt">TXT</option>
         <option value="zip">ZIP</option>
       </select>
-      <select id="sort">
+      <select id="sort" aria-label="Sortowanie">
         <option value="name.asc">Sort: nazwa ↑</option>
         <option value="name.desc">Sort: nazwa ↓</option>
         <option value="fav.desc">Sort: ulubione →</option>
         <option value="mod.desc">Sort: ostatnio modyfikowane</option>
       </select>
-      <span class="pill">Widocznych: <b id="countVis">0</b></span>
+      <span class="pill" aria-live="polite">Widocznych: <b id="countVis">0</b></span>
       <div class="right" style="margin-left:auto">
         <button id="btnExportCSV" class="btn ghost" type="button">CSV (lista)</button>
         <label class="btn ghost" title="Wczytaj lokalne pliki żeby pobrać ich datę modyfikacji (bez wysyłania)">
@@ -109,12 +175,12 @@
       <table id="tblDocs" role="grid" aria-label="Tabela dokumentów">
         <thead>
           <tr>
-            <th>★</th>
-            <th>Nazwa</th>
-            <th>Opis (edytowalny)</th>
-            <th>Tagi</th>
-            <th>Ost. modyfikacja</th>
-            <th>Akcje</th>
+            <th scope="col">★</th>
+            <th scope="col">Nazwa</th>
+            <th scope="col">Opis (edytowalny)</th>
+            <th scope="col">Tagi</th>
+            <th scope="col">Ost. modyfikacja</th>
+            <th scope="col">Akcje</th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
@@ -186,7 +252,7 @@ function saveNotes(){
 /* ===== Twoje pliki z podziałem na działy ===== */
 const FILES = [
   /* OGÓLNE */
-  { name:'UMOWA Z WYKONAWCĄ arkon.pdf', href:'UMOWA Z WYKONAWCĄ arkon.pdf',
+  { name:'UMOWA Z WYKONAWCĄ  arkon.pdf', href:'UMOWA Z WYKONAWCĄ  arkon.pdf',
     desc:'Wzór umowy z Wykonawcą (PDF).', tags:['umowa','ogólne','prefinansowanie','dofinansowanie'] },
   { name:'PEŁNOMOCNICTWO.docx', href:'PEŁNOMOCNICTWO.docx',
     desc:'Pełnomocnictwo do reprezentowania w programie/urzędzie.', tags:['pełnomocnictwo','ogólne','prefinansowanie','dofinansowanie'] },
@@ -293,6 +359,8 @@ function render(){
     const tdFav = document.createElement('td');
     const star = document.createElement('span');
     star.className = 'star' + (file._fav?' on':'');
+    star.setAttribute('role','button');
+    star.setAttribute('aria-label', file._fav ? 'Usuń z ulubionych' : 'Dodaj do ulubionych');
     star.textContent = file._fav ? '★' : '☆';
     star.title = file._fav ? 'Usuń z ulubionych' : 'Dodaj do ulubionych';
     star.addEventListener('click', ()=>{
@@ -309,7 +377,7 @@ function render(){
     const ext = fileExt(file.name);
     ico.className = 'ico ' + (ext==='pdf'?'pdf': (['doc','docx'].includes(ext)?'doc': (['xls','xlsx'].includes(ext)?'xls': (ext==='zip'?'zip': (ext==='txt'?'txt':'')))));
     ico.textContent = ext==='pdf'?'📄': (['doc','docx'].includes(ext)?'📝': (['xls','xlsx'].includes(ext)?'📊': (ext==='zip'?'🗜':'📄')));
-    const a = document.createElement('a'); a.href=file.href; a.textContent=file.name; a.title='Otwórz';
+    const a = document.createElement('a'); a.href=encodeURI(file.href); a.textContent=file.name; a.title='Otwórz';
     a.addEventListener('click', (e)=>{
       // PDF podgląd w modalu; inne — standardowo
       if(fileExt(file.name)==='pdf'){
@@ -343,13 +411,13 @@ function render(){
     const tdAct = document.createElement('td');
     tdAct.className='right';
     const btnOpen = document.createElement('a');
-    btnOpen.className='btn ghost'; btnOpen.href=file.href; btnOpen.target='_blank'; btnOpen.rel='noopener';
+    btnOpen.className='btn ghost'; btnOpen.href=encodeURI(file.href); btnOpen.target='_blank'; btnOpen.rel='noopener';
     btnOpen.textContent = 'Otwórz';
     btnOpen.addEventListener('click', (e)=>{
       if(fileExt(file.name)==='pdf'){ e.preventDefault(); openPreview(file); }
     });
     const btnDl = document.createElement('a');
-    btnDl.className='btn'; btnDl.href=file.href; btnDl.download=file.name; btnDl.textContent='Pobierz';
+    btnDl.className='btn'; btnDl.href=encodeURI(file.href); btnDl.download=file.name; btnDl.textContent='Pobierz';
 
     tdAct.appendChild(btnOpen);
     tdAct.appendChild(btnDl);
@@ -388,7 +456,7 @@ function buildQuickTags(){
       filter.tag = (filter.tag===tag ? '' : tag);
       render();
     });
-    if(filter.tag===tag){ btn.style.background='#1a2a66'; btn.style.borderColor='#4b65d2'; }
+    if(filter.tag===tag){ btn.style.background='#1a2a66'; btn.style.borderColor='#4b65d2'; btn.style.color='#e9eeff'; }
     box.appendChild(btn);
   });
 }
@@ -406,8 +474,8 @@ const modal = $('#modal'), mFrame = $('#mFrame'), mOpen = $('#mOpen'), mTitle = 
 $('#mClose').addEventListener('click', closePreview);
 function openPreview(file){
   mTitle.textContent = file.name;
-  mFrame.src = file.href;
-  mOpen.href = file.href;
+  mFrame.src = encodeURI(file.href);
+  mOpen.href = encodeURI(file.href);
   modal.classList.add('open');
 }
 function closePreview(){
