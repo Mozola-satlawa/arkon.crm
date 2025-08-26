@@ -1,18 +1,17 @@
 {
-  "name": "arkon-netlify-site",
+  "name": "arkon-netlify-chat",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "ARKON – statyczne strony + Netlify Functions + Netlify Blobs",
   "scripts": {
-    "start": "netlify dev",
+    "dev": "netlify dev",
+    "build": "echo \"Static only\"",
     "deploy": "netlify deploy",
     "deploy:prod": "netlify deploy --prod"
   },
   "dependencies": {
     "@netlify/blobs": "^7.0.0"
   },
-  "devDependencies": {},
   "engines": {
     "node": ">=18"
   }
