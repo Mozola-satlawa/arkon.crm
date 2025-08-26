@@ -1,38 +1,15 @@
-[build]
+
+// Netlify TOML file content preserved as a string to avoid JavaScript parse errors.
+const netlifyToml = `[build]
   publish = "."
   node_bundler = "esbuild"
 
 [functions]
-  directory = "netlify/functions"
   node_bundler = "esbuild"
-  external_node_modules = ["@netlify/blobs"]
+  directory = "netlify/functions"
 
-# === REST aliasy dla funkcji ===
-# CHAT
-[[redirects]]
-  from = "/api/messages"
-  to   = "/.netlify/functions/messages"
-  status = 200
-[[redirects]]
-  from = "/api/messages/*"
-  to   = "/.netlify/functions/messages/:splat"
-  status = 200
-[[redirects]]
-  from = "/api/upload"
-  to   = "/.netlify/functions/upload"
-  status = 200
-
-# DOCS
-[[redirects]]
-  from = "/api/docs"
-  to   = "/.netlify/functions/docs"
-  status = 200
-[[redirects]]
-  from = "/api/docs/*"
-  to   = "/.netlify/functions/docs/:splat"
-  status = 200
-
-# CONTRACTS
+# --- API aliasy ---
+# contracts
 [[redirects]]
   from = "/api/contracts"
   to   = "/.netlify/functions/contracts"
@@ -42,7 +19,17 @@
   to   = "/.netlify/functions/contracts/:splat"
   status = 200
 
-# TASKS (jeśli używasz)
+# docs
+[[redirects]]
+  from = "/api/docs"
+  to   = "/.netlify/functions/docs"
+  status = 200
+[[redirects]]
+  from = "/api/docs/*"
+  to   = "/.netlify/functions/docs/:splat"
+  status = 200
+
+# tasks
 [[redirects]]
   from = "/api/tasks"
   to   = "/.netlify/functions/tasks"
@@ -51,3 +38,19 @@
   from = "/api/tasks/*"
   to   = "/.netlify/functions/tasks/:splat"
   status = 200
+
+# messages (chat)
+[[redirects]]
+  from = "/api/messages"
+  to   = "/.netlify/functions/messages"
+  status = 200
+
+# upload (chat attachments)
+[[redirects]]
+  from = "/api/upload"
+  to   = "/.netlify/functions/upload"
+  status = 200
+`;
+
+// Export the TOML string so other scripts can write it to a .toml file or use it as needed.
+module.exports = netlifyToml;
