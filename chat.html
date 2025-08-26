@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ARKON • Komunikator (Netlify Functions)</title>
-<meta name="description" content="Czat oparty o Netlify Functions + Netlify Blobs. Pokoje, reakcje, edycja, kasowanie, załaduj starsze.">
+<title>ARKON • Komunikator (Netlify)</title>
+<meta name="description" content="Lekki komunikator ARKON z backendem Netlify Functions: pokoje, wysyłanie wiadomości, załączniki (Blobs), reakcje, prosty reload.">
 <style>
   :root{
     --bg:#0b1020; --p1:#101736; --p2:#0f1a44; --ink:#e8edff; --muted:#aeb8da; --accent:#4cc9f0;
@@ -29,41 +29,64 @@
   .topbar{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
   .meta{font-size:11px;color:#aeb8da}
   .badge{display:inline-block;padding:1px 6px;border:1px solid #5672d1;border-radius:999px;font-size:10px;background:#0e184a;color:#cfe1ff}
-  .msg-wrap{height:calc(100% - 180px);overflow:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+  .msg-wrap{height:calc(100% - 200px);overflow:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
   .day{display:flex;align-items:center;gap:10px;margin:2px 0}
   .day::before,.day::after{content:"";height:1px;background:#223160;flex:1}
   .msg{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:flex-start}
   .bubble{background:linear-gradient(180deg,#111a3c,#0f1a44);border:1px solid #2a3a75;border-radius:12px;padding:8px 10px;max-width:980px;word-break:break-word}
   .bubble.me{background:#16204d;border-color:#3d58c1}
-  .bubble .tools{display:flex;gap:6px;opacity:.9;margin-top:4px;flex-wrap:wrap}
-  .bubble .tools .btn-icon{background:transparent;border:1px solid #2d3e86;border-radius:8px;padding:2px 6px;cursor:pointer;color:#cfe1ff}
+  .bubble .tools{display:flex;gap:6px;opacity:.85;margin-top:4px}
+  .bubble .btn-icon{background:transparent;border:1px solid #2d3e86;border-radius:8px;padding:2px 6px;cursor:pointer;color:#cfe1ff}
   .bubble .file{display:inline-flex;gap:6px;align-items:center;padding:3px 6px;border:1px dashed #3a4ca3;border-radius:8px;margin-top:4px}
   .reactions{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap}
   .react{background:#0e184a;border:1px solid #3f57c1;border-radius:999px;padding:2px 6px;font-size:12px;cursor:pointer}
-  .children{margin-left:22px;margin-top:6px;border-left:1px dashed #2b3a77;padding-left:10px}
   .composer{border-top:1px solid var(--line);padding:10px;display:grid;grid-template-columns:1fr auto;gap:8px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
   .loadmore{padding:8px 10px;text-align:center;border:1px dashed #2b3a77;border-radius:10px;cursor:pointer;background:#0d1530}
   .hoverable:hover{background:var(--hover)}
   @media(max-width:1060px){ .wrap{grid-template-columns:1fr} .msg-wrap{height:50vh} }
+  a{color:#cfe1ff}
 </style>
 </head>
 <body>
 <header>
-  <h1 style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-    Komunikator • ARKON <span class="badge">Netlify</span>
-  </h1>
+  <h1 style="display:flex;align-items:center;gap:10px;margin-bottom:6px">Komunikator • ARKON <span class="badge">Netlify</span></h1>
 </header>
 
 <div class="wrap">
   <!-- LEWY PANEL -->
   <aside class="panel left" id="left">
     <div class="section">
-      <div class="meta">Pokoje</div>
+      <div class="meta">Pokoje prywatne</div>
       <div class="row" style="margin-top:6px">
-        <button class="btn ghost" data-room="global">🌍 Wspólny</button>
         <button class="btn ghost" data-room="krolowa">👑 Królowa</button>
         <button class="btn ghost" data-room="adrian">👤 Adrian</button>
         <button class="btn ghost" data-room="emil">👤 Emil</button>
+        <button class="btn ghost" data-room="global">🌍 Wspólny</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="meta">Wyszukiwanie lokalne</div>
+      <div class="row" style="margin-top:6px">
+        <input id="q" placeholder="fraza… (Enter)" />
+        <button class="btn ghost" id="btnSearch">Szukaj</button>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <select id="authorFilter" style="flex:1">
+          <option value="">— Autor —</option>
+          <option>Królowa</option><option>Adrian</option><option>Emil</option><option>Pracownik</option><option>Anon</option>
+        </select>
+        <button class="btn ghost" id="btnClear">Wyczyść</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="meta">Eksport (widoczna lista)</div>
+      <div class="row" style="margin-top:6px">
+        <button class="btn ghost" id="btnCSV">CSV</button>
+        <button class="btn ghost" id="btnJSON">JSON</button>
+        <button class="btn ghost" id="btnReload">Odśwież</button>
       </div>
     </div>
 
@@ -75,29 +98,30 @@
       </div>
       <div class="meta" id="conn" style="margin-top:6px">inicjalizacja…</div>
     </div>
-
-    <div class="section">
-      <div class="meta">Starsze wiadomości</div>
-      <div class="loadmore hoverable" id="btnOlder">⟲ Załaduj starsze…</div>
-    </div>
   </aside>
 
-  <!-- PRAWA STRONA: CZAT -->
-  <main class="panel" id="chat" style="display:flex;flex-direction:column">
+  <!-- PRAWO -->
+  <main class="panel" id="page-chat" style="display:flex;flex-direction:column">
     <div class="topbar">
       <div class="row">
         <div id="roomTitle"><b>—</b></div>
+        <span class="badge" title="Prosty reload po wysyłce">Ręczny refresh</span>
       </div>
-      <div class="row">
+      <div class="toolbar">
+        <button class="btn ghost" id="btnEmoji">😊 Emoji</button>
+        <button class="btn ghost" id="btnPickFile">📎 Załącz</button>
         <input id="file" type="file" hidden>
-        <button class="btn ghost" id="btnAttach">📎 Załącz</button>
       </div>
     </div>
 
-    <div id="msgs" class="msg-wrap" aria-live="polite"></div>
+    <div id="msgs" class="msg-wrap" aria-live="polite">
+      <div class="loadmore hoverable" id="older">⟲ Załaduj starsze…</div>
+    </div>
 
     <div class="composer">
-      <textarea id="txt" placeholder="Napisz wiadomość… (Ctrl+Enter wysyła)" rows="2"></textarea>
+      <div class="row" style="width:100%">
+        <textarea id="txt" placeholder="Napisz wiadomość… (Ctrl+Enter wysyła)" rows="2" style="flex:1"></textarea>
+      </div>
       <div class="row">
         <button id="btnSend" class="btn ok">Wyślij ▶</button>
       </div>
@@ -106,367 +130,217 @@
 </div>
 
 <script>
+(() => {
 'use strict';
 
-/* === UTIL === */
+/*** KONFIG BACKENDU (Netlify Functions) ***/
+const API = {
+  messages: '/api/messages',
+  upload:   '/api/upload'
+};
+
+/*** POMOCNICZE ***/
 const $ = s => document.querySelector(s);
 const el = (tag, attrs={}) => Object.assign(document.createElement(tag), attrs);
 const INT = new Intl.DateTimeFormat('pl-PL', { dateStyle:'short', timeStyle:'short' });
-const linkify = t => (t||'').replace(/(https?:\/\/[^\s)]+)|(www\.[^\s)]+)/gi, (m)=>{
-  const url = m.startsWith('http') ? m : 'http://' + m;
-  return '<a href="'+url+'" target="_blank" rel="noopener">'+m+'</a>';
-});
-function dayLabel(ts){ try{ return INT.format(new Date(ts)).split(',')[0]; }catch{ return ''; }}
+const csvEsc = v => { let s = v==null ? '' : String(v); if(/[;"\n]/.test(s)) s = '"' + s.replace(/"/g,'""') + '"'; return s; };
+const esc = s => (s==null ? '' : String(s)).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 
-/* === STAN === */
-const state = {
+/*** STAN ***/
+let state = {
   room: localStorage.getItem('chat_room') || 'global',
   me:   localStorage.getItem('chat_me')   || 'Pracownik',
+  messages: [],
   oldest: null,
-  list: [],
-  cache: new Map()
+  search: { q:'', author:'' }
 };
+
 $('#meName').textContent = state.me;
 $('#roomTitle').innerHTML = '<b>'+state.room.toUpperCase()+'</b>';
 $('#conn').textContent = 'gotowe';
 
-/* === API (Netlify Functions) === */
-async function apiGetMessages(room, before){
-  const url = '/api/messages?room=' + encodeURIComponent(room) + (before ? '&before=' + encodeURIComponent(before) : '');
-  const r = await fetch(url, { cache:'no-store' });
-  if(!r.ok) throw new Error('GET /api/messages HTTP ' + r.status);
-  return r.json(); // { items, oldest }
-}
-async function apiSendMessage(payload){
-  const r = await fetch('/api/messages', {
-    method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
-  });
-  if(!r.ok) throw new Error('POST /api/messages HTTP ' + r.status);
-  return r.json(); // { ok, item }
-}
-async function apiPatch(payload){
-  const r = await fetch('/api/messages', {
-    method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
-  });
-  if(!r.ok) throw new Error('PATCH /api/messages HTTP ' + r.status);
-}
-async function apiDelete(id){
-  const r = await fetch('/api/messages?id='+encodeURIComponent(id), { method:'DELETE' });
-  if(!r.ok) throw new Error('DELETE /api/messages HTTP ' + r.status);
-}
-async function apiUploadFile(file){
-  // opcjonalne: jeśli nie masz funkcji upload.js, zwróć null
-  try{
-    const fd = new FormData(); fd.append('file', file);
-    const r = await fetch('/api/upload', { method:'POST', body: fd });
-    if(!r.ok) throw new Error('POST /api/upload HTTP ' + r.status);
-    const j = await r.json();
-    return j.url || null;
-  }catch(e){
-    console.warn('Upload funkcją nieudany, pomijam:', e);
-    return null;
-  }
-}
-
-/* === RENDER === */
-function reactionBadge(emoji, count, id){
-  const span = document.createElement('span');
-  span.className = 'react';
-  span.textContent = emoji + ' ' + count;
-  span.title = 'Dodaj reakcję ' + emoji;
-  span.addEventListener('click', ()=>react(id, emoji));
-  return span;
-}
+/*** RENDER ***/
 function fileChip(url){
-  const a = document.createElement('a');
-  a.className = 'file'; a.href = url; a.target = '_blank'; a.rel='noopener';
   const name = (url||'').split('/').pop();
-  a.textContent = '📎 ' + (name || url);
-  return a;
+  const isImg = /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name||'');
+  const a = '<a class="file" href="'+esc(url)+'" target="_blank" rel="noopener">📎 '+esc(name||'plik')+'</a>';
+  const img = isImg ? '<div style="margin-top:6px"><img src="'+esc(url)+'" alt="" style="max-width:280px;border:1px solid #2b3a77;border-radius:10px"></div>' : '';
+  return a + img;
 }
-function bubbleNode(m, children){
-  const wrap = document.createElement('div');
-  wrap.className = 'msg'; wrap.id = 'm-' + m.id;
-
-  const meta = document.createElement('div');
-  meta.className = 'meta';
-  meta.textContent = (m.author===state.me ? 'Ja' : (m.author||'—'));
-  wrap.appendChild(meta);
-
-  const bubble = document.createElement('div');
-  bubble.className = 'bubble' + (m.author===state.me ? ' me' : '');
-  const body = document.createElement('div');
-  body.innerHTML = m.deleted_at ? '<i class="meta">[wiadomość usunięta]</i>' : linkify(m.body||'');
-  bubble.appendChild(body);
-
-  if(m.file_url){
-    bubble.appendChild(fileChip(m.file_url));
-  }
-
-  const tools = document.createElement('div');
-  tools.className = 'tools';
-
-  const btnReply = el('button',{ className:'btn-icon', textContent:'💬 Odpowiedz' });
-  btnReply.addEventListener('click', ()=>startReply(m.id));
-  tools.appendChild(btnReply);
-
-  ['👍','❤','🔥'].forEach(emo=>{
-    const b = el('button',{ className:'btn-icon', textContent:emo });
-    b.addEventListener('click', ()=>react(m.id, emo));
-    tools.appendChild(b);
-  });
-
-  const when = el('span',{ className:'meta' });
-  let tail = INT.format(new Date(m.created_at));
-  if(m.author===state.me) tail += ' ✓✓';
-  if(m.edited_at) tail += ' • ed.';
-  when.style.marginLeft = 'auto';
-  when.textContent = tail;
-  tools.appendChild(when);
-
-  if(m.author===state.me && !m.deleted_at){
-    const be = el('button',{ className:'btn-icon', textContent:'✎ Edytuj' });
-    be.addEventListener('click', ()=>editMsg(m.id));
-    const bd = el('button',{ className:'btn-icon', textContent:'🗑 Usuń' });
-    bd.addEventListener('click', ()=>delMsg(m.id));
-    tools.appendChild(be); tools.appendChild(bd);
-  }
-
-  bubble.appendChild(tools);
-
-  if(m.reactions && typeof m.reactions==='object'){
-    const entries = Object.entries(m.reactions).filter(([,v])=>v>0);
-    if(entries.length){
-      const box = el('div',{ className:'reactions' });
-      entries.forEach(([emo,c])=> box.appendChild(reactionBadge(emo,c,m.id)));
-      bubble.appendChild(box);
-    }
-  }
-
-  if(children && children.length){
-    const kids = el('div',{ className:'children' });
-    children.forEach(c=> kids.appendChild(bubbleNode(c, [])));
-    bubble.appendChild(kids);
-  }
-
-  wrap.appendChild(bubble);
-  return wrap;
+function reactionBadge(emoji, count){ return '<span class="react" data-r="'+emoji+'">'+emoji+' '+count+'</span>'; }
+function bubbleHtml(m){
+  const me = m.author===state.me;
+  const when = INT.format(new Date(m.created_at));
+  const reacts = (m.reactions && typeof m.reactions==='object') ? Object.entries(m.reactions).filter(([,v])=>v>0) : [];
+  const body = m.deleted_at ? '<i class="meta">[wiadomość usunięta]</i>' : esc(m.body||'').replace(/(https?:\/\/\S+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+  let html = '';
+  html += '<div class="msg" id="m-'+m.id+'">';
+  html += '  <div class="meta">'+(me?'Ja':esc(m.author||'—'))+'</div>';
+  html += '  <div class="bubble '+(me?'me':'')+'">';
+  html += '    '+body;
+  if(m.file_url) html += fileChip(m.file_url);
+  html += '    <div class="tools">';
+  html += '      <button class="btn-icon" data-react="👍" data-id="'+m.id+'">👍</button>';
+  html += '      <button class="btn-icon" data-react="❤" data-id="'+m.id+'">❤</button>';
+  html += '      <button class="btn-icon" data-react="🔥" data-id="'+m.id+'">🔥</button>';
+  html += '      <span class="meta" style="margin-left:auto">'+when+(m.edited_at?' • ed.':'')+'</span>';
+  html += '    </div>';
+  if(reacts.length) html += '    <div class="reactions">'+reacts.map(([emo,c])=>reactionBadge(emo,c)).join(' ')+'</div>';
+  html += '  </div>';
+  html += '</div>';
+  return html;
 }
-function indexByParent(list){
-  const byId=new Map(), children=new Map();
-  list.forEach(m=>{
-    byId.set(m.id, m);
-    if(m.parent_id){
-      if(!children.has(m.parent_id)) children.set(m.parent_id, []);
-      children.get(m.parent_id).push(m);
-    }
-  });
-  return { byId, children };
-}
-function renderMessages(scrollToBottom){
-  const box = $('#msgs');
-  const { children } = indexByParent(state.list);
-  const frag = document.createDocumentFragment();
-
-  // day dividers
+function render(list){
+  const msgs = $('#msgs');
+  const out = [];
   let lastDay = '';
-  state.list.filter(m=>!m.parent_id).forEach(m=>{
-    const d = dayLabel(m.created_at);
-    if(d && d !== lastDay){
-      const day = el('div', { className:'day' });
-      day.appendChild(document.createTextNode(d));
-      frag.appendChild(day); lastDay = d;
+  (list||[]).forEach(m=>{
+    const d = (m.created_at||'').slice(0,10);
+    if(d && d!==lastDay){
+      out.push('<div class="day"><span>'+esc(INT.format(new Date(m.created_at)).split(',')[0])+'</span></div>');
+      lastDay = d;
     }
-    frag.appendChild(bubbleNode(m, children.get(m.id)||[]));
+    out.push(bubbleHtml(m));
   });
+  const older = $('#older').outerHTML;
+  msgs.innerHTML = older + out.join('');
+  msgs.scrollTop = msgs.scrollHeight;
 
-  const prevScroll = box.scrollHeight - box.scrollTop;
-  box.innerHTML = '';
-  box.appendChild(frag);
-  if(scrollToBottom){
-    box.scrollTop = box.scrollHeight;
-  }else{
-    // zachowaj względną pozycję przy doładowaniu starszych
-    box.scrollTop = box.scrollHeight - prevScroll;
-  }
-}
-
-/* === LOGIKA === */
-let replyTo = null;
-function startReply(id){
-  replyTo = id;
-  const m = state.cache.get(id);
-  const preview = ↪ Odp: ${(m?.author||'—')}: ${(m?.body||'').slice(0,80)};
-  const t = $('#txt');
-  t.value = (preview + '\n' + t.value).trim() + ' ';
-  t.focus();
-}
-
-async function react(id, emo){
-  try{
-    await apiPatch({ id, reaction: emo });
-    // lokalne podbicie licznika (bez czekania)
-    const m = state.cache.get(id);
-    if(m){
-      m.reactions = m.reactions || {};
-      m.reactions[emo] = (m.reactions[emo]||0) + 1;
-      renderMessages(false);
-    }
-  }catch(e){ console.error(e); }
-}
-async function editMsg(id){
-  const m = state.cache.get(id);
-  if(!m || m.author!==state.me || m.deleted_at) return;
-  const t = prompt('Edytuj wiadomość:', m.body||''); if(t==null) return;
-  try{
-    await apiPatch({ id, body: t });
-    m.body = t; m.edited_at = new Date().toISOString();
-    renderMessages(false);
-  }catch(e){ alert('Błąd edycji: '+e.message); }
-}
-async function delMsg(id){
-  const m = state.cache.get(id);
-  if(!m || m.author!==state.me || m.deleted_at) return;
-  if(!confirm('Usunąć wiadomość?')) return;
-  try{
-    await apiDelete(id);
-    m.deleted_at = new Date().toISOString();
-    m.body = '[usunięto]';
-    renderMessages(false);
-  }catch(e){ alert('Błąd usuwania: '+e.message); }
-}
-
-async function send(text, fileUrl){
-  text = (text||'').trim();
-  if(!text && !fileUrl) return;
-  try{
-    const { item } = await apiSendMessage({
-      room: state.room,
-      author: state.me,
-      body: text,
-      parentId: replyTo,
-      fileUrl: fileUrl || null
+  // podpinamy reakcje
+  msgs.querySelectorAll('[data-react]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      const id = b.getAttribute('data-id');
+      const emoji = b.getAttribute('data-react');
+      try{
+        await fetch(API.messages, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id, reaction: emoji }) });
+        await load(true);
+      }catch(e){ console.error(e); alert('Błąd reakcji'); }
     });
-    replyTo = null;
-    $('#txt').value = '';
-    if(item){
-      state.list.push(item);
-      state.cache.set(item.id, item);
-      renderMessages(true);
-    }else{
-      // fallback: przeładuj całość
-      await loadInitial();
-    }
-  }catch(e){
-    alert('Błąd wysyłania: ' + e.message);
-  }
+  });
 }
 
-/* === ŁADOWANIE === */
-async function loadInitial(){
+/*** API ***/
+async function apiGetMessages(before){
+  const u = new URL(API.messages, location.origin);
+  u.searchParams.set('room', state.room);
+  if(before) u.searchParams.set('before', before);
+  const r = await fetch(u.toString(), { headers:{'Accept':'application/json'} });
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return r.json(); // {items, oldest}
+}
+async function apiSend({text, fileUrl, parentId}){
+  const payload = { room: state.room, author: state.me, body: text||'', fileUrl: fileUrl||null, parentId: parentId||null };
+  const r = await fetch(API.messages, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return r.json();
+}
+async function apiUpload(file){
+  const fd = new FormData();
+  fd.append('file', file);
+  const r = await fetch(API.upload, { method:'POST', body: fd });
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return r.json(); // { ok, url }
+}
+
+/*** DZIAŁANIE ***/
+async function load(keepScroll){
   try{
-    const { items, oldest } = await apiGetMessages(state.room, null);
-    state.list = Array.isArray(items) ? items : [];
-    state.cache.clear();
-    state.list.forEach(m=>state.cache.set(m.id, m));
+    const { items, oldest } = await apiGetMessages();
+    let list = items||[];
+    // lokalny filtr
+    if(state.search.author) list = list.filter(m => (m.author||'')===state.search.author);
+    if(state.search.q){
+      const rx = new RegExp(state.search.q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i');
+      list = list.filter(m => rx.test(m.body||'') || rx.test(m.file_url||''));
+    }
+    state.messages = list;
     state.oldest = oldest || null;
-    renderMessages(true);
+    render(state.messages);
   }catch(e){
-    console.error(e);
-    $('#conn').textContent = 'błąd pobierania';
+    console.error(e); alert('Błąd pobierania wiadomości');
   }
 }
 async function loadOlder(){
-  if(!state.oldest) return;
+  if(!state.oldest) { $('#older').textContent='— brak starszych —'; return; }
   try{
-    const { items, oldest } = await apiGetMessages(state.room, state.oldest);
+    const { items, oldest } = await apiGetMessages(state.oldest);
     const older = (items||[]);
-    if(!older.length){
-      $('#btnOlder').textContent = '— brak starszych —';
-      return;
-    }
-    state.list = older.concat(state.list);
-    older.forEach(m=>state.cache.set(m.id, m));
+    if(!older.length){ $('#older').textContent='— brak starszych —'; return; }
+    const combined = older.concat(state.messages);
+    state.messages = combined;
     state.oldest = oldest || state.oldest;
-    renderMessages(false);
-  }catch(e){
-    console.error(e);
-  }
+    render(state.messages);
+  }catch(e){ console.error(e); }
 }
-async function pollNewest(){
-  // dla prostoty — ściągamy od nowa; przy małej skali wystarczy
+async function sendText(){
+  const t = ($('#txt').value||'').trim();
+  if(!t) return;
   try{
-    const { items } = await apiGetMessages(state.room, null);
-    const fresh = Array.isArray(items)? items : [];
-    // proste porównanie długości/ostatniego id
-    if(fresh.length > state.list.length){
-      state.list = fresh;
-      state.cache.clear();
-      state.list.forEach(m=>state.cache.set(m.id, m));
-      renderMessages(true);
-    }
-  }catch(e){ /* cicho */ }
+    await apiSend({ text: t });
+    $('#txt').value='';
+    await load();
+  }catch(e){ console.error(e); alert('Błąd wysyłania'); }
+}
+async function sendFile(){
+  const f = $('#file').files[0];
+  if(!f) return;
+  try{
+    const up = await apiUpload(f);
+    if(!up || !up.url){ alert('Nie otrzymano URL pliku'); return; }
+    await apiSend({ text: 'Załącznik: '+(f.name||'plik'), fileUrl: up.url });
+    $('#file').value = '';
+    await load();
+  }catch(e){ console.error(e); alert('Błąd załącznika'); }
 }
 
-/* === UI: zdarzenia === */
+/*** UI BINDINGS ***/
 document.querySelectorAll('[data-room]').forEach(b=>{
   b.addEventListener('click', async ()=>{
     const id = b.getAttribute('data-room');
-    if(state.room === id) return;
-    state.room = id; localStorage.setItem('chat_room', id);
+    if(state.room===id) return;
+    state.room=id; localStorage.setItem('chat_room', id);
     $('#roomTitle').innerHTML = '<b>'+id.toUpperCase()+'</b>';
-    state.oldest = null; state.list = []; state.cache.clear();
-    $('#msgs').innerHTML = '';
-    $('#btnOlder').textContent = '⟲ Załaduj starsze…';
-    await loadInitial();
+    state.oldest=null; state.search={q:'',author:''};
+    $('#q').value=''; $('#authorFilter').value='';
+    await load();
   });
 });
 $('#btnName').addEventListener('click', ()=>{
   const n = prompt('Twój podpis (imię w czacie):', state.me) || state.me;
-  state.me = n; localStorage.setItem('chat_me', n); $('#meName').textContent = n;
+  state.me=n; localStorage.setItem('chat_me', n); $('#meName').textContent=n;
 });
-$('#btnOlder').addEventListener('click', loadOlder);
+$('#btnEmoji').addEventListener('click', ()=>{
+  const el = $('#txt');
+  el.value = (el.value||'') + ' 😊';
+  el.focus();
+});
+$('#btnPickFile').addEventListener('click', ()=>$('#file').click());
+$('#file').addEventListener('change', sendFile);
+$('#btnSend').addEventListener('click', sendText);
+$('#txt').addEventListener('keydown', (e)=>{ if(e.key==='Enter' && (e.ctrlKey||e.metaKey)){ e.preventDefault(); sendText(); }});
+$('#older').addEventListener('click', loadOlder);
+$('#btnReload').addEventListener('click', load);
 
-$('#btnSend').addEventListener('click', async ()=>{
-  const t = $('#txt').value;
-  await send(t, null);
-});
-$('#txt').addEventListener('keydown', (e)=>{
-  if(e.key==='Enter' && (e.ctrlKey||e.metaKey)){
-    e.preventDefault(); $('#btnSend').click();
-  }
-});
+$('#btnSearch').addEventListener('click', ()=>{ state.search.q = ($('#q').value||'').trim(); load(); });
+$('#q').addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ state.search.q = ($('#q').value||'').trim(); load(); }});
+$('#authorFilter').addEventListener('change', (e)=>{ state.search.author = e.target.value||''; load(); });
+$('#btnClear').addEventListener('click', ()=>{ state.search={q:'',author:''}; $('#q').value=''; $('#authorFilter').value=''; load(); });
 
-$('#btnAttach').addEventListener('click', ()=>$('#file').click());
-$('#file').addEventListener('change', async (e)=>{
-  const f = e.target.files[0]; e.target.value='';
-  if(!f) return;
-  // spróbuj przez funkcję upload
-  const url = await apiUploadFile(f);
-  if(url){
-    await send('', url);
-    return;
-  }
-  // fallback data:URL (małe pliki)
-  if(f.size <= 1024*1024){
-    const reader = new FileReader();
-    reader.onload = async ()=>{ await send('', reader.result); };
-    reader.readAsDataURL(f);
-  }else{
-    alert('Brak funkcji upload lub błąd. Plik za duży na data:URL.');
-  }
+$('#btnCSV').addEventListener('click', ()=>{
+  const rows=[['id','author','body','file','time','edited','deleted']];
+  state.messages.forEach(m=>rows.push([
+    m.id, m.author||'', m.body||'', m.file_url||'', m.created_at||'', m.edited_at||'', m.deleted_at||''
+  ]));
+  const csv = rows.map(r=>r.map(csvEsc).join(';')).join('\n');
+  const a=el('a',{href:URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})), download:'chat.csv'}); a.click();
+});
+$('#btnJSON').addEventListener('click', ()=>{
+  const a=el('a',{href:URL.createObjectURL(new Blob([JSON.stringify(state.messages,null,2)],{type:'application/json'})), download:'chat.json'}); a.click();
 });
 
-/* === START === */
-(async function init(){
-  try{
-    $('#meName').textContent = state.me;
-    await loadInitial();
-    setInterval(pollNewest, 5000); // prosty polling
-  }catch(e){
-    console.error(e);
-    $('#conn').textContent = 'błąd inicjalizacji';
-  }
+/*** START ***/
+load();
+
 })();
 </script>
 </body>
