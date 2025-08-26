@@ -1,59 +1,155 @@
-// Upload załączników do Netlify Blobs (chat-uploads)
-import { getStore } from "@netlify/blobs";
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARKON • Komunikator (Netlify Blobs)</title>
+<style>
+  :root{--bg:#0b1020;--p1:#101736;--p2:#0f1a44;--ink:#e8edff;--muted:#aeb8da;--line:#253166;--chip:#162357;--hover:#172152;--ok:#2b8a57}
+  *{box-sizing:border-box} html,body{height:100%} body{margin:0;background:linear-gradient(180deg,#0a0f1e,#0c1230 55%,#0a0f1e);color:var(--ink);font:15px/1.45 system-ui,Segoe UI,Roboto,Arial}
+  header{padding:12px 16px;border-bottom:1px solid var(--line);background:#11183a;position:sticky;top:0;z-index:5}
+  h1{margin:0;font-size:20px}
+  .wrap{max-width:1100px;margin:auto;padding:16px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:9px 12px;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px dashed #3a4ca3}
+  input,textarea{width:100%;background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:9px;color:var(--ink)}
+  .chat{border:1px solid var(--line);border-radius:12px;background:linear-gradient(180deg,var(--p1),var(--p2));padding:12px}
+  #msgs{max-height:58vh;min-height:260px;overflow:auto;display:flex;flex-direction:column;gap:10px;background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:10px}
+  .msg{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:flex-start}
+  .bub{background:linear-gradient(180deg,#111a3c,#0f1a44);border:1px solid #2a3a75;border-radius:10px;padding:8px 10px;max-width:900px;word-break:break-word}
+  .me .bub{background:#16204d;border-color:#3d58c1}
+  .meta{font-size:12px;color:#aeb8da}
+  .file{display:inline-flex;gap:6px;align-items:center;padding:3px 6px;border:1px dashed #3a4ca3;border-radius:8px;margin-top:4px}
+  .day{display:flex;align-items:center;gap:10px;margin:6px 0}
+  .day::before,.day::after{content:"";height:1px;background:#223160;flex:1}
+  .composer{display:grid;grid-template-columns:1fr auto;gap:8px}
+  .badge{display:inline-block;padding:1px 6px;border:1px solid #5672d1;border-radius:999px;font-size:10px;background:#0e184a;color:#cfe1ff}
+</style>
+</head>
+<body>
+<header>
+  <h1>Komunikator • ARKON <span class="badge">Netlify Blobs</span></h1>
+</header>
 
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST,OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type"
-};
-const j = (status, body = {}) => ({
-  statusCode: status,
-  headers: { "Content-Type": "application/json; charset=utf-8", ...CORS },
-  body: JSON.stringify(body)
-});
-const ok = (b = {}) => j(200, b);
-const bad = (m = "Bad Request") => j(400, { error: m });
+<div class="wrap">
+  <section class="chat">
+    <div class="row" style="margin-bottom:8px">
+      <input id="name" style="max-width:220px" placeholder="Podpis (domyślnie: Pracownik)">
+      <select id="room" style="max-width:220px">
+        <option value="global">🌍 Wspólny</option>
+        <option value="krolowa">👑 Królowa</option>
+        <option value="adrian">👤 Adrian</option>
+        <option value="emil">👤 Emil</option>
+      </select>
+      <button id="reload" class="btn ghost">Odśwież</button>
+    </div>
 
-const store = getStore("chat-uploads");
-const rid = (p = "") => ${p}${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)};
+    <div id="msgs" aria-live="polite"></div>
 
-export async function handler(event) {
-  if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers: CORS };
-  if (event.httpMethod !== "POST") return j(405, { error: "Method not allowed" });
+    <div class="composer" style="margin-top:8px">
+      <textarea id="txt" rows="2" placeholder="Napisz wiadomość… (Ctrl+Enter = Wyślij)"></textarea>
+      <div class="row">
+        <button id="btnFile" class="btn ghost">📎 Załącz</button>
+        <input id="file" type="file" hidden>
+        <button id="btnSend" class="btn">Wyślij ▶</button>
+      </div>
+    </div>
+  </section>
+</div>
 
-  try {
-    // Netlify Functions dostaje body (często base64). Użyjmy Web API, żeby sparsować form-data
-    const ct = event.headers["content-type"] || event.headers["Content-Type"] || "";
-    if (!ct.startsWith("multipart/form-data")) return bad("Wymagane multipart/form-data z polem 'file'");
+<script>
+(() => {
+  "use strict";
 
-    const raw = Buffer.from(event.body || "", event.isBase64Encoded ? "base64" : "utf8");
-    const req = new Request("http://local/upload", { method: "POST", headers: { "content-type": ct }, body: raw });
-    const form = await req.formData();
-    const file = form.get("file");
+  const $ = s => document.querySelector(s);
+  const msgsBox = $('#msgs'), txt = $('#txt'), file = $('#file');
+  const nameInput = $('#name'), roomSel = $('#room');
 
-    if (!file || typeof file.arrayBuffer !== "function") return bad("Pole 'file' nie znalezione");
+  const INT = new Intl.DateTimeFormat('pl-PL', { dateStyle:'short', timeStyle:'short' });
+  const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const linkify = t => String(t||'').replace(/(https?:\/\/\S+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
 
-    const room = String(form.get("room") || "global");
-    const ext = (file.name.split(".").pop() || "bin").toLowerCase();
-    const key = uploads/${room}/${new Date().toISOString().replace(/[:.]/g, "-")}-${rid()}.${ext};
+  // stan
+  nameInput.value = localStorage.getItem('chat_me') || 'Pracownik';
+  roomSel.value   = localStorage.getItem('chat_room') || 'global';
+  nameInput.addEventListener('input', () => localStorage.setItem('chat_me', nameInput.value.trim() || 'Pracownik'));
+  roomSel.addEventListener('change', () => { localStorage.setItem('chat_room', roomSel.value); load(); });
 
-    const buf = await file.arrayBuffer();
-    await store.set(key, buf, {
-      metadata: { name: file.name || "", type: file.type || "application/octet-stream", size: file.size || 0 }
-    });
-
-    // Publiczny URL do assetu w Blobs (ten sam origin)
-    const url = /.netlify/blobs/${encodeURIComponent("chat-uploads")}/${encodeURIComponent(key)};
-
-    return j(201, {
-      ok: true,
-      key,
-      url,            // frontend wstawi to jako file_url w wiadomości
-      name: file.name,
-      type: file.type || "application/octet-stream",
-      size: file.size || 0
-    });
-  } catch (e) {
-    return j(500, { error: e?.message || String(e) });
+  function fileChip(url) {
+    const name = (url||'').split('/').pop();
+    const isImg = /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name||'');
+    return (
+      '<a class="file" href="'+esc(url)+'" target="_blank" rel="noopener">📎 '+esc(name||'plik')+'</a>' +
+      (isImg ? '<div style="margin-top:6px"><img src="'+esc(url)+'" alt="" style="max-width:300px;border:1px solid #2a3a75;border-radius:8px"></div>' : '')
+    );
   }
-}
+
+  function render(messages) {
+    const me = (nameInput.value || 'Pracownik').trim() || 'Pracownik';
+    const out = [];
+    let lastDay = '';
+    (messages || []).forEach(m => {
+      const day = (m.created_at || '').slice(0,10);
+      if (day && day !== lastDay) {
+        out.push('<div class="day"><span class="meta">'+esc(INT.format(new Date(m.created_at)).split(',')[0])+'</span></div>');
+        lastDay = day;
+      }
+      const isMe = m.author === me;
+      out.push(
+        '<div class="msg '+(isMe?'me':'')+'">'+
+          '<div class="meta" style="min-width:90px">'+(isMe?'Ja':esc(m.author||'—'))+'</div>'+
+          '<div class="bub">'+
+            (m.deleted_at ? '<i class="meta">[usunięto]</i>' : linkify(esc(m.body||'')))+
+            (m.file_url ? fileChip(m.file_url) : '')+
+            '<div class="meta" style="margin-top:4px">'+INT.format(new Date(m.created_at))+(m.edited_at?' • ed.':'')+'</div>'+
+          '</div>'+
+        '</div>'
+      );
+    });
+    msgsBox.innerHTML = out.join('');
+    msgsBox.scrollTop = msgsBox.scrollHeight;
+  }
+
+  // API
+  async function apiGetMessages() {
+    const r = roomSel.value || 'global';
+    const res = await fetch('/api/messages?room='+encodeURIComponent(r));
+    if (!res.ok) throw new Error('HTTP '+res.status);
+    return res.json(); // {items:[]}
+  }
+  async function apiSend({ body, file_url }) {
+    const payload = {
+      room: roomSel.value || 'global',
+      author: (nameInput.value || 'Pracownik').trim() || 'Pracownik',
+      body: body || '',
+      file_url: file_url || null
+    };
+    const res = await fetch('/api/messages', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    if (!res.ok) throw new Error('HTTP '+res.status);
+    return res.json();
+  }
+  async function apiUpload(f) {
+    const fd = new FormData();
+    fd.append('file', f);
+    fd.append('room', roomSel.value || 'global');
+    const res = await fetch('/api/upload', { method:'POST', body: fd });
+    if (!res.ok) throw new Error('HTTP '+res.status);
+    return res.json(); // { url }
+  }
+
+  async function load() {
+    try {
+      const data = await apiGetMessages();
+      render(data.items || []);
+    } catch (e) {
+      console.error(e);
+      alert('Błąd pobierania wiadomości (sprawdź Functions)');
+    }
+  }
+
+  async function sendText() {
+    const text = (txt.value || '').trim();
+    if (!text) return;
+    try {
+      await api
