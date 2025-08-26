@@ -6,29 +6,15 @@
   node_bundler = "esbuild"
   directory = "netlify/functions"
 
-# --- API aliasy ---
-# messages (chat)
+# ===== Alias API =====
+# Chat messages
 [[redirects]]
   from = "/api/messages"
   to   = "/.netlify/functions/messages"
   status = 200
 
-# upload (chat attachments)
+# Upload (attachments)
 [[redirects]]
   from = "/api/upload"
   to   = "/.netlify/functions/upload"
   status = 200
-
-# (opcjonalnie) ładne 404 dla SPA / statycznych
-[[redirects]]
-  from = "/*"
-  to   = "/chat.html"
-  status = 200
-
-# CORS dla funkcji (bez żadnych niedomkniętych cudzysłowów)
-[[headers]]
-  for = "/.netlify/functions/*"
-  [headers.values]
-    Access-Control-Allow-Origin = "*"
-    Access-Control-Allow-Methods = "GET,POST,PUT,PATCH,DELETE,OPTIONS"
-    Access-Control-Allow-Headers = "Content-Type, Authorization"
