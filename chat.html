@@ -1,93 +1,105 @@
 <!doctype html>
 <html lang="pl">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>ARKON • Chat (Netlify)</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARKON • Komunikator (Netlify Functions)</title>
+<meta name="description" content="Czat oparty o Netlify Functions + Netlify Blobs. Pokoje, reakcje, edycja, kasowanie, załaduj starsze.">
 <style>
-  :root{--bg:#0b1020;--p1:#101736;--p2:#0f1a44;--ink:#e8edff;--line:#253166;--muted:#aeb8da;--ok:#2b8a57;--bad:#ff6b6b}
-  *{box-sizing:border-box} html,body{height:100%} body{margin:0;background:#0a0f1e;color:var(--ink);font:15px/1.5 system-ui}
-  header{background:#11183a;border-bottom:1px solid var(--line);padding:10px 12px;position:sticky;top:0;z-index:2}
-  .wrap{max-width:1200px;margin:auto;padding:12px;display:grid;gap:12px;grid-template-columns:300px 1fr}
-  .panel{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  :root{
+    --bg:#0b1020; --p1:#101736; --p2:#0f1a44; --ink:#e8edff; --muted:#aeb8da; --accent:#4cc9f0;
+    --ok:#2b8a57; --bad:#ff6b6b; --line:#253166; --chip:#162357; --card:#0f1533; --hover:#172152;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:linear-gradient(180deg,#0a0f1e,#0c1230 55%,#0a0f1e);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
+  header{padding:12px 16px;border-bottom:1px solid var(--line);background:#11183a;position:sticky;top:0;z-index:5}
+  h1{margin:0;font-size:20px}
+  .wrap{display:grid;grid-template-columns:300px 1fr;gap:12px;height:calc(100% - 58px);padding:12px;max-width:1500px;margin:auto}
+  .panel{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .left{display:flex;flex-direction:column}
   .section{padding:10px;border-bottom:1px solid var(--line)}
   .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 10px;cursor:pointer}
-  .btn.ghost{background:transparent;border-style:dashed}
-  input,select,textarea{width:100%;background:#0d1530;border:1px solid #28356c;color:var(--ink);border-radius:10px;padding:8px}
-  .msg-wrap{height:60vh;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:12px}
-  .msg{display:grid;grid-template-columns:auto 1fr;gap:8px}
-  .bubble{background:#0f1a44;border:1px solid #2a3a75;border-radius:12px;padding:8px 10px}
+  .pill{display:inline-flex;align-items:center;gap:6px;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:12px}
+  .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:9px 12px;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px dashed #3a4ca3}
+  .btn.ok{background:#194d34;border-color:var(--ok)}
+  .btn.bad{background:#42202a;border-color:#7b3341}
+  input,select,textarea{width:100%;background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:9px;color:var(--ink)}
+  .topbar{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
+  .meta{font-size:11px;color:#aeb8da}
+  .badge{display:inline-block;padding:1px 6px;border:1px solid #5672d1;border-radius:999px;font-size:10px;background:#0e184a;color:#cfe1ff}
+  .msg-wrap{height:calc(100% - 180px);overflow:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+  .day{display:flex;align-items:center;gap:10px;margin:2px 0}
+  .day::before,.day::after{content:"";height:1px;background:#223160;flex:1}
+  .msg{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:flex-start}
+  .bubble{background:linear-gradient(180deg,#111a3c,#0f1a44);border:1px solid #2a3a75;border-radius:12px;padding:8px 10px;max-width:980px;word-break:break-word}
   .bubble.me{background:#16204d;border-color:#3d58c1}
-  .meta{color:var(--muted);font-size:12px}
+  .bubble .tools{display:flex;gap:6px;opacity:.9;margin-top:4px;flex-wrap:wrap}
+  .bubble .tools .btn-icon{background:transparent;border:1px solid #2d3e86;border-radius:8px;padding:2px 6px;cursor:pointer;color:#cfe1ff}
+  .bubble .file{display:inline-flex;gap:6px;align-items:center;padding:3px 6px;border:1px dashed #3a4ca3;border-radius:8px;margin-top:4px}
+  .reactions{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap}
+  .react{background:#0e184a;border:1px solid #3f57c1;border-radius:999px;padding:2px 6px;font-size:12px;cursor:pointer}
+  .children{margin-left:22px;margin-top:6px;border-left:1px dashed #2b3a77;padding-left:10px}
   .composer{border-top:1px solid var(--line);padding:10px;display:grid;grid-template-columns:1fr auto;gap:8px}
-  .reactions{display:flex;gap:6px;margin-top:6px}
-  .chip{display:inline-flex;align-items:center;gap:6px;border:1px dashed #3a4ca3;border-radius:8px;padding:2px 6px}
-  .load{margin:8px 12px;padding:8px;border:1px dashed #3a4ca3;border-radius:10px;text-align:center;cursor:pointer}
-  @media(max-width:980px){.wrap{grid-template-columns:1fr} .msg-wrap{height:52vh}}
+  .loadmore{padding:8px 10px;text-align:center;border:1px dashed #2b3a77;border-radius:10px;cursor:pointer;background:#0d1530}
+  .hoverable:hover{background:var(--hover)}
+  @media(max-width:1060px){ .wrap{grid-template-columns:1fr} .msg-wrap{height:50vh} }
 </style>
 </head>
 <body>
 <header>
-  <div class="row">
-    <strong>ARKON • Chat (Netlify)</strong>
-    <span id="status" class="meta">–</span>
-  </div>
+  <h1 style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+    Komunikator • ARKON <span class="badge">Netlify</span>
+  </h1>
 </header>
 
 <div class="wrap">
-  <!-- LEWA -->
-  <aside class="panel">
+  <!-- LEWY PANEL -->
+  <aside class="panel left" id="left">
     <div class="section">
-      <div class="meta">Pokój</div>
+      <div class="meta">Pokoje</div>
       <div class="row" style="margin-top:6px">
-        <select id="roomSel" style="flex:1">
-          <option value="global">global</option>
-          <option value="krolowa">krolowa</option>
-          <option value="adrian">adrian</option>
-          <option value="emil">emil</option>
-        </select>
-        <button class="btn" id="saveRoom">Zapisz</button>
+        <button class="btn ghost" data-room="global">🌍 Wspólny</button>
+        <button class="btn ghost" data-room="krolowa">👑 Królowa</button>
+        <button class="btn ghost" data-room="adrian">👤 Adrian</button>
+        <button class="btn ghost" data-room="emil">👤 Emil</button>
       </div>
     </div>
+
     <div class="section">
-      <div class="meta">Ja (podpis)</div>
+      <div class="meta">Ja</div>
       <div class="row" style="margin-top:6px">
-        <input id="me" placeholder="Twoje imię" />
-        <button class="btn" id="saveMe">Zapisz</button>
+        <span class="pill">Podpis: <b id="meName">—</b></span>
+        <button class="btn ghost" id="btnName">✎ Zmień</button>
       </div>
+      <div class="meta" id="conn" style="margin-top:6px">inicjalizacja…</div>
     </div>
+
     <div class="section">
-      <div class="meta">Załącznik</div>
-      <div class="row" style="margin-top:6px">
-        <input type="file" id="file" />
-        <button class="btn ghost" id="sendFile">Wyślij plik</button>
-      </div>
-      <div id="lastFile" class="meta" style="margin-top:6px"></div>
-    </div>
-    <div class="section">
-      <div class="meta">Akcje</div>
-      <div class="row" style="margin-top:6px">
-        <button class="btn ghost" id="reload">Odśwież</button>
-        <button class="btn ghost" id="loadOlder">Starsze…</button>
-      </div>
+      <div class="meta">Starsze wiadomości</div>
+      <div class="loadmore hoverable" id="btnOlder">⟲ Załaduj starsze…</div>
     </div>
   </aside>
 
-  <!-- PRAWA -->
-  <main class="panel" style="display:flex;flex-direction:column">
-    <div class="section">
+  <!-- PRAWA STRONA: CZAT -->
+  <main class="panel" id="chat" style="display:flex;flex-direction:column">
+    <div class="topbar">
       <div class="row">
-        <strong>Pokój: <span id="roomTitle">global</span></strong>
+        <div id="roomTitle"><b>—</b></div>
+      </div>
+      <div class="row">
+        <input id="file" type="file" hidden>
+        <button class="btn ghost" id="btnAttach">📎 Załącz</button>
       </div>
     </div>
 
     <div id="msgs" class="msg-wrap" aria-live="polite"></div>
 
     <div class="composer">
-      <textarea id="txt" rows="2" placeholder="Napisz wiadomość… (Ctrl+Enter wysyła)"></textarea>
+      <textarea id="txt" placeholder="Napisz wiadomość… (Ctrl+Enter wysyła)" rows="2"></textarea>
       <div class="row">
-        <button class="btn" id="send">Wyślij ▶</button>
+        <button id="btnSend" class="btn ok">Wyślij ▶</button>
       </div>
     </div>
   </main>
@@ -96,195 +108,366 @@
 <script>
 'use strict';
 
-/* ====== PROSTE USTAWIENIA ====== */
-const API = {
-  list:  (room, cursor) => /api/messages?room=${encodeURIComponent(room)}${cursor ? '&before=' + encodeURIComponent(cursor) : ''},
-  add:   /api/messages,
-  patch: /api/messages,
-  del:   (id) => /api/messages?id=${encodeURIComponent(id)},
-  upload: /api/upload
-};
+/* === UTIL === */
+const $ = s => document.querySelector(s);
+const el = (tag, attrs={}) => Object.assign(document.createElement(tag), attrs);
+const INT = new Intl.DateTimeFormat('pl-PL', { dateStyle:'short', timeStyle:'short' });
+const linkify = t => (t||'').replace(/(https?:\/\/[^\s)]+)|(www\.[^\s)]+)/gi, (m)=>{
+  const url = m.startsWith('http') ? m : 'http://' + m;
+  return '<a href="'+url+'" target="_blank" rel="noopener">'+m+'</a>';
+});
+function dayLabel(ts){ try{ return INT.format(new Date(ts)).split(',')[0]; }catch{ return ''; }}
 
-const $ = sel => document.querySelector(sel);
-const INT = new Intl.DateTimeFormat('pl-PL',{dateStyle:'short', timeStyle:'short'});
-
-/* ====== STAN ====== */
+/* === STAN === */
 const state = {
-  room: localStorage.getItem('room') || 'global',
-  me:   localStorage.getItem('me')   || 'Pracownik',
-  oldest: null,     // znacznik do paginacji „starsze”
-  cache: new Map(), // id -> message
-  replyTo: null
+  room: localStorage.getItem('chat_room') || 'global',
+  me:   localStorage.getItem('chat_me')   || 'Pracownik',
+  oldest: null,
+  list: [],
+  cache: new Map()
 };
+$('#meName').textContent = state.me;
+$('#roomTitle').innerHTML = '<b>'+state.room.toUpperCase()+'</b>';
+$('#conn').textContent = 'gotowe';
 
-$('#roomSel').value = state.room;
-$('#roomTitle').textContent = state.room;
-$('#me').value = state.me;
-
-/* ====== RENDER ====== */
-function bubble(m){
-  const me = m.author === state.me;
-  const when = INT.format(new Date(m.created_at || Date.now()));
-  const file = m.file_url ? <div class="chip">📎 <a href="${m.file_url}" target="_blank">${m.file_url.split('/').pop()}</a></div> : '';
-  const reacts = m.reactions ? Object.entries(m.reactions).map(([k,v])=><button class="btn ghost" onclick="react('${m.id}','${k}')">${k} ${v}</button>).join(' ') : '';
-  return `
-    <div class="msg" id="m-${m.id}">
-      <div class="meta">${me?'Ja':(m.author||'—')}</div>
-      <div class="bubble ${me?'me':''}">
-        ${m.deleted_at ? <i class="meta">[usunięto]</i> : (m.body||'')}
-        ${file}
-        <div class="reactions" style="margin-top:6px">
-          <button class="btn ghost" onclick="startReply('${m.id}')">💬 Odp</button>
-          <button class="btn ghost" onclick="react('${m.id}','👍')">👍</button>
-          <button class="btn ghost" onclick="react('${m.id}','❤')">❤</button>
-          <button class="btn ghost" onclick="react('${m.id}','🔥')">🔥</button>
-          ${me && !m.deleted_at ? `<button class="btn ghost" onclick="editMsg('${m.id}')">✎</button>
-          <button class="btn ghost" onclick="delMsg('${m.id}')">🗑</button>` : ''}
-          <span class="meta" style="margin-left:auto">${when}${m.edited_at?' • ed.':''}</span>
-        </div>
-      </div>
-    </div>
-  `;
+/* === API (Netlify Functions) === */
+async function apiGetMessages(room, before){
+  const url = '/api/messages?room=' + encodeURIComponent(room) + (before ? '&before=' + encodeURIComponent(before) : '');
+  const r = await fetch(url, { cache:'no-store' });
+  if(!r.ok) throw new Error('GET /api/messages HTTP ' + r.status);
+  return r.json(); // { items, oldest }
 }
-function render(list, append=false){
-  const box = $('#msgs');
-  if(!append) box.innerHTML = '';
-  const frag = document.createElement('div');
-  list.forEach(m => {
-    state.cache.set(m.id, m);
-    frag.insertAdjacentHTML('beforeend', bubble(m));
+async function apiSendMessage(payload){
+  const r = await fetch('/api/messages', {
+    method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
   });
-  box.appendChild(frag);
-  if(!append) box.scrollTop = box.scrollHeight;
+  if(!r.ok) throw new Error('POST /api/messages HTTP ' + r.status);
+  return r.json(); // { ok, item }
 }
-
-/* ====== API HELPERS ====== */
-async function apiGet(url){
-  const r = await fetch(url);
-  if(!r.ok) throw new Error(${r.status} ${r.statusText});
-  return r.json();
-}
-async function apiSend(url, method, body, isForm=false){
-  const r = await fetch(url, {
-    method,
-    headers: isForm ? undefined : { 'Content-Type': 'application/json' },
-    body: isForm ? body : JSON.stringify(body)
+async function apiPatch(payload){
+  const r = await fetch('/api/messages', {
+    method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
   });
-  if(!r.ok) throw new Error(${method} ${url} -> ${r.status});
-  return r.json();
+  if(!r.ok) throw new Error('PATCH /api/messages HTTP ' + r.status);
 }
-
-/* ====== OPERACJE ====== */
-async function load(initial=false){
-  setStatus('Ładowanie…');
+async function apiDelete(id){
+  const r = await fetch('/api/messages?id='+encodeURIComponent(id), { method:'DELETE' });
+  if(!r.ok) throw new Error('DELETE /api/messages HTTP ' + r.status);
+}
+async function apiUploadFile(file){
+  // opcjonalne: jeśli nie masz funkcji upload.js, zwróć null
   try{
-    const data = await apiGet(API.list(state.room, initial ? null : state.oldest));
-    // Oczekujemy { items:[...], oldest:"ISO" }
-    const items = Array.isArray(data) ? data : (data.items || []);
-    if(initial){
-      state.oldest = (items[0] && items[0].created_at) || null;
-      render(items);
-    }else{
-      if(!items.length){ alert('Brak starszych.'); return; }
-      state.oldest = items[0].created_at || state.oldest;
-      render(items, true);
+    const fd = new FormData(); fd.append('file', file);
+    const r = await fetch('/api/upload', { method:'POST', body: fd });
+    if(!r.ok) throw new Error('POST /api/upload HTTP ' + r.status);
+    const j = await r.json();
+    return j.url || null;
+  }catch(e){
+    console.warn('Upload funkcją nieudany, pomijam:', e);
+    return null;
+  }
+}
+
+/* === RENDER === */
+function reactionBadge(emoji, count, id){
+  const span = document.createElement('span');
+  span.className = 'react';
+  span.textContent = emoji + ' ' + count;
+  span.title = 'Dodaj reakcję ' + emoji;
+  span.addEventListener('click', ()=>react(id, emoji));
+  return span;
+}
+function fileChip(url){
+  const a = document.createElement('a');
+  a.className = 'file'; a.href = url; a.target = '_blank'; a.rel='noopener';
+  const name = (url||'').split('/').pop();
+  a.textContent = '📎 ' + (name || url);
+  return a;
+}
+function bubbleNode(m, children){
+  const wrap = document.createElement('div');
+  wrap.className = 'msg'; wrap.id = 'm-' + m.id;
+
+  const meta = document.createElement('div');
+  meta.className = 'meta';
+  meta.textContent = (m.author===state.me ? 'Ja' : (m.author||'—'));
+  wrap.appendChild(meta);
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble' + (m.author===state.me ? ' me' : '');
+  const body = document.createElement('div');
+  body.innerHTML = m.deleted_at ? '<i class="meta">[wiadomość usunięta]</i>' : linkify(m.body||'');
+  bubble.appendChild(body);
+
+  if(m.file_url){
+    bubble.appendChild(fileChip(m.file_url));
+  }
+
+  const tools = document.createElement('div');
+  tools.className = 'tools';
+
+  const btnReply = el('button',{ className:'btn-icon', textContent:'💬 Odpowiedz' });
+  btnReply.addEventListener('click', ()=>startReply(m.id));
+  tools.appendChild(btnReply);
+
+  ['👍','❤','🔥'].forEach(emo=>{
+    const b = el('button',{ className:'btn-icon', textContent:emo });
+    b.addEventListener('click', ()=>react(m.id, emo));
+    tools.appendChild(b);
+  });
+
+  const when = el('span',{ className:'meta' });
+  let tail = INT.format(new Date(m.created_at));
+  if(m.author===state.me) tail += ' ✓✓';
+  if(m.edited_at) tail += ' • ed.';
+  when.style.marginLeft = 'auto';
+  when.textContent = tail;
+  tools.appendChild(when);
+
+  if(m.author===state.me && !m.deleted_at){
+    const be = el('button',{ className:'btn-icon', textContent:'✎ Edytuj' });
+    be.addEventListener('click', ()=>editMsg(m.id));
+    const bd = el('button',{ className:'btn-icon', textContent:'🗑 Usuń' });
+    bd.addEventListener('click', ()=>delMsg(m.id));
+    tools.appendChild(be); tools.appendChild(bd);
+  }
+
+  bubble.appendChild(tools);
+
+  if(m.reactions && typeof m.reactions==='object'){
+    const entries = Object.entries(m.reactions).filter(([,v])=>v>0);
+    if(entries.length){
+      const box = el('div',{ className:'reactions' });
+      entries.forEach(([emo,c])=> box.appendChild(reactionBadge(emo,c,m.id)));
+      bubble.appendChild(box);
     }
-    setStatus('OK');
-  }catch(e){
-    setStatus('BŁĄD: '+e.message);
-    showError('GET /api/messages ' + e.message);
+  }
+
+  if(children && children.length){
+    const kids = el('div',{ className:'children' });
+    children.forEach(c=> kids.appendChild(bubbleNode(c, [])));
+    bubble.appendChild(kids);
+  }
+
+  wrap.appendChild(bubble);
+  return wrap;
+}
+function indexByParent(list){
+  const byId=new Map(), children=new Map();
+  list.forEach(m=>{
+    byId.set(m.id, m);
+    if(m.parent_id){
+      if(!children.has(m.parent_id)) children.set(m.parent_id, []);
+      children.get(m.parent_id).push(m);
+    }
+  });
+  return { byId, children };
+}
+function renderMessages(scrollToBottom){
+  const box = $('#msgs');
+  const { children } = indexByParent(state.list);
+  const frag = document.createDocumentFragment();
+
+  // day dividers
+  let lastDay = '';
+  state.list.filter(m=>!m.parent_id).forEach(m=>{
+    const d = dayLabel(m.created_at);
+    if(d && d !== lastDay){
+      const day = el('div', { className:'day' });
+      day.appendChild(document.createTextNode(d));
+      frag.appendChild(day); lastDay = d;
+    }
+    frag.appendChild(bubbleNode(m, children.get(m.id)||[]));
+  });
+
+  const prevScroll = box.scrollHeight - box.scrollTop;
+  box.innerHTML = '';
+  box.appendChild(frag);
+  if(scrollToBottom){
+    box.scrollTop = box.scrollHeight;
+  }else{
+    // zachowaj względną pozycję przy doładowaniu starszych
+    box.scrollTop = box.scrollHeight - prevScroll;
   }
 }
-async function sendMsg(){
-  const body = $('#txt').value.trim();
-  if(!body) return;
-  try{
-    await apiSend(API.add, 'POST', { room: state.room, author: state.me, body, parentId: state.replyTo || null });
-    $('#txt').value = '';
-    state.replyTo = null;
-    await load(true);
-  }catch(e){
-    showError('POST /api/messages ' + e.message);
-  }
+
+/* === LOGIKA === */
+let replyTo = null;
+function startReply(id){
+  replyTo = id;
+  const m = state.cache.get(id);
+  const preview = ↪ Odp: ${(m?.author||'—')}: ${(m?.body||'').slice(0,80)};
+  const t = $('#txt');
+  t.value = (preview + '\n' + t.value).trim() + ' ';
+  t.focus();
 }
-async function react(id, emoji){
+
+async function react(id, emo){
   try{
-    await apiSend(API.patch, 'PATCH', { id, reaction: emoji });
-  }catch(e){
-    showError('PATCH /api/messages ' + e.message);
-  }
+    await apiPatch({ id, reaction: emo });
+    // lokalne podbicie licznika (bez czekania)
+    const m = state.cache.get(id);
+    if(m){
+      m.reactions = m.reactions || {};
+      m.reactions[emo] = (m.reactions[emo]||0) + 1;
+      renderMessages(false);
+    }
+  }catch(e){ console.error(e); }
 }
 async function editMsg(id){
-  const m = state.cache.get(id); if(!m) return;
-  const t = prompt('Edytuj:', m.body||''); if(t==null) return;
+  const m = state.cache.get(id);
+  if(!m || m.author!==state.me || m.deleted_at) return;
+  const t = prompt('Edytuj wiadomość:', m.body||''); if(t==null) return;
   try{
-    await apiSend(API.patch, 'PATCH', { id, body: t });
-    await load(true);
-  }catch(e){ showError('PATCH /api/messages ' + e.message); }
+    await apiPatch({ id, body: t });
+    m.body = t; m.edited_at = new Date().toISOString();
+    renderMessages(false);
+  }catch(e){ alert('Błąd edycji: '+e.message); }
 }
 async function delMsg(id){
+  const m = state.cache.get(id);
+  if(!m || m.author!==state.me || m.deleted_at) return;
   if(!confirm('Usunąć wiadomość?')) return;
   try{
-    await apiSend(API.del(id), 'DELETE');
-    await load(true);
-  }catch(e){ showError('DELETE /api/messages ' + e.message); }
+    await apiDelete(id);
+    m.deleted_at = new Date().toISOString();
+    m.body = '[usunięto]';
+    renderMessages(false);
+  }catch(e){ alert('Błąd usuwania: '+e.message); }
 }
-function startReply(id){
-  const m = state.cache.get(id);
-  state.replyTo = id;
-  $('#txt').value = ↪ ${m?.author||'—'}: ${(m?.body||'').slice(0,80)}\n + $('#txt').value;
-  $('#txt').focus();
-}
-async function sendFile(){
-  const inp = $('#file'); const f = inp.files[0];
-  if(!f){ alert('Wybierz plik'); return; }
-  const fd = new FormData(); fd.append('file', f);
+
+async function send(text, fileUrl){
+  text = (text||'').trim();
+  if(!text && !fileUrl) return;
   try{
-    const { url } = await apiSend(API.upload, 'POST', fd, true);
-    $('#lastFile').textContent = 'Wysłano: ' + url;
-    // Wyślij wiadomość z linkiem
-    await apiSend(API.add, 'POST', { room: state.room, author: state.me, body: '', parentId: null, fileUrl: url });
-    inp.value = '';
-    await load(true);
+    const { item } = await apiSendMessage({
+      room: state.room,
+      author: state.me,
+      body: text,
+      parentId: replyTo,
+      fileUrl: fileUrl || null
+    });
+    replyTo = null;
+    $('#txt').value = '';
+    if(item){
+      state.list.push(item);
+      state.cache.set(item.id, item);
+      renderMessages(true);
+    }else{
+      // fallback: przeładuj całość
+      await loadInitial();
+    }
   }catch(e){
-    showError('POST /api/upload ' + e.message);
+    alert('Błąd wysyłania: ' + e.message);
   }
 }
 
-/* ====== UI BINDINGS ====== */
-$('#send').addEventListener('click', sendMsg);
-$('#txt').addEventListener('keydown', e=>{
-  if(e.key==='Enter' && (e.ctrlKey||e.metaKey)){ e.preventDefault(); sendMsg(); }
-});
-$('#reload').addEventListener('click', ()=>load(true));
-$('#loadOlder').addEventListener('click', ()=>load(false));
-$('#saveRoom').addEventListener('click', ()=>{
-  state.room = $('#roomSel').value || 'global';
-  localStorage.setItem('room', state.room);
-  $('#roomTitle').textContent = state.room;
-  state.oldest = null;
-  load(true);
-});
-$('#saveMe').addEventListener('click', ()=>{
-  state.me = $('#me').value.trim() || 'Pracownik';
-  localStorage.setItem('me', state.me);
-});
-$('#sendFile').addEventListener('click', sendFile);
-
-/* ====== INFO/ERROR ====== */
-function setStatus(t){ $('#status').textContent = ' ' + t; }
-function showError(t){
-  const box = $('#msgs');
-  const div = document.createElement('div');
-  div.className = 'load';
-  div.style.borderColor = '#7b3341';
-  div.style.color = '#ffb3b3';
-  div.textContent = t;
-  box.prepend(div);
+/* === ŁADOWANIE === */
+async function loadInitial(){
+  try{
+    const { items, oldest } = await apiGetMessages(state.room, null);
+    state.list = Array.isArray(items) ? items : [];
+    state.cache.clear();
+    state.list.forEach(m=>state.cache.set(m.id, m));
+    state.oldest = oldest || null;
+    renderMessages(true);
+  }catch(e){
+    console.error(e);
+    $('#conn').textContent = 'błąd pobierania';
+  }
+}
+async function loadOlder(){
+  if(!state.oldest) return;
+  try{
+    const { items, oldest } = await apiGetMessages(state.room, state.oldest);
+    const older = (items||[]);
+    if(!older.length){
+      $('#btnOlder').textContent = '— brak starszych —';
+      return;
+    }
+    state.list = older.concat(state.list);
+    older.forEach(m=>state.cache.set(m.id, m));
+    state.oldest = oldest || state.oldest;
+    renderMessages(false);
+  }catch(e){
+    console.error(e);
+  }
+}
+async function pollNewest(){
+  // dla prostoty — ściągamy od nowa; przy małej skali wystarczy
+  try{
+    const { items } = await apiGetMessages(state.room, null);
+    const fresh = Array.isArray(items)? items : [];
+    // proste porównanie długości/ostatniego id
+    if(fresh.length > state.list.length){
+      state.list = fresh;
+      state.cache.clear();
+      state.list.forEach(m=>state.cache.set(m.id, m));
+      renderMessages(true);
+    }
+  }catch(e){ /* cicho */ }
 }
 
-/* ====== START ====== */
-load(true);
+/* === UI: zdarzenia === */
+document.querySelectorAll('[data-room]').forEach(b=>{
+  b.addEventListener('click', async ()=>{
+    const id = b.getAttribute('data-room');
+    if(state.room === id) return;
+    state.room = id; localStorage.setItem('chat_room', id);
+    $('#roomTitle').innerHTML = '<b>'+id.toUpperCase()+'</b>';
+    state.oldest = null; state.list = []; state.cache.clear();
+    $('#msgs').innerHTML = '';
+    $('#btnOlder').textContent = '⟲ Załaduj starsze…';
+    await loadInitial();
+  });
+});
+$('#btnName').addEventListener('click', ()=>{
+  const n = prompt('Twój podpis (imię w czacie):', state.me) || state.me;
+  state.me = n; localStorage.setItem('chat_me', n); $('#meName').textContent = n;
+});
+$('#btnOlder').addEventListener('click', loadOlder);
+
+$('#btnSend').addEventListener('click', async ()=>{
+  const t = $('#txt').value;
+  await send(t, null);
+});
+$('#txt').addEventListener('keydown', (e)=>{
+  if(e.key==='Enter' && (e.ctrlKey||e.metaKey)){
+    e.preventDefault(); $('#btnSend').click();
+  }
+});
+
+$('#btnAttach').addEventListener('click', ()=>$('#file').click());
+$('#file').addEventListener('change', async (e)=>{
+  const f = e.target.files[0]; e.target.value='';
+  if(!f) return;
+  // spróbuj przez funkcję upload
+  const url = await apiUploadFile(f);
+  if(url){
+    await send('', url);
+    return;
+  }
+  // fallback data:URL (małe pliki)
+  if(f.size <= 1024*1024){
+    const reader = new FileReader();
+    reader.onload = async ()=>{ await send('', reader.result); };
+    reader.readAsDataURL(f);
+  }else{
+    alert('Brak funkcji upload lub błąd. Plik za duży na data:URL.');
+  }
+});
+
+/* === START === */
+(async function init(){
+  try{
+    $('#meName').textContent = state.me;
+    await loadInitial();
+    setInterval(pollNewest, 5000); // prosty polling
+  }catch(e){
+    console.error(e);
+    $('#conn').textContent = 'błąd inicjalizacji';
+  }
+})();
 </script>
 </body>
 </html>
