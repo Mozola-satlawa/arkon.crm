@@ -1,9 +1,19 @@
 {
-  "name": "arkon-netlify-api",
+  "name": "arkon-netlify-site",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=18" },
+  "description": "ARKON – statyczne strony + Netlify Functions + Netlify Blobs",
+  "scripts": {
+    "start": "netlify dev",
+    "deploy": "netlify deploy",
+    "deploy:prod": "netlify deploy --prod"
+  },
   "dependencies": {
-    "@netlify/blobs": "^8.0.0"
+    "@netlify/blobs": "^7.0.0"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18"
   }
 }
