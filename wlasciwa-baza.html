@@ -1,0 +1,262 @@
+doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARKON — Baza klientów</title>
+<meta name="description" content="Baza klientów ARKON CRM: podgląd, dodawanie, edycja, wyszukiwanie, import/eksport. Współdzieli dane z klienci.html.">
+<style>
+  :root{ --bg:#0b1020; --p1:#121a34; --p2:#172142; --ink:#e8edff; --muted:#aeb8da; --accent:#4cc9f0; --ok:#2b8a57; --grid:#243059; --card:#0f1533; --line:#1c2750; --bad:#ff6b6b; }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#0a0f1e,#0c1230 60%,#0a0f1e);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
+  header{padding:16px;background:#11183a;border-bottom:1px solid var(--line)}
+  header h1{margin:0;font-size:22px}
+  nav{background:#172142;display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line)}
+  nav a{color:#cfe1ff;text-decoration:none;padding:8px 12px;border-radius:999px;border:1px solid #2a3a75}
+  nav a:hover{background:#223160}
+  .wrap{max-width:1280px;margin:auto;padding:16px}
+
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+  .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px dashed #3a4ca3}
+  .btn.bad{background:#3a1f2a;border-color:#7b3341}
+  .btn.ok{background:#194d34;border-color:var(--ok)}
+  input,select,textarea{background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:8px 10px;color:var(--ink);font:inherit}
+  input::placeholder{color:#aeb8da99}
+  textarea{min-height:80px;resize:vertical}
+
+  .card{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;padding:14px}
+  table{width:100%;border-collapse:separate;border-spacing:0}
+  th,td{padding:10px;border-bottom:1px solid var(--grid);text-align:left;vertical-align:top}
+  th{font-size:13px;color:var(--muted)}
+  .small{font-size:12px;color:#aeb8da}
+  .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
+
+  /* Drawer */
+  .drawer{position:fixed;right:0;top:0;height:100%;width:520px;max-width:100%;background:linear-gradient(180deg,#0e1433,#0e173d);border-left:1px solid #2b3a77;box-shadow:-20px 0 60px #0008;transform:translateX(100%);transition:.25s;z-index:50;overflow:auto}
+  .drawer.open{transform:none}
+  .drawer .hd{position:sticky;top:0;background:#101a45;border-bottom:1px solid #2b3a77;padding:12px}
+  .drawer .bd{padding:12px}
+  .drawer h3{margin:0 0 6px 0}
+  .kv{display:grid;grid-template-columns:140px 1fr;gap:10px;align-items:center}
+  .kv label{font-size:13px;color:#aeb8da}
+  .kv input,.kv select,.kv textarea{width:100%}
+
+  @media print{ nav,.toolbar,.drawer{display:none!important} }
+</style>
+</head>
+<body>
+<header>
+  <h1>Baza klientów • ARKON CRM</h1>
+  <div class="small">Ta strona współdzieli dane z <b>klienci.html</b> (localStorage: <code>arkon_clients_v1</code>).</div>
+</header>
+
+<nav>
+  <a href="index.html">Pulpit</a>
+  <a href="kalkulator.html" target="_blank" rel="noopener">Kalkulator</a>
+  <a href="komponenty.html">Komponenty</a>
+  <a href="dokumenty.html">Dokumenty</a>
+  <a href="upload.html">Przesył plików</a>
+  <a href="chat.html">Komunikator</a>
+  <a href="ustawienia.html">Ustawienia</a>
+  <a href="lidy.html">Lidy</a>
+  <a href="klienci.html">Klienci (zaaw.)</a>
+</nav>
+
+<div class="wrap">
+  <div class="toolbar">
+    <button id="btnAdd" class="btn ok">+ Nowy klient</button>
+    <button id="btnExport" class="btn ghost">Eksport JSON</button>
+    <label class="btn ghost">Import JSON <input id="fileIn" type="file" accept="application/json" hidden></label>
+    <span class="pill">Łącznie: <b id="countAll">0</b></span>
+    <span class="pill">Widocznych: <b id="countVis">0</b></span>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <input id="q" placeholder="🔎 Szukaj: nazwa, e-mail, telefon, tag…" style="min-width:260px">
+      <select id="fStatus">
+        <option value="">Status (wszystkie)</option>
+        <option>LEAD</option><option>ZAPYTANIE</option><option>W TOKU</option><option>KLIENT</option><option>UTRACONY</option>
+      </select>
+      <button id="btnClear" class="btn ghost">Wyczyść</button>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px;overflow:auto">
+    <table>
+      <thead>
+        <tr><th>Akcje</th><th>Nazwa</th><th>Status</th><th>Kontakt</th><th>Adres</th><th>Tagi</th></tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Drawer -->
+<aside id="drawer" class="drawer">
+  <div class="hd">
+    <div style="display:flex;gap:8px;justify-content:space-between;align-items:center">
+      <h3 style="margin:0">Edycja klienta</h3>
+      <div>
+        <button id="btnClose" class="btn ghost" type="button">Zamknij</button>
+        <button id="btnDel" class="btn bad" type="button">Usuń</button>
+      </div>
+    </div>
+  </div>
+  <div class="bd">
+    <div class="kv">
+      <label>Nazwa</label><input id="e_name" placeholder="np. Jan Kowalski / Firma XYZ">
+      <label>Status</label>
+      <select id="e_status">
+        <option>LEAD</option><option>ZAPYTANIE</option><option>W TOKU</option><option>KLIENT</option><option>UTRACONY</option>
+      </select>
+      <label>E-mail</label><input id="e_email" placeholder="email@domena.pl">
+      <label>Telefon</label><input id="e_phone" placeholder="+48 …">
+      <label>Adres</label><input id="e_addr" placeholder="ulica, miasto">
+      <label>Tagi (po przecinku)</label><input id="e_tags" placeholder="pompa, fotowoltaika">
+      <label>Notatki</label><textarea id="e_notes" placeholder="Ważne uzgodnienia, terminy, itp."></textarea>
+    </div>
+  </div>
+</aside>
+
+<script>
+'use strict';
+
+/* helpers */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
+const fmtDate = ts => new Date(ts).toLocaleString('pl-PL');
+const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+/* storage keys (wspólne z klienci.html) */
+const LS = { clients:'arkon_clients_v1' };
+
+/* state */
+let clients = load(LS.clients, []);
+let filter = { q:'', status:'' };
+let openId = null;
+
+/* seed (jeśli pusto) */
+if(!clients.length){
+  clients = [
+    { id:uid(), created:Date.now()-86400000, name:'Jan Kowalski', status:'LEAD', email:'jan@kowalski.pl', phone:'+48 500 000 111', address:'Przemków', tags:['pompa'], notes:'' },
+    { id:uid(), created:Date.now()-43200000, name:'Firma XYZ Sp. z o.o.', status:'W TOKU', email:'biuro@xyz.pl', phone:'+48 600 100 200', address:'Legnica', tags:['fotowoltaika'], notes:'' }
+  ];
+  save();
+}
+
+/* init UI */
+$('#btnAdd').addEventListener('click', ()=>{ createClient(); });
+$('#btnExport').addEventListener('click', exportJSON);
+$('#fileIn').addEventListener('change', e=>{ const f=e.target.files[0]; if(f) importJSON(f); e.target.value=''; });
+$('#q').addEventListener('input', e=>{ filter.q=e.target.value.trim().toLowerCase(); render(); });
+$('#fStatus').addEventListener('change', e=>{ filter.status=e.target.value; render(); });
+$('#btnClear').addEventListener('click', ()=>{ filter={q:'',status:''}; $('#q').value=''; $('#fStatus').value=''; render(); });
+
+$('#btnClose').addEventListener('click', closeDrawer);
+$('#btnDel').addEventListener('click', ()=>{ if(openId && confirm('Usunąć klienta?')) deleteClient(openId); });
+
+/* load/save */
+function load(key, fallback){ try{return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback));}catch{return fallback;} }
+function save(){ localStorage.setItem(LS.clients, JSON.stringify(clients)); render(); }
+
+/* rendering */
+function render(){
+  const tb = $('#tbody'); tb.innerHTML='';
+  let rows = clients.slice();
+  if(filter.q){
+    rows = rows.filter(c=>[c.name,c.email,c.phone,c.address,(c.tags||[]).join(' ')].join(' ').toLowerCase().includes(filter.q));
+  }
+  if(filter.status){ rows = rows.filter(c=>c.status===filter.status); }
+
+  $('#countAll').textContent = clients.length;
+  $('#countVis').textContent = rows.length;
+
+  rows.sort((a,b)=> (b.created||0)-(a.created||0));
+
+  rows.forEach(c=>{
+    const tr=document.createElement('tr');
+    const tagsHtml=(c.tags||[]).map(t=>'<span class="pill">'+esc(t)+'</span>').join('');
+    tr.innerHTML = \`
+      <td>
+        <button class="btn ghost open" data-id="\${c.id}" type="button">Edytuj</button>
+      </td>
+      <td><b>\${esc(c.name||'—')}</b><div class="small">\${fmtDate(c.created||Date.now())}</div></td>
+      <td>\${esc(c.status||'—')}</td>
+      <td>\${esc(c.email||'')}<div class="small">\${esc(c.phone||'')}</div></td>
+      <td>\${esc(c.address||'')}</td>
+      <td>\${tagsHtml}</td>
+    \`;
+    tr.querySelector('.open').addEventListener('click', ()=>openDrawer(c.id));
+    tb.appendChild(tr);
+  });
+}
+render();
+
+/* CRUD */
+function createClient(){
+  const c = { id:uid(), created:Date.now(), name:'Nowy klient', status:'LEAD', email:'', phone:'', address:'', tags:[], notes:'' };
+  clients.unshift(c); save(); openDrawer(c.id);
+}
+function deleteClient(id){
+  const i = clients.findIndex(x=>x.id===id);
+  if(i>=0){ clients.splice(i,1); save(); closeDrawer(); }
+}
+
+/* Drawer */
+const drawer = $('#drawer');
+function openDrawer(id){
+  openId=id; drawer.classList.add('open');
+  const c = clients.find(x=>x.id===id); if(!c) return;
+
+  $('#e_name').value   = c.name||'';
+  $('#e_status').value = c.status||'LEAD';
+  $('#e_email').value  = c.email||'';
+  $('#e_phone').value  = c.phone||'';
+  $('#e_addr').value   = c.address||'';
+  $('#e_tags').value   = (c.tags||[]).join(', ');
+  $('#e_notes').value  = c.notes||'';
+
+  bindEditor();
+}
+function closeDrawer(){ drawer.classList.remove('open'); openId=null; }
+
+function bindEditor(){
+  ['#e_name','#e_email','#e_phone','#e_addr','#e_tags','#e_notes'].forEach(sel=>{
+    const el=$(sel); el.oninput = debounce(saveEditor,150);
+  });
+  $('#e_status').onchange = saveEditor;
+}
+function saveEditor(){
+  if(!openId) return;
+  const c = clients.find(x=>x.id===openId); if(!c) return;
+  c.name   = $('#e_name').value.trim();
+  c.status = $('#e_status').value;
+  c.email  = $('#e_email').value.trim();
+  c.phone  = $('#e_phone').value.trim();
+  c.address= $('#e_addr').value.trim();
+  c.tags   = $('#e_tags').value.split(',').map(s=>s.trim()).filter(Boolean);
+  c.notes  = $('#e_notes').value;
+  save();
+}
+
+/* export/import */
+function exportJSON(){
+  const blob = new Blob([JSON.stringify({clients},null,2)], {type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='arkon_baza_klientow.json'; a.click(); URL.revokeObjectURL(a.href);
+}
+async function importJSON(file){
+  try{
+    const txt=await file.text(); const data=JSON.parse(txt);
+    if(!data || !Array.isArray(data.clients)) throw new Error('Zły format');
+    clients = data.clients; save(); alert('Zaimportowano.');
+  }catch(e){ alert('Błąd importu: '+(e.message||e)); }
+}
+
+/* debounce */
+function debounce(fn,ms){ let t; return function(){ const a=arguments; clearTimeout(t); t=setTimeout(()=>fn.apply(null,a),ms||180); }; }
+</script>
+</body>
+</html>
