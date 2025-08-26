@@ -1,105 +1,123 @@
-// netlify/functions/messages.js
-import { getStore } from '@netlify/blobs';
 
-const store = getStore('chat-messages'); // 1 "tabela" w Blobs
-const headers = {
-  'Content-Type': 'application/json; charset=utf-8',
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type'
+import { getStore } from "@netlify/blobs";
+
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type"
 };
+const json = (status, body) => ({
+  statusCode: status,
+  headers: { "Content-Type": "application/json; charset=utf-8", ...CORS },
+  body: JSON.stringify(body)
+});
 
-export default async (req) => {
-  if (req.method === 'OPTIONS') return new Response('', { headers, status: 204 });
+export async function handler(event) {
+  if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers: CORS };
+
+  const store = getStore("chat-messages");
 
   try {
-    if (req.method === 'GET') {
-      const url = new URL(req.url);
-      const room = url.searchParams.get('room') || 'global';
-      const before = url.searchParams.get('before'); // ISO (opcjonalnie)
+    // LIST
+    if (event.httpMethod === "GET") {
+      const url = new URL(event.rawUrl || http://x${event.path}${event.queryString ? "?" + event.queryString : ""});
+      const room = url.searchParams.get("room") || "global";
+      const before = url.searchParams.get("before"); // ISO
 
-      // klucze w formacie: room/<room>/<timestamp>-<id>.json
       const prefix = room/${room}/;
-      // pobierz wszystkie (prosto, do 1000); można potem paginować ręcznie
       const { blobs } = await store.list({ prefix });
-      // posortuj rosnąco po ts
       const items = [];
-      for (const b of blobs) {
-        const key = b.key; // room/room/ts-id.json
-        const body = await store.get(key, { type: 'json' });
-        if (!body) continue;
-        if (before && body.created_at >= before) continue; // chcemy starsze
-        items.push(body);
+
+      for (const b of blobs || []) {
+        const data = await store.get(b.key, { type: "json" });
+        if (!data) continue;
+        if (before && (data.created_at || "") >= before) continue; // jeśli chcemy tylko starsze
+        items.push(data);
       }
-      items.sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
+
+      items.sort((a, b) => String(a.created_at || "").localeCompare(String(b.created_at || "")));
       const oldest = items[0]?.created_at || null;
-      return json({ items, oldest });
+      return json(200, { items, oldest });
     }
 
-    if (req.method === 'POST') {
-      const { room='global', author='Anon', body='', parentId=null, fileUrl=null } = await req.json();
+    // CREATE
+    if (event.httpMethod === "POST") {
+      if (!event.body) return json(400, { ok: false, error: "Brak body" });
+      let payload = {};
+      try { payload = JSON.parse(event.body); } catch { return json(400, { ok: false, error: "Zły JSON" }); }
+
+      const room = payload.room || "global";
       const now = new Date().toISOString();
       const id = ${Date.now().toString(36)}_${crypto.randomUUID()};
-      const item = { id, room_id: room, author, body, parent_id: parentId, file_url: fileUrl, created_at: now, reactions:{} };
+      const item = {
+        id,
+        room_id: room,
+        author: payload.author || "Anon",
+        body: payload.body || "",
+        parent_id: payload.parentId || null,
+        file_url: payload.fileUrl || null,
+        created_at: now,
+        reactions: {}
+      };
       const key = room/${room}/${now}-${id}.json;
       await store.setJSON(key, item);
-      return json({ ok:true, item }, 201);
+      return json(201, { ok: true, item });
     }
 
-    if (req.method === 'PATCH') {
-      const { id, body, reaction } = await req.json();
-      if (!id) return json({ ok:false, error:'id required' }, 400);
-      // znajdź klucz po id (przelatujemy listę; dla prostoty)
-      const { blobs } = await store.list({ prefix: 'room/' , paginate: true });
-      let foundKey = null, data = null;
-      for await (const page of blobs) {
-        for (const b of page.blobs || []) {
-          const item = await store.get(b.key, { type: 'json' });
-          if (item?.id === id) { foundKey = b.key; data = item; break; }
-        }
-        if (foundKey) break;
-      }
-      if (!foundKey || !data) return json({ ok:false, error:'not found' }, 404);
+    // PATCH (edit / reaction)
+    if (event.httpMethod === "PATCH") {
+      if (!event.body) return json(400, { ok: false, error: "Brak body" });
+      let payload = {};
+      try { payload = JSON.parse(event.body); } catch { return json(400, { ok: false, error: "Zły JSON" }); }
 
-      if (typeof body === 'string') {
-        data.body = body;
+      const id = payload.id;
+      if (!id) return json(400, { ok: false, error: "id required" });
+
+      // znajdź klucz po id
+      const { blobs } = await store.list({ prefix: "room/" });
+      let foundKey = null;
+      let data = null;
+      for (const b of blobs || []) {
+        const item = await store.get(b.key, { type: "json" });
+        if (item?.id === id) { foundKey = b.key; data = item; break; }
+      }
+      if (!foundKey || !data) return json(404, { ok: false, error: "not found" });
+
+      if (typeof payload.body === "string") {
+        data.body = payload.body;
         data.edited_at = new Date().toISOString();
       }
-      if (reaction) {
+      if (payload.reaction) {
         data.reactions = data.reactions || {};
-        data.reactions[reaction] = (data.reactions[reaction] || 0) + 1;
+        data.reactions[payload.reaction] = (data.reactions[payload.reaction] || 0) + 1;
       }
       await store.setJSON(foundKey, data);
-      return json({ ok:true });
+      return json(200, { ok: true });
     }
 
-    if (req.method === 'DELETE') {
-      const url = new URL(req.url);
-      const id = url.searchParams.get('id');
-      if (!id) return json({ ok:false, error:'id required' }, 400);
+    // DELETE (soft delete)
+    if (event.httpMethod === "DELETE") {
+      const url = new URL(event.rawUrl || http://x${event.path}${event.queryString ? "?" + event.queryString : ""});
+      const id = url.searchParams.get("id");
+      if (!id) return json(400, { ok: false, error: "id required" });
 
-      // jak wyżej: odszukaj klucz po id i oznacz jako usunięte
-      const { blobs } = await store.list({ prefix: 'room/', paginate: true });
-      let foundKey = null, data = null;
-      for await (const page of blobs) {
-        for (const b of page.blobs || []) {
-          const item = await store.get(b.key, { type: 'json' });
-          if (item?.id === id) { foundKey = b.key; data = item; break; }
-        }
-        if (foundKey) break;
+      const { blobs } = await store.list({ prefix: "room/" });
+      let foundKey = null;
+      let data = null;
+      for (const b of blobs || []) {
+        const item = await store.get(b.key, { type: "json" });
+        if (item?.id === id) { foundKey = b.key; data = item; break; }
       }
-      if (!foundKey || !data) return json({ ok:false, error:'not found' }, 404);
+      if (!foundKey || !data) return json(404, { ok: false, error: "not found" });
 
       data.deleted_at = new Date().toISOString();
-      data.body = '[usunięto]';
+      data.body = "[usunięto]";
       await store.setJSON(foundKey, data);
-      return json({ ok:true });
+      return json(200, { ok: true });
     }
 
-    return json({ ok:false, error:'Method not allowed' }, 405);
+    return json(405, { ok: false, error: "Method Not Allowed" });
   } catch (e) {
-    return json({ ok:false, error: e?.message || String(e) }, 500);
+    return json(500, { ok: false, error: e?.message || String(e) });
   }
-};
-
-function json(obj, status=200){ return new Response(JSON.stringify(obj), { status, headers }); }
+}
