@@ -1,18 +1,4 @@
-# Build a single self-contained HTML file that organizes the user's documents
-# into three categories per their instruction:
-# - ogólne
-# - prefinansowanie
-# - dofinansowanie
-#
-# Filenames are taken exactly as listed from the user's repo listing.
-# NOTE on diacritics: links use the exact Unicode filenames provided.
-# On some hosts, NFD/NFC normalization can break matching even if the
-# string looks the same. If any link 404s, consider renaming the physical
-# file to plain ASCII and updating the HREF in this file accordingly.
-#
-# The file is saved as /mnt/data/dokumenty_kategorie.html
-
-html = r"""<!doctype html>
+<!doctype html>
 <html lang="pl">
 <head>
 <meta charset="utf-8">
@@ -166,7 +152,7 @@ html = r"""<!doctype html>
         <button id="mClose" class="btn" type="button">Zamknij</button>
       </div>
     </div>
-    <div class="bd"><iframe id="mFrame" src="" title="Podgląd dokumentu"></iframe></div>
+    <div class="bd"><iframe id="mFrame" src="about:blank" title="Podgląd dokumentu"></iframe></div>
   </div>
 </div>
 
@@ -238,7 +224,7 @@ if(usp.get('tag')){ filter.tag = usp.get('tag'); }
 $('#q').addEventListener('input', e=>{ filter.q=e.target.value; render(); });
 $('#fType').addEventListener('change', e=>{ filter.type=e.target.value; render(); });
 $('#sort').addEventListener('change', e=>{ filter.sort=e.target.value; render(); });
-$('#btnReset').addEventListener('click', ()=>{
+$('#btnReset').addEventListener('click', ()=>{ 
   if(!confirm('Wyczyścić lokalne opisy, tagi i ulubione?')) return;
   notes = {}; saveNotes(); render();
 });
@@ -489,10 +475,4 @@ function init(){
 init();
 </script>
 </body>
-</html>"""
-
-out_path = "/mnt/data/dokumenty_kategorie.html"
-with open(out_path, "w", encoding="utf-8") as f:
-    f.write(html)
-
-out_path
+</html>
