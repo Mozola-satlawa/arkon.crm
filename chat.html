@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="pl">
 <head>
@@ -8,12 +7,9 @@
 <meta name="description" content="Komunikator ARKON na Netlify Functions + Blobs: pokoje, emoji, załączniki, wątki, eksport, router.">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <style>
-  :root{
-    --bg:#0b1020; --p1:#101736; --p2:#0f1a44; --ink:#e8edff; --muted:#aeb8da; --accent:#4cc9f0;
-    --ok:#2b8a57; --bad:#ff6b6b; --line:#253166; --chip:#162357; --card:#0f1533; --hover:#172152;
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%}
+  :root{ --bg:#0b1020; --p1:#101736; --p2:#0f1a44; --ink:#e8edff; --muted:#aeb8da; --accent:#4cc9f0;
+    --ok:#2b8a57; --bad:#ff6b6b; --line:#253166; --chip:#162357; --card:#0f1533; --hover:#172152; }
+  *{box-sizing:border-box} html,body{height:100%}
   body{margin:0;background:linear-gradient(180deg,#0a0f1e,#0c1230 55%,#0a0f1e);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
   header{padding:12px 16px;border-bottom:1px solid var(--line);background:#11183a;position:sticky;top:0;z-index:5}
   h1{margin:0;font-size:20px}
@@ -21,7 +17,6 @@
   .panel{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;overflow:hidden}
   .left{display:flex;flex-direction:column}
   .section{padding:10px;border-bottom:1px solid var(--line)}
-  .list{overflow:auto;min-height:120px;max-height:38vh}
   .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .pill{display:inline-flex;align-items:center;gap:6px;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:12px}
   .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:9px 12px;cursor:pointer}
@@ -51,8 +46,6 @@
   .tab.active{background:#14225a}
   .typing{font-size:12px;color:#9cc3ff}
   .presence{display:flex;gap:6px;flex-wrap:wrap}
-  .dot{width:8px;height:8px;border-radius:50%;background:#4ade80;display:inline-block}
-  .search{display:grid;grid-template-columns:1fr auto;gap:6px}
   .loadmore{padding:8px 10px;text-align:center;border:1px dashed #2b3a77;border-radius:10px;cursor:pointer;background:#0d1530}
   .hoverable:hover{background:var(--hover)}
   @media(max-width:1060px){ .wrap{grid-template-columns:1fr} .msg-wrap{height:50vh} }
@@ -86,8 +79,8 @@
 
     <div class="section">
       <div class="meta">Wyszukiwanie</div>
-      <div class="search" style="margin-top:6px">
-        <input id="q" placeholder="fraza… (Enter)" />
+      <div class="row" style="margin-top:6px">
+        <input id="q" placeholder="fraza… (Enter)">
         <button class="btn ghost" onclick="searchMessages()">Szukaj</button>
       </div>
       <div class="row" style="margin-top:6px">
@@ -101,7 +94,6 @@
 
     <div class="section">
       <div class="meta">Online w pokoju</div>
-      <div id="presence" class="presence" style="margin-top:6px"></div>
       <div id="typing" class="typing" style="margin-top:4px"></div>
     </div>
 
@@ -124,7 +116,7 @@
     </div>
   </aside>
 
-  <!-- PRAWO: STRONY -->
+  <!-- PRAWO: CZAT -->
   <main class="panel" id="page-chat" style="display:flex;flex-direction:column">
     <div class="topbar">
       <div class="row">
@@ -152,32 +144,29 @@
     </div>
   </main>
 
+  <!-- Dodatkowe panele (placeholdery) -->
   <main class="panel" id="page-contracts" style="display:none;padding:16px">
     <h2>📄 Umowy</h2>
-    <p class="meta">Tu możesz podpiąć generowanie/podpisywanie umów (np. fetch do Netlify Functions).</p>
-    <button class="btn" onclick="alert('TODO: generowanie umowy / integracja funkcji')">Nowa umowa</button>
+    <p class="meta">Tu możesz podpiąć generowanie/podpisywanie umów (Netlify Functions).</p>
   </main>
 
   <main class="panel" id="page-docs" style="display:none;padding:16px">
     <h2>📂 Dokumenty</h2>
     <p class="meta">Przegląd i pobieranie plików (Netlify Blobs).</p>
-    <button class="btn" onclick="alert('TODO: lista dokumentów z blobów')">Odśwież listę</button>
-    <div id="docsList" style="margin-top:10px"></div>
   </main>
 
   <main class="panel" id="page-tasks" style="display:none;padding:16px">
     <h2>✅ Zadania</h2>
     <p class="meta">Prosty moduł zadań przypięty do pokoju (do rozbudowy).</p>
-    <button class="btn" onclick="alert('TODO: CRUD zadań')">Dodaj zadanie</button>
   </main>
 </div>
 
 <script>
 'use strict';
 
-/*** USTAWIENIA ***/
-const API_MESSAGES = '/api/messages'; // Netlify Function (masz: netlify/functions/messages.js)
-const API_UPLOAD   = '/api/upload';   // Netlify Function (masz: netlify/functions/upload.js)
+/*** KONFIG ***/
+const API_MESSAGES = '/api/messages';
+const API_UPLOAD   = '/api/upload';
 
 /*** UTIL ***/
 const $ = s => document.querySelector(s);
@@ -189,8 +178,7 @@ const EMOJI = '😀😁😂🤣😊😉😍😘😎🤩🥰😇🤓🤠🫶👍�
 let state = {
   room: localStorage.getItem('chat_room') || 'global',
   me:   localStorage.getItem('chat_me')   || 'Pracownik',
-  oldestCursor: null,
-  search:{ q:'', author:'' },
+  oldestCursor: null,                // ISO najstarszej załadowanej (do paginacji ↑)
   messages: [],
   cache: new Map(),
   poller: null,
@@ -221,8 +209,7 @@ function toggleEmoji(){
   picker.addEventListener('click', ev=>{
     if(ev.target.classList.contains('emoji')){
       $('#txt').value += ev.target.textContent;
-      document.body.removeChild(picker); picker=null; $('#txt').focus();
-      showTyping(true);
+      document.body.removeChild(picker); picker=null; $('#txt').focus(); showTyping(true);
     }
   });
   document.body.appendChild(picker);
@@ -230,10 +217,7 @@ function toggleEmoji(){
 
 /*** RENDER ***/
 const linkify = (t='') => t.replace(/(https?:\/\/\S+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
-function dayDivider(ts){
-  return '<div class="day"><span>'+INT.format(new Date(ts)).split(',')[0]+'</span></div>';
-}
-function reactionBadge(emoji, count){ return '<span class="react" data-r="'+emoji+'">'+emoji+' '+count+'</span>'; }
+function dayDivider(ts){ return '<div class="day"><span>'+INT.format(new Date(ts)).split(',')[0]+'</span></div>'; }
 function fileChip(url){
   const name = (url||'').split('/').pop();
   const isImg = /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name);
@@ -243,22 +227,13 @@ function bubbleHtml(m, children){
   const me = m.author===state.me;
   const body = linkify(m.body||'');
   const when = INT.format(new Date(m.created_at||Date.now()));
-  const reactions = (m.reactions && typeof m.reactions==='object') ? Object.entries(m.reactions).filter(([,v])=>v>0) : [];
   return [
     '<div class="msg" id="m-'+m.id+'">',
       '<div class="meta">', (me?'Ja':(m.author||'—')) ,'</div>',
       '<div class="bubble ', (me?'me':''), '">',
         (m.deleted_at ? '<i class="meta">[wiadomość usunięta]</i>' : body),
         (m.file_url ? fileChip(m.file_url) : ''),
-        '<div class="tools">',
-          '<button class="btn-icon" onclick="startReply(\''+m.id+'\')">💬 Odpowiedz</button>',
-          '<button class="btn-icon" onclick="localReact(\''+m.id+'\',\'👍\')">👍</button>',
-          '<button class="btn-icon" onclick="localReact(\''+m.id+'\',\'❤\')">❤</button>',
-          '<button class="btn-icon" onclick="localReact(\''+m.id+'\',\'🔥\')">🔥</button>',
-          (me && !m.deleted_at ? '<button class="btn-icon" onclick="localEdit(\''+m.id+'\')">✎ Edytuj</button><button class="btn-icon" onclick="localDelete(\''+m.id+'\')">🗑 Usuń</button>':''),
-          '<span class="meta" style="margin-left:auto">'+when+(me?' <span title="lokalne ✓✓">✓✓</span>':'')+(m.edited_at?' • ed.':'')+'</span>',
-        '</div>',
-        (reactions.length ? '<div class="reactions">'+reactions.map(([emo,c])=>reactionBadge(emo,c)).join(' ')+'</div>' : ''),
+        '<div class="tools"><span class="meta" style="margin-left:auto">'+when+(m.edited_at?' • ed.':'')+'</span></div>',
         (children && children.length ? '<div class="children">'+children.map(c=>bubbleHtml(c,[])).join('')+'</div>' : ''),
       '</div>',
     '</div>'
@@ -289,52 +264,48 @@ function renderMessages(scrollToBottom=true){
   if(scrollToBottom) box.scrollTop = box.scrollHeight;
 }
 
-/*** API (Netlify Functions) ***/
-async function apiList(room){
-  const r = await fetch(API_MESSAGES+'?room='+encodeURIComponent(room), {
-    headers:{'Accept':'application/json'}
-  });
+/*** API ***/
+async function apiList(room, opts={}){
+  let url = API_MESSAGES+'?room='+encodeURIComponent(room);
+  if(opts.before) url += '&before='+encodeURIComponent(opts.before);
+  if(opts.limit)  url += '&limit='+Number(opts.limit);
+  const r = await fetch(url, { headers:{'Accept':'application/json'} });
   if(!r.ok) throw new Error('GET /api/messages HTTP '+r.status);
   const json = await r.json();
-  // Twoja funkcja messages.js zwraca { items: [...] }
-  const arr = Array.isArray(json) ? json : (json.items || json.messages || []);
+  const arr = Array.isArray(json) ? json : (json.messages || []);
   return arr.map((m, i)=>({
-    id: m.id || m.key || String(i+1)+'-'+(m.ts||m.date||Date.now()),
-    room_id: m.room_id || m.room || room,
-    author: m.author || m.name || 'Anon',
-    body: m.body || m.text || m.message || '',
-    file_url: m.file_url || m.file || null,
-    created_at: m.created_at || m.date || m.ts || new Date().toISOString(),
-    parent_id: m.parent_id || m.parentId || null,
-    reactions: m.reactions || {}
+    id: m.id || String(i+1),
+    room_id: m.room_id || room,
+    author: m.author || 'Anon',
+    body: m.body || m.text || '',
+    file_url: m.file_url || null,
+    created_at: m.created_at || new Date().toISOString(),
+    parent_id: m.parent_id || null
   }));
 }
 async function apiSend(payload){
-  // DOPASOWANIE DO messages.js:
-  // Oczekuje: { room, author, body, parentId, fileUrl }
   const r = await fetch(API_MESSAGES, {
     method:'POST',
     headers:{'Content-Type':'application/json','Accept':'application/json'},
     body: JSON.stringify({
       room: payload.room_id,
       author: payload.author,
-      body: payload.body,
-      parentId: payload.parent_id || null,
-      fileUrl: payload.file_url || null
+      text: payload.body,
+      file_url: payload.file_url || null,
+      parent_id: payload.parent_id || null
     })
   });
   if(!r.ok) throw new Error('POST /api/messages HTTP '+r.status);
   return await r.json();
 }
 async function apiUpload(file){
-  // Twój upload.js: multipart "file" -> { ok:true, url }
   const fd = new FormData();
   fd.append('file', file);
   fd.append('room', state.room);
   const r = await fetch(API_UPLOAD, { method:'POST', body: fd });
   if(!r.ok) throw new Error('POST /api/upload HTTP '+r.status);
   const data = await r.json();
-  const url = data.url || data.publicUrl || data.fileUrl || data.location || '';
+  const url = data.url || '';
   if(!url) throw new Error('Brak URL z upload');
   return url;
 }
@@ -343,8 +314,8 @@ async function apiUpload(file){
 async function loadInitial(){
   try{
     $('#conn').textContent = 'pobieram…';
-    const data = await apiList(state.room);
-    state.messages = data.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+    const data = await apiList(state.room, { limit: 50 });
+    state.messages = data.sort((a,b)=> new Date(a.created_at)-new Date(b.created_at));
     state.messages.forEach(m=>state.cache.set(m.id,m));
     if(state.messages.length) state.oldestCursor = state.messages[0].created_at;
     renderMessages(true);
@@ -358,63 +329,57 @@ function startPolling(){
   if(state.poller) clearInterval(state.poller);
   state.poller = setInterval(async ()=>{
     try{
-      const data = await apiList(state.room);
-      // scal po id
-      const map = new Map(state.messages.map(m=>[m.id,m]));
-      for(const m of data){ map.set(m.id, m); }
-      const merged = [...map.values()].sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
-      if(merged.length !== state.messages.length){
+      const data = await apiList(state.room, { limit: 50 });
+      const oldNewest = state.messages[state.messages.length-1]?.created_at || '';
+      const merged = [...state.messages];
+      const known = new Set(state.messages.map(m=>m.id));
+      data.forEach(m=>{ if(!known.has(m.id)) merged.push(m); });
+      merged.sort((a,b)=> new Date(a.created_at)-new Date(b.created_at));
+      const newNewest = merged[merged.length-1]?.created_at || '';
+      if(newNewest !== oldNewest){
         state.messages = merged;
         renderMessages(true);
         ding();
       }
-    }catch(e){/* cicho */}
+    }catch(e){ /* cicho */ }
   }, 3000);
 }
+
+// Paginacja "w górę" (starsze)
 async function loadOlder(){
-  alert('Paginacja w górę: potrzebny parametr before/limit w funkcji messages.js (TODO).');
+  if(!state.oldestCursor) return;
+  try {
+    const older = await apiList(state.room, { before: state.oldestCursor, limit: 50 });
+    if(older.length){
+      // wstawiamy na początek
+      state.messages = [...older, ...state.messages].sort((a,b)=> new Date(a.created_at)-new Date(b.created_at));
+      state.messages.forEach(m=>state.cache.set(m.id,m));
+      state.oldestCursor = state.messages[0]?.created_at || state.oldestCursor;
+      const box = $('#msgs');
+      const prevHeight = box.scrollHeight;
+      renderMessages(false);
+      // utrzymanie przybliżonej pozycji przewinięcia:
+      const newHeight = box.scrollHeight;
+      box.scrollTop = newHeight - prevHeight;
+    } else {
+      alert('Brak starszych wiadomości.');
+    }
+  } catch(e){
+    console.error("loadOlder error", e);
+  }
 }
 
-/*** WYSYŁANIE / ODP / REAKCJE LOKALNE ***/
-let replyTo=null;
-function startReply(id){
-  replyTo = id;
-  const m = state.cache.get(id);
-  const preview = '↪ Odp: '+(m?.author||'—')+': '+((m?.body||'').slice(0,80));
-  const t = $('#txt');
-  t.value = (preview+'\n'+t.value).trim()+' ';
-  t.focus();
-}
-function localReact(id, emo){
-  const m = state.cache.get(id);
-  if(!m) return;
-  m.reactions = m.reactions || {};
-  m.reactions[emo] = (m.reactions[emo]||0)+1;
-  renderMessages(false);
-}
-function localEdit(id){
-  const m = state.cache.get(id); if(!m) return;
-  const t = prompt('Edytuj treść:', m.body||''); if(t==null) return;
-  m.body = t; m.edited_at = new Date().toISOString();
-  renderMessages(false);
-}
-function localDelete(id){
-  const m = state.cache.get(id); if(!m) return;
-  if(!confirm('Usunąć wiadomość lokalnie?')) return;
-  m.deleted_at = new Date().toISOString(); m.body='[usunięto]';
-  renderMessages(false);
-}
+/*** WYSYŁANIE ***/
 async function sendMessage(text, fileUrl){
   text = (text||'').trim();
   if(!text && !fileUrl) return;
-  const payload = { room_id: state.room, author: state.me, body: text, file_url: fileUrl||null, parent_id: replyTo };
+  const payload = { room_id: state.room, author: state.me, body: text, file_url: fileUrl||null, parent_id: null };
   try{
     await apiSend(payload);
-    replyTo = null;
     $('#txt').value='';
-    // szybkie odświeżenie po zapisie
-    const data = await apiList(state.room);
-    state.messages = data.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+    // po zapisie: dociągnij najnowsze
+    const data = await apiList(state.room, { limit: 50 });
+    state.messages = data.sort((a,b)=> new Date(a.created_at)-new Date(b.created_at));
     state.messages.forEach(m=>state.cache.set(m.id,m));
     renderMessages(true);
   }catch(err){
@@ -441,7 +406,7 @@ $('#file').addEventListener('change', async (e)=>{
   e.target.value='';
 });
 
-/*** PISANIE (tylko UI) ***/
+/*** PISANIE (UI) ***/
 function showTyping(on){
   const set = window._typingSet || new Set();
   window._typingSet = set;
@@ -466,10 +431,19 @@ $('#txt').addEventListener('keydown', (e)=>{
 $('#btnSend').addEventListener('click', async ()=>{ await sendMessage($('#txt').value, null); });
 
 /*** SZUKANIE ***/
+function exportCSV(){
+  const rows=[['id','author','body','file','time']].concat(state.messages.map(m=>[
+    m.id, m.author, m.body||'', m.file_url||'', m.created_at
+  ]));
+  const csv = rows.map(r=>r.map(s=>{s=(s??'').toString(); return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s}).join(';')).join('\n');
+  const a=el('a',{href:URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})), download:'chat.csv'}); a.click();
+}
+function exportJSON(){
+  const a=el('a',{href:URL.createObjectURL(new Blob([JSON.stringify(state.messages,null,2)],{type:'application/json'})), download:'chat.json'}); a.click();
+}
 async function searchMessages(){
-  state.search.q = $('#q').value.trim();
-  state.search.author = $('#authorFilter').value.trim();
-  const q=state.search.q, a=state.search.author;
+  const q = ($('#q').value||'').trim();
+  const a = ($('#authorFilter').value||'').trim();
   let arr = [...state.messages];
   if(a) arr = arr.filter(m=>m.author===a);
   if(q){
@@ -479,24 +453,7 @@ async function searchMessages(){
   const bak = state.messages;
   state.messages = arr;
   renderMessages(true);
-  setTimeout(()=>{ state.messages = bak; renderMessages(false); }, 10000);
-}
-function clearSearch(){
-  $('#q').value=''; $('#authorFilter').value='';
-  state.search={q:'',author:''};
-  renderMessages(true);
-}
-
-/*** EKSPORT ***/
-function exportCSV(){
-  const rows=[['id','author','body','file','time','parent','edited','deleted']].concat(state.messages.map(m=>[
-    m.id, m.author, m.body||'', m.file_url||'', m.created_at, m.parent_id||'', m.edited_at||'', m.deleted_at||''
-  ]));
-  const csv = rows.map(r=>r.map(s=>{s=(s??'').toString(); return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s}).join(';')).join('\n');
-  const a=el('a',{href:URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})), download:'chat.csv'}); a.click();
-}
-function exportJSON(){
-  const a=el('a',{href:URL.createObjectURL(new Blob([JSON.stringify(state.messages,null,2)],{type:'application/json'})), download:'chat.json'}); a.click();
+  setTimeout(()=>{ state.messages = bak; renderMessages(false); }, 8000);
 }
 
 /*** DŹWIĘK ***/
@@ -511,7 +468,7 @@ async function setRoom(id){
   await loadInitial();
 }
 
-/*** JA (podpis) ***/
+/*** JA ***/
 $('#btnName').addEventListener('click', ()=>{
   const n = prompt('Twój podpis (imię w czacie):', state.me) || state.me;
   state.me=n; localStorage.setItem('chat_me', n); $('#meName').textContent=n;
