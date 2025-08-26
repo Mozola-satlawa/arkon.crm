@@ -1,10 +1,24 @@
-<!doctype html>
+# Build a single self-contained HTML file that organizes the user's documents
+# into three categories per their instruction:
+# - ogólne
+# - prefinansowanie
+# - dofinansowanie
+#
+# Filenames are taken exactly as listed from the user's repo listing.
+# NOTE on diacritics: links use the exact Unicode filenames provided.
+# On some hosts, NFD/NFC normalization can break matching even if the
+# string looks the same. If any link 404s, consider renaming the physical
+# file to plain ASCII and updating the HREF in this file accordingly.
+#
+# The file is saved as /mnt/data/dokumenty_kategorie.html
+
+html = r"""<!doctype html>
 <html lang="pl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ARKON — Dokumenty (prefinansowanie / dofinansowanie)</title>
-<meta name="description" content="Lista dokumentów ARKON z tagami prefinansowanie i dofinansowanie.">
+<title>ARKON — Dokumenty (ogólne / prefinansowanie / dofinansowanie)</title>
+<meta name="description" content="Lista dokumentów ARKON z podziałem na ogólne, prefinansowanie i dofinansowanie.">
 <style>
   :root{
     --bg:#0b1020; --p1:#101736; --p2:#0f1a44; --ink:#e8edff; --muted:#aeb8da; --accent:#4cc9f0;
@@ -19,8 +33,8 @@
   header h1{margin:0;font-size:22px}
   .small{font-size:12px;color:var(--muted)}
   nav{background:#172142;display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:15}
-  nav a{color:#cfe1ff;text-decoration:none;padding:8px 12px;border-radius:999px;border:1px solid #2a3a75}
-  nav a:hover{background:#223160}
+  nav a, nav button{color:#cfe1ff;text-decoration:none;padding:8px 12px;border-radius:999px;border:1px solid #2a3a75;background:transparent;cursor:pointer}
+  nav a:hover, nav button:hover{background:#223160}
   .wrap{max-width:1360px;margin:auto;padding:16px}
   .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
   .btn{background:var(--btn);border:1px solid var(--btnb);color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
@@ -51,13 +65,13 @@
   .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
   .muted{color:var(--muted)}
   .list-reset{list-style:none;margin:0;padding:0}
+  .hint{font-size:12px;color:#aeb8da}
   .modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:60}
   .modal.open{display:flex}
   .modal .box{width:1100px;max-width:95vw;max-height:92vh;display:flex;flex-direction:column;background:linear-gradient(180deg,#10173c,#111b48);border:1px solid #2b3a77;border-radius:12px}
   .modal .hd{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid #2b3a77}
   .modal .bd{padding:0;height:80vh}
   .modal iframe{width:100%;height:100%;border:0;background:#0b1022}
-  .hint{font-size:12px;color:#aeb8da}
   @media print{ nav,.toolbar,.modal{display:none!important} }
 </style>
 </head>
@@ -65,21 +79,16 @@
 
 <header>
   <h1>Dokumenty • ARKON CRM</h1>
-  <div class="small">Lista umów i oświadczeń. Opisy, tagi, ulubione, podgląd PDF (inline). Dane pomocnicze zapisywane lokalnie w przeglądarce.</div>
+  <div class="small">Lista umów i oświadczeń. Opisy, tagi, ulubione, podgląd PDF (inline). Dane pomocnicze zapisują się lokalnie w przeglądarce.</div>
 </header>
 
 <nav>
-  <a href="index.html">Pulpit</a>
-  <a href="klienci.html">Klienci</a>
-  <a href="lidy.html">Lidy</a>
-  <a href="komponenty.html">Komponenty</a>
-  <a href="upload.html">Przesył plików</a>
+  <a href="app.htm">Hub</a>
   <a href="dokumenty.html" aria-current="page">Dokumenty</a>
-  <a href="#" id="gotoPref">Prefinansowanie</a>
-  <a href="#" id="gotoDofi">Dofinansowanie</a>
-  <a href="chat.html">Komunikator</a>
-  <a href="ustawienia.html">Ustawienia</a>
-  <a href="kalendarz-montaze.html">Kalendarz montaży</a>
+  <button id="btnAll">Wszystkie</button>
+  <button id="btnGen">Ogólne</button>
+  <button id="btnPref">Prefinansowanie</button>
+  <button id="btnDofi">Dofinansowanie</button>
 </nav>
 
 <div class="wrap grid cols-2">
@@ -129,25 +138,25 @@
 
   <aside class="grid">
     <div class="card">
-      <b>Szybkie filtry</b>
+      <b>Szybkie filtry (tagi)</b>
       <div style="margin-top:8px" class="small">
         <div class="list-reset" id="quickTags"></div>
       </div>
       <div class="hint" style="margin-top:8px">Kliknij tag, aby filtrować. Ponowne kliknięcie usuwa filtr.</div>
     </div>
 
-    <div class="card">
-      <b>Podpowiedzi</b>
-      <ul class="small">
-        <li>Opis i tagi zapisują się w <code>localStorage</code> (per nazwa pliku).</li>
-        <li>PDF otworzy się w podglądzie. Pliki Word/Excel pobiorą się lub otworzą w systemie.</li>
-        <li><span class="kbd">/</span> — fokus na wyszukiwarce.</li>
-        <li>„Wczytaj metadane” pozwala pobrać datę modyfikacji Twoich lokalnych kopii (nie wysyłamy nigdzie).</li>
-      </ul>
+    <div class="card small">
+      <b>Uwagi, gdy plik „nie wczytuje się”:</b>
+      <ol>
+        <li>Sprawdź <i>dokładną</i> nazwę (w tym polskie znaki i myślniki).</li>
+        <li>Upewnij się, że plik leży w tym samym katalogu co ta strona.</li>
+        <li>Diakrytyki (np. Ś, Ą) mogą mieć różne formy Unicode (NFC/NFD). Jeśli serwer nie dopasowuje, rozważ zmianę nazwy na ASCII (np. <code>OSWIADCZENIE_WSPOLMAZONKA.docx</code>).</li>
+      </ol>
     </div>
   </aside>
 </div>
 
+<!-- MODAL PREVIEW -->
 <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
   <div class="box">
     <div class="hd">
@@ -163,66 +172,96 @@
 
 <script>
 'use strict';
+
+/* ===== helpers ===== */
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const INT = new Intl.NumberFormat('pl-PL',{maximumFractionDigits:0});
 const fmtDate = ts => ts ? new Date(ts).toLocaleString('pl-PL') : '—';
 const fileExt = n => (n.split('.').pop()||'').toLowerCase();
 const sl = (s) => (s||'').toString().toLowerCase();
-const CSVesc = v => { let s = String(v==null?'':v); return /[\";\n]/.test(s) ? '"' + s.replace(/\"/g,'""') + '"' : s; };
+const CSVesc = v => {
+  let s = String(v==null?'':v);
+  return /[\";\n]/.test(s) ? '"' + s.replace(/\"/g,'""') + '"' : s;
+};
 
-const LS_KEY = 'arkon_docs_notes_v1';
+/* ===== local storage for notes ===== */
+const LS_KEY = 'arkon_docs_notes_v1'; // { [fileName]: {desc, tags:string[], fav:boolean, mod?:number}}
 let notes = load(LS_KEY, {});
-function load(key, fallback){ try{ return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }catch{ return fallback; } }
-function saveNotes(){ localStorage.setItem(LS_KEY, JSON.stringify(notes)); buildQuickTags(); }
 
-/* ===== Pliki: stare → prefinansowanie; nowe → dofinansowanie ===== */
+function load(key, fallback){
+  try{ return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }catch{ return fallback; }
+}
+function saveNotes(){
+  localStorage.setItem(LS_KEY, JSON.stringify(notes));
+  buildQuickTags();
+}
+
+/* ===== Twoje pliki z podziałem na działy ===== */
 const FILES = [
-  { name: 'OŚWIADCZENIE O DOKONANIU ZAPŁATY.docx', href:'OŚWIADCZENIE O DOKONANIU ZAPŁATY.docx',
-    desc:'Oświadczenie potwierdzające dokonanie zapłaty przelewem/na rachunek.',
-    tags:['oświadczenie','płatność','prefinansowanie'] },
-  { name: 'OŚWIADCZENIE WSPÓŁMAŁŻONKA.docx', href:'OŚWIADCZENIE WSPÓŁMAŁŻONKA.docx',
-    desc:'Zgoda współmałżonka na wykonanie zakresu/zgłoszenie.',
-    tags:['oświadczenie','majątkowe','prefinansowanie'] },
-  { name: 'OŚWIADCZENIE WSPÓŁWŁAŚCICIELA.docx', href:'OŚWIADCZENIE WSPÓŁWŁAŚCICIELA.docx',
-    desc:'Zgoda współwłaściciela nieruchomości na realizację inwestycji.',
-    tags:['oświadczenie','prawne','prefinansowanie'] },
-  { name: 'PEŁNOMOCNICTWO.docx', href:'PEŁNOMOCNICTWO.docx',
-    desc:'Pełnomocnictwo do reprezentowania w programie/urzędzie.',
-    tags:['pełnomocnictwo','prawne','prefinansowanie'] },
-  { name: 'UMOWA Z WYKONAWCĄ arkon.docx', href:'UMOWA Z WYKONAWCĄ arkon.docx',
-    desc:'Wzór umowy z Wykonawcą (ARKON) – edytowalny DOCX.',
-    tags:['umowa','wykonawca','ARKON','prefinansowanie'] },
+  /* OGÓLNE */
+  { name:'UMOWA Z WYKONAWCĄ arkon.pdf', href:'UMOWA Z WYKONAWCĄ arkon.pdf',
+    desc:'Wzór umowy z Wykonawcą (PDF).', tags:['umowa','ogólne','prefinansowanie','dofinansowanie'] },
+  { name:'PEŁNOMOCNICTWO.docx', href:'PEŁNOMOCNICTWO.docx',
+    desc:'Pełnomocnictwo do reprezentowania w programie/urzędzie.', tags:['pełnomocnictwo','ogólne','prefinansowanie','dofinansowanie'] },
+  { name:'OŚWIADCZENIE WSPÓŁMAŁŻONKA.docx', href:'OŚWIADCZENIE WSPÓŁMAŁŻONKA.docx',
+    desc:'Zgoda współmałżonka na wykonanie zakresu/zgłoszenie.', tags:['oświadczenie','ogólne','prefinansowanie','dofinansowanie'] },
+  { name:'OŚWIADCZENIE WSPÓŁWŁAŚCICIELA.docx', href:'OŚWIADCZENIE WSPÓŁWŁAŚCICIELA.docx',
+    desc:'Zgoda współwłaściciela nieruchomości na realizację inwestycji.', tags:['oświadczenie','ogólne','prefinansowanie','dofinansowanie'] },
+  { name:'7188a6a8-7977-4e81-8ce6-7410c21c9b25.pdf', href:'7188a6a8-7977-4e81-8ce6-7410c21c9b25.pdf',
+    desc:'Dokument PDF (identyfikator).', tags:['ogólne','pdf'] },
 
-  /* Nowe – dział dofinansowanie */
-  { name: 'OŚWIADCZENIE WSPÓŁMAŁŻONKA (Czyste Powietrze) – załącznik.docx',
-    href:'OŚWIADCZENIE WSPÓŁMAŁŻONKA (Czyste Powietrze) – załącznik.docx',
-    desc:'Załącznik do wniosku: zgoda współmałżonka (Program „Czyste Powietrze”).',
-    tags:['oświadczenie','załącznik','Czyste Powietrze','dofinansowanie'] }
+  /* PREFINANSOWANIE — + zaliczka, protokół */
+  { name:'zalacznik_do_instrukcji_wniosku_o_dofinansowanie_wzor_dyspozycji_wyplaty_zaliczki-14-06-2024.pdf',
+    href:'zalacznik_do_instrukcji_wniosku_o_dofinansowanie_wzor_dyspozycji_wyplaty_zaliczki-14-06-2024.pdf',
+    desc:'Wzór dyspozycji wypłaty zaliczki.', tags:['prefinansowanie','zaliczka','pdf'] },
+  { name:'PROTOKÓŁ ODBIORU PRAC.docx', href:'PROTOKÓŁ ODBIORU PRAC.docx',
+    desc:'Protokół odbioru prac (DOCX).', tags:['prefinansowanie','protokół'] },
+  { name:'protokolu_odbioru_prac_wykonawcy.pdf', href:'protokolu_odbioru_prac_wykonawcy.pdf',
+    desc:'Protokół odbioru prac (PDF).', tags:['prefinansowanie','protokół','pdf'] },
+
+  /* DOFINANSOWANIE — + zapłata, PB-5 */
+  { name:'OŚWIADCZENIE O DOKONANIU ZAPŁATY.docx', href:'OŚWIADCZENIE O DOKONANIU ZAPŁATY.docx',
+    desc:'Oświadczenie potwierdzające dokonanie zapłaty.', tags:['dofinansowanie','oświadczenie','płatność'] },
+  { name:'oswiadczenie_o_posiadanym_prawie_do_dysponowania_nieruchomoscia_na_cele_budowlane_pb-5v11.docx',
+    href:'oswiadczenie_o_posiadanym_prawie_do_dysponowania_nieruchomoscia_na_cele_budowlane_pb-5v11.docx',
+    desc:'PB-5 v11: oświadczenie o prawie do dysponowania nieruchomością.', tags:['dofinansowanie','oświadczenie'] }
 ];
 
+/* ===== stan & UI ===== */
 let filter = { q:'', type:'', sort:'name.asc', tag:'' };
 
+/* wstępne ustawienie tagu z URL (?tag=dofinansowanie) */
 const usp = new URLSearchParams(location.search);
 if(usp.get('tag')){ filter.tag = usp.get('tag'); }
 
 $('#q').addEventListener('input', e=>{ filter.q=e.target.value; render(); });
 $('#fType').addEventListener('change', e=>{ filter.type=e.target.value; render(); });
 $('#sort').addEventListener('change', e=>{ filter.sort=e.target.value; render(); });
-$('#btnReset').addEventListener('click', ()=>{ if(!confirm('Wyczyścić lokalne opisy, tagi i ulubione?')) return; notes = {}; saveNotes(); render(); });
+$('#btnReset').addEventListener('click', ()=>{
+  if(!confirm('Wyczyścić lokalne opisy, tagi i ulubione?')) return;
+  notes = {}; saveNotes(); render();
+});
 $('#btnExportCSV').addEventListener('click', exportCSV);
 $('#pickMeta').addEventListener('change', handlePickMeta);
 
+/* skrót klawiaturowy do wyszukiwania */
 window.addEventListener('keydown', (e)=>{ if(e.key==='/' && !e.metaKey && !e.ctrlKey){ e.preventDefault(); $('#q').focus(); }});
 
-$('#gotoPref').addEventListener('click', (e)=>{ e.preventDefault(); filter.tag = (filter.tag==='prefinansowanie'?'':'prefinansowanie'); render(); });
-$('#gotoDofi').addEventListener('click', (e)=>{ e.preventDefault(); filter.tag = (filter.tag==='dofinansowanie'?'':'dofinansowanie'); render(); });
+/* szybkie filtry — działy */
+$('#btnAll').addEventListener('click', ()=>{ filter.tag=''; render(); });
+$('#btnGen').addEventListener('click', ()=>{ filter.tag='ogólne'; render(); });
+$('#btnPref').addEventListener('click', ()=>{ filter.tag='prefinansowanie'; render(); });
+$('#btnDofi').addEventListener('click', ()=>{ filter.tag='dofinansowanie'; render(); });
 
+/* ===== render ===== */
 function applyFilters(rows){
+  // scal notatki (desc/tags/fav/mod)
   rows = rows.map(r=>{
     const n = notes[r.name] || {};
     return Object.assign({}, r, { _desc: n.desc ?? r.desc ?? '', _tags: Array.isArray(n.tags)? n.tags : (r.tags||[]), _fav: !!n.fav, _mod: n.mod || 0 });
   });
+
   if(filter.q){
     const q = sl(filter.q);
     rows = rows.filter(r => sl(r.name).includes(q) || sl(r._desc).includes(q) || (r._tags||[]).some(t=>sl(t).includes(q)));
@@ -239,6 +278,7 @@ function applyFilters(rows){
     const t = sl(filter.tag);
     rows = rows.filter(r => (r._tags||[]).some(x=>sl(x)===t));
   }
+
   rows.sort((a,b)=>{
     switch(filter.sort){
       case 'name.asc':  return a.name.localeCompare(b.name,'pl',{sensitivity:'base'});
@@ -255,18 +295,28 @@ function render(){
   let rows = applyFilters(FILES.slice());
   $('#countVis').textContent = rows.length;
   const tb = $('#tbody'); tb.innerHTML='';
-  if(!rows.length){ tb.innerHTML = '<tr><td colspan="6" class="small">Brak wyników dla bieżących filtrów.</td></tr>'; return; }
+
+  if(!rows.length){
+    tb.innerHTML = '<tr><td colspan="6" class="small">Brak wyników dla bieżących filtrów.</td></tr>';
+    return;
+  }
 
   rows.forEach(file=>{
     const tr = document.createElement('tr');
+    // ★ ulubione
     const tdFav = document.createElement('td');
     const star = document.createElement('span');
     star.className = 'star' + (file._fav?' on':'');
     star.textContent = file._fav ? '★' : '☆';
     star.title = file._fav ? 'Usuń z ulubionych' : 'Dodaj do ulubionych';
-    star.addEventListener('click', ()=>{ const n = notes[file.name] || {}; n.fav = !file._fav; notes[file.name] = n; saveNotes(); render(); });
+    star.addEventListener('click', ()=>{
+      const n = notes[file.name] || {};
+      n.fav = !file._fav;
+      notes[file.name] = n; saveNotes(); render();
+    });
     tdFav.appendChild(star);
 
+    // Nazwa + ikonka
     const tdName = document.createElement('td');
     const box = document.createElement('div'); box.className='name';
     const ico = document.createElement('div');
@@ -274,15 +324,23 @@ function render(){
     ico.className = 'ico ' + (ext==='pdf'?'pdf': (['doc','docx'].includes(ext)?'doc': (['xls','xlsx'].includes(ext)?'xls': (ext==='zip'?'zip': (ext==='txt'?'txt':'')))));
     ico.textContent = ext==='pdf'?'📄': (['doc','docx'].includes(ext)?'📝': (['xls','xlsx'].includes(ext)?'📊': (ext==='zip'?'🗜':'📄')));
     const a = document.createElement('a'); a.href=file.href; a.textContent=file.name; a.title='Otwórz';
-    a.addEventListener('click', (e)=>{ if(fileExt(file.name)==='pdf'){ e.preventDefault(); openPreview(file); } });
+    a.addEventListener('click', (e)=>{
+      // PDF podgląd w modalu; inne — standardowo
+      if(fileExt(file.name)==='pdf'){
+        e.preventDefault();
+        openPreview(file);
+      }
+    });
     box.appendChild(ico); box.appendChild(a);
     tdName.appendChild(box);
 
+    // Opis (edytowalny) + autosave
     const tdDesc = document.createElement('td');
     const ta = document.createElement('textarea'); ta.placeholder='Opis dokumentu…'; ta.value=file._desc||'';
     ta.addEventListener('input', debounce(()=>{ setNote(file.name, {desc:ta.value}); }, 200));
     tdDesc.appendChild(ta);
 
+    // Tagi (edytowalne, po przecinku)
     const tdTags = document.createElement('td');
     const inpTags = document.createElement('input'); inpTags.placeholder='np. umowa, prawne'; inpTags.value=(file._tags||[]).join(', ');
     inpTags.addEventListener('input', debounce(()=>{
@@ -291,42 +349,87 @@ function render(){
     }, 200));
     tdTags.appendChild(inpTags);
 
-    const tdMod = document.createElement('td'); tdMod.textContent = file._mod ? fmtDate(file._mod) : '—';
+    // Ost. modyfikacja (z local metadanych jeśli wczytane)
+    const tdMod = document.createElement('td');
+    tdMod.textContent = file._mod ? fmtDate(file._mod) : '—';
 
-    const tdAct = document.createElement('td'); tdAct.className='right';
-    const btnOpen = document.createElement('a'); btnOpen.className='btn ghost'; btnOpen.href=file.href; btnOpen.target='_blank'; btnOpen.rel='noopener'; btnOpen.textContent = 'Otwórz';
-    btnOpen.addEventListener('click', (e)=>{ if(fileExt(file.name)==='pdf'){ e.preventDefault(); openPreview(file); } });
-    const btnDl = document.createElement('a'); btnDl.className='btn'; btnDl.href=file.href; btnDl.download=file.name; btnDl.textContent='Pobierz';
-    tdAct.appendChild(btnOpen); tdAct.appendChild(btnDl);
+    // Akcje
+    const tdAct = document.createElement('td');
+    tdAct.className='right';
+    const btnOpen = document.createElement('a');
+    btnOpen.className='btn ghost'; btnOpen.href=file.href; btnOpen.target='_blank'; btnOpen.rel='noopener';
+    btnOpen.textContent = 'Otwórz';
+    btnOpen.addEventListener('click', (e)=>{
+      if(fileExt(file.name)==='pdf'){ e.preventDefault(); openPreview(file); }
+    });
+    const btnDl = document.createElement('a');
+    btnDl.className='btn'; btnDl.href=file.href; btnDl.download=file.name; btnDl.textContent='Pobierz';
 
-    tr.appendChild(tdFav); tr.appendChild(tdName); tr.appendChild(tdDesc); tr.appendChild(tdTags); tr.appendChild(tdMod); tr.appendChild(tdAct);
-    tb.appendChild(tr);
+    tdAct.appendChild(btnOpen);
+    tdAct.appendChild(btnDl);
+
+    tr.appendChild(tdFav);
+    tr.appendChild(tdName);
+    tr.appendChild(tdDesc);
+    tr.appendChild(tdTags);
+    tr.appendChild(tdMod);
+    tr.appendChild(tdAct);
+
+    $('#tbody').appendChild(tr);
   });
 }
 
+/* ===== tag chmura ===== */
 function buildQuickTags(){
   const box = $('#quickTags'); box.innerHTML='';
   const map = new Map();
-  FILES.forEach(f=>{ (f.tags||[]).forEach(t=> map.set(t, (map.get(t)||0)+1)); });
-  Object.values(notes).forEach(n=>{ (n.tags||[]).forEach(t=> map.set(t, (map.get(t)||0)+1)); });
+  // zbierz z plików + z notes
+  FILES.forEach(f=>{
+    (f.tags||[]).forEach(t=> map.set(t, (map.get(t)||0)+1));
+  });
+  Object.values(notes).forEach(n=>{
+    (n.tags||[]).forEach(t=> map.set(t, (map.get(t)||0)+1));
+  });
   if(map.size===0){ box.innerHTML='<div class="muted">Brak tagów. Dodaj w tabeli.</div>'; return; }
+
   const sorted = [...map.entries()].sort((a,b)=> b[1]-a[1]);
   sorted.slice(0,30).forEach(([tag,count])=>{
     const btn = document.createElement('button');
-    btn.className='tag'; btn.type='button'; btn.textContent = tag + ' ('+count+')';
-    btn.addEventListener('click', ()=>{ filter.tag = (filter.tag===tag ? '' : tag); render(); });
+    btn.className='tag';
+    btn.type='button';
+    btn.textContent = tag + ' ('+count+')';
+    btn.addEventListener('click', ()=>{
+      filter.tag = (filter.tag===tag ? '' : tag);
+      render();
+    });
     if(filter.tag===tag){ btn.style.background='#1a2a66'; btn.style.borderColor='#4b65d2'; }
     box.appendChild(btn);
   });
 }
 
-function setNote(name, part){ const n = notes[name] || {}; Object.assign(n, part); notes[name] = n; saveNotes(); }
+/* ===== notatki - merge partial ===== */
+function setNote(name, part){
+  const n = notes[name] || {};
+  Object.assign(n, part);
+  notes[name] = n;
+  saveNotes();
+}
 
+/* ===== preview modal (PDF) ===== */
 const modal = $('#modal'), mFrame = $('#mFrame'), mOpen = $('#mOpen'), mTitle = $('#mTitle');
 $('#mClose').addEventListener('click', closePreview);
-function openPreview(file){ mTitle.textContent = file.name; mFrame.src = file.href; mOpen.href = file.href; modal.classList.add('open'); }
-function closePreview(){ mFrame.src = 'about:blank'; modal.classList.remove('open'); }
+function openPreview(file){
+  mTitle.textContent = file.name;
+  mFrame.src = file.href;
+  mOpen.href = file.href;
+  modal.classList.add('open');
+}
+function closePreview(){
+  mFrame.src = 'about:blank';
+  modal.classList.remove('open');
+}
 
+/* ===== wczytaj metadane z lokalnych plików (tylko po nazwie) ===== */
 async function handlePickMeta(e){
   const files = Array.from(e.target.files||[]);
   if(!files.length) return;
@@ -345,11 +448,19 @@ async function handlePickMeta(e){
   e.target.value = '';
 }
 
+/* ===== eksport CSV ===== */
 function exportCSV(){
   const rows = applyFilters(FILES.slice());
   const out = [['Ulubione','Nazwa','Opis','Tagi','Ost. modyfikacja','Ścieżka']];
   rows.forEach(r=>{
-    out.push([ r._fav?'TAK':'NIE', r.name, (r._desc||'').replace(/\s+/g,' ').trim(), (r._tags||[]).join('|'), r._mod? new Date(r._mod).toISOString() : '', r.href ]);
+    out.push([
+      r._fav?'TAK':'NIE',
+      r.name,
+      (r._desc||'').replace(/\s+/g,' ').trim(),
+      (r._tags||[]).join('|'),
+      r._mod? new Date(r._mod).toISOString() : '',
+      r.href
+    ]);
   });
   const csv = out.map(line=>line.map(CSVesc).join(';')).join('\n');
   const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
@@ -360,10 +471,17 @@ function exportCSV(){
   URL.revokeObjectURL(a.href);
 }
 
+/* ===== debounce util ===== */
 function debounce(fn,ms){ let t; return function(){ const a=arguments; clearTimeout(t); t=setTimeout(()=>fn.apply(null,a), ms||180); }; }
 
+/* ===== init ===== */
 function init(){
-  FILES.forEach(f=>{ if(!notes[f.name]){ notes[f.name] = { desc:f.desc||'', tags:(f.tags||[]), fav:false }; } });
+  // zasiej domyślne opisy/tagi jeśli nie ma notatek
+  FILES.forEach(f=>{
+    if(!notes[f.name]){
+      notes[f.name] = { desc:f.desc||'', tags:(f.tags||[]), fav:false };
+    }
+  });
   saveNotes();
   buildQuickTags();
   render();
@@ -371,4 +489,10 @@ function init(){
 init();
 </script>
 </body>
-</html>
+</html>"""
+
+out_path = "/mnt/data/dokumenty_kategorie.html"
+with open(out_path, "w", encoding="utf-8") as f:
+    f.write(html)
+
+out_path
