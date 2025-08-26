@@ -14,7 +14,7 @@ const ok = (b = {}) => json(200, b);
 const bad = (m = "Bad Request") => json(400, { error: m });
 
 function getIdFromPath(path, fn) {
-  const base = '/.netlify/functions/' + fn + '/';
+  const base = /.netlify/functions/${fn}/;
   const i = path.indexOf(base);
   if (i === -1) return null;
   return decodeURIComponent(path.slice(i + base.length));
@@ -41,7 +41,7 @@ export async function handler(event) {
       if (!event.body) return bad("Brak body");
       let p = {};
       try { p = JSON.parse(event.body); } catch { return bad("Niepoprawny JSON"); }
-      const id = `t_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
+      const id = t_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)};
       const rec = {
         id,
         title: p.title || "Zadanie",
