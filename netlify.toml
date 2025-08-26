@@ -3,18 +3,11 @@
   node_bundler = "esbuild"
 
 [functions]
-  node_bundler = "esbuild"
   directory = "netlify/functions"
+  node_bundler = "esbuild"
 
-# ===== Alias API =====
-# Chat messages
+# Alias HTTP -> Function
 [[redirects]]
-  from = "/api/messages"
-  to   = "/.netlify/functions/messages"
-  status = 200
-
-# Upload (attachments)
-[[redirects]]
-  from = "/api/upload"
-  to   = "/.netlify/functions/upload"
+  from = "/api/blobs-health"
+  to   = "/.netlify/functions/blobs-health"
   status = 200
