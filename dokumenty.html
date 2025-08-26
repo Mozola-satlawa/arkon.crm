@@ -3,139 +3,73 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ARKON — Dokumenty (ogólne / prefinansowanie / dofinansowanie)</title>
-<meta name="description" content="Lista dokumentów ARKON z podziałem na ogólne, prefinansowanie i dofinansowanie.">
+<title>ARKON — Dokumenty</title>
+<meta name="description" content="Wzory umów i oświadczeń. Wyszukiwarka, sortowanie, tagi, podgląd PDF.">
 <style>
   :root{
-    --bg:#0a0f1e; --p1:#0f1533cc; --p2:#0c1230cc; --ink:#e9eeff; --muted:#aeb8da; --accent:#4cc9f0;
-    --ok:#2b8a57; --bad:#ff6b6b; --warn:#ffb84d; --line:#27336a; --grid:#22305f;
-    --btn:#253772; --btnb:#3c54ad; --card:#0f1533;
-    --shadow: 0 10px 30px rgba(10,15,30,.35), inset 0 1px 0 rgba(255,255,255,.03);
-    --radius: 16px;
-  }
-  @media (prefers-color-scheme: light){
-    :root{
-      --bg:#f6f8ff; --p1:#ffffffcc; --p2:#f7f9ffcc; --ink:#0e1533; --muted:#536191;
-      --line:#dae2ff; --grid:#e8edff; --btn:#254a90; --btnb:#3f6ad6;
-    }
-    body{background:#eef2ff}
+    --bg:#0c0c0c; --panel:#121212; --card:#181818; --line:#2a2a2a;
+    --ink:#f2f3f5; --muted:#b9c0cc;
+    --accent:#3ea6ff; --accent2:#00e5ff;
+    --bad:#ff5c5c; --ok:#2ecc71;
   }
   *{box-sizing:border-box}
   html,body{margin:0;height:100%}
-  body{
-    background:
-      radial-gradient(1200px 600px at 10% -10%, #1a2250 0%, transparent 60%),
-      radial-gradient(1200px 600px at 110% 10%, #13224a 0%, transparent 55%),
-      linear-gradient(180deg,#0a0f1e,#0c1230 55%,#0a0f1e);
-    color:var(--ink);
-    font:15px/1.55 system-ui, Segoe UI, Roboto, Arial;
-    letter-spacing: .2px;
-  }
-  a{color:#d5e4ff;text-decoration:none;transition:.2s ease color}
-  a:hover{color:#ffffff}
-  header{
-    padding:18px 16px;
-    background:linear-gradient(180deg,#11183a,#0f1533);
-    border-bottom:1px solid var(--line);
-    position:sticky;top:0;z-index:20;
-    backdrop-filter:saturate(120%) blur(8px);
-  }
-  header h1{margin:0;font-size:22px;letter-spacing:.3px}
+  body{background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,Segoe UI,Roboto,Arial}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{color:#fff}
+  header{padding:16px;background:#0f0f0f;border-bottom:1px solid var(--line)}
+  header h1{margin:0;font-size:22px}
   .small{font-size:12px;color:var(--muted)}
-  nav{
-    background:linear-gradient(180deg,#151d44,#121a3b);
-    display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px;
-    border-bottom:1px solid var(--line);position:sticky;top:62px;z-index:19;
-    backdrop-filter:saturate(120%) blur(8px);
+  nav{background:#141414;display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+  nav a,nav button{
+    color:var(--ink);background:#1b1b1b;border:1px solid var(--line);padding:8px 12px;border-radius:8px;cursor:pointer
   }
-  nav a, nav button{
-    color:#d5e4ff;padding:8px 14px;border-radius:999px;border:1px solid #2a3a75;
-    background:linear-gradient(180deg,#19255a,#14214e);
-    cursor:pointer;transition:.2s ease transform,.2s ease background,.2s ease border-color,.2s ease box-shadow;
-    box-shadow: 0 2px 0 rgba(0,0,0,.25);
-  }
-  nav a[aria-current="page"]{border-color:#5a73ff;box-shadow:0 0 0 2px #5a73ff33 inset}
-  nav a:hover, nav button:hover{background:#223160; transform:translateY(-1px)}
-  nav a:focus-visible, nav button:focus-visible{outline:3px solid #7bb8ff88; outline-offset:2px}
-  .wrap{max-width:1360px;margin:auto;padding:16px}
-  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0}
-  .btn{
-    background:linear-gradient(180deg,#26407c,#21356a);
-    border:1px solid var(--btnb);color:#fff;border-radius:12px;padding:9px 14px;cursor:pointer;
-    transition:.2s ease transform,.2s ease box-shadow,.2s ease background;
-    box-shadow: var(--shadow);
-  }
-  .btn:hover{transform:translateY(-1px)}
-  .btn:active{transform:translateY(0)}
-  .btn.ghost{
-    background:linear-gradient(180deg,#101b44,#0c1537);
-    border:1px dashed var(--btnb);box-shadow:none;color:#d5e4ff
-  }
-  .btn.bad{background:linear-gradient(180deg,#4a2331,#3a1f2a);border-color:#7b3341}
-  .btn.ok{background:linear-gradient(180deg,#1b5b3a,#12442a);border-color:var(--ok)}
-  input,select,textarea{
-    background:#0d1530;border:1px solid #2b3a77;border-radius:12px;padding:9px 12px;color:var(--ink);font:inherit;
-    transition:.2s ease border-color,.2s ease box-shadow; min-height:38px
-  }
-  input::placeholder{color:#aeb8da99}
-  input:focus-visible, select:focus-visible, textarea:focus-visible{outline:none;border-color:#7bb8ff; box-shadow:0 0 0 3px #7bb8ff33}
-  textarea{min-height:74px;resize:vertical}
-  .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
-  .tag{display:inline-block;margin:4px 8px 0 0;padding:6px 10px;border:1px solid #3a4ca3;border-radius:999px;font-size:12px;cursor:pointer}
-  .tag:hover{background:#1a2a66;border-color:#5a73ff}
-  .grid{display:grid;gap:14px}
-  @media(min-width:1200px){ .cols-2{grid-template-columns:2fr 1fr} }
-  .card{
-    background:linear-gradient(180deg,var(--p1),var(--p2));
-    border:1px solid var(--line);border-radius:var(--radius);padding:14px;
-    box-shadow: var(--shadow);
-  }
-  table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border-radius:12px}
-  thead th{
-    position:sticky; top:0; background:#121a3f; color:#c6d0ff; text-transform:uppercase; letter-spacing:.05em; font-size:12px;
-    border-bottom:1px solid var(--grid);
-  }
-  th,td{padding:11px 10px;border-bottom:1px solid var(--grid);text-align:left;vertical-align:top}
-  tbody tr:nth-child(odd){background:#0e1431}
-  tbody tr:hover{background:#121a3f}
-  th:first-child, td:first-child{padding-left:14px}
-  th:last-child, td:last-child{padding-right:14px}
+  nav a[aria-current="page"],nav button.active{background:#202020;border-color:#3b3b3b}
+  nav a:hover,nav button:hover{background:#262626}
+  .wrap{max-width:1320px;margin:auto;padding:16px}
+  .grid{display:grid;gap:16px}
+  @media(min-width:1200px){.cols-2{grid-template-columns:2fr 1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+  .btn{background:#2a2a2a;border:1px solid #3b3b3b;color:#fff;border-radius:8px;padding:8px 12px;cursor:pointer}
+  .btn.ghost{background:transparent;border-style:dashed;color:var(--accent)}
+  .btn.bad{background:#351b1b;border-color:#613232}
+  .btn.ok{background:#173525;border-color:#2c7a52}
+  input,select,textarea{background:#111;border:1px solid #343434;border-radius:8px;padding:8px 10px;color:var(--ink);font:inherit}
+  input::placeholder{color:#9aa3b3}
+  textarea{min-height:72px;resize:vertical}
+  .pill{font-size:12px;color:var(--muted);border:1px solid #343434;border-radius:999px;padding:4px 10px}
+  .tag{display:inline-block;margin:4px 6px 0 0;padding:4px 10px;border:1px solid #3c3c3c;border-radius:999px;font-size:12px;cursor:pointer}
+  .tag:hover{background:#232323}
+  table{width:100%;border-collapse:collapse;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  thead{background:#202020}
+  th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+  tbody tr:nth-child(odd){background:#151515}
+  tbody tr:hover{background:#202020}
   td .name{display:flex;gap:10px;align-items:center;min-width:240px}
-  .ico{width:28px;height:28px;border-radius:8px;background:#0e1538;border:1px solid #293a80;display:grid;place-items:center;font-size:16px;box-shadow:inset 0 1px 0 #ffffff14}
-  .ico.pdf{background:#2a1830;border-color:#6b2d55}
-  .ico.doc{background:#16233f;border-color:#3950a5}
-  .ico.xls{background:#0f2f28;border-color:#1f6b57}
-  .ico.zip{background:#2c2512;border-color:#7a5f1a}
-  .ico.txt{background:#1f1f2e;border-color:#53537a}
-  .star{cursor:pointer;font-size:18px;line-height:1;transition:.15s ease transform}
-  .star.on{color:#ffd86b;text-shadow:0 0 10px #ffd86b66}
-  .star:hover{transform:scale(1.1)}
+  .ico{width:26px;height:26px;border-radius:6px;background:#222;display:grid;place-items:center;font-size:15px}
+  .pdf{color:#ff6b6b}.doc{color:#63a6ff}.xls{color:#2ecc71}.zip{color:#f0b23e}.txt{color:#cfcfcf}
+  .star{cursor:pointer;font-size:18px;line-height:1}
+  .star.on{color:#ffd86b}
   .right{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
-  .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
-  .muted{color:var(--muted)}
-  .list-reset{list-style:none;margin:0;padding:0}
-  .hint{font-size:12px;color:#aeb8da}
-  .modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:60}
+  .hint{font-size:12px;color:var(--muted)}
+  .modal{position:fixed;inset:0;background:#000c;display:none;align-items:center;justify-content:center;z-index:60}
   .modal.open{display:flex}
-  .modal .box{
-    width:1100px;max-width:95vw;max-height:92vh;display:flex;flex-direction:column;
-    background:linear-gradient(180deg,#10173c,#111b48);border:1px solid #2b3a77;border-radius:14px; box-shadow: var(--shadow)
-  }
-  .modal .hd{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid #2b3a77}
+  .modal .box{width:1100px;max-width:95vw;max-height:92vh;background:#111;border:1px solid #343434;border-radius:12px;display:flex;flex-direction:column}
+  .modal .hd{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid #343434}
   .modal .bd{padding:0;height:80vh}
-  .modal iframe{width:100%;height:100%;border:0;background:#0b1022;border-bottom-left-radius:14px;border-bottom-right-radius:14px}
-  @media print{ nav,.toolbar,.modal{display:none!important} .card{box-shadow:none;border-color:#dde5ff} body{background:#fff} }
+  .modal iframe{width:100%;height:100%;border:0;background:#000}
+  @media print{ nav,.toolbar,.modal{display:none!important} }
 </style>
 </head>
 <body>
-
 <header>
   <h1>Dokumenty • ARKON CRM</h1>
-  <div class="small">Lista umów i oświadczeń. Opisy, tagi, ulubione, podgląd PDF (inline). Dane pomocnicze zapisują się lokalnie w przeglądarce.</div>
+  <div class="small">Wzory umów i oświadczeń. Wyszukiwarka, sortowanie, tagi, podgląd PDF (inline). Dane pomocnicze zapisują się lokalnie.</div>
 </header>
 
 <nav>
-  <a href="pulpit.html">Pulpit</a>
+  <a href="index.html">Pulpit</a>
   <a href="dokumenty.html" aria-current="page">Dokumenty</a>
   <button id="btnAll" type="button">Wszystkie</button>
   <button id="btnGen" type="button">Ogólne</button>
@@ -146,8 +80,8 @@
 <div class="wrap grid cols-2">
   <section class="card">
     <div class="toolbar">
-      <input id="q" placeholder="🔎 Szukaj po nazwie, opisie lub tagu…" style="min-width:260px" aria-label="Szukaj dokumentów">
-      <select id="fType" title="Typ pliku" aria-label="Filtr typu pliku">
+      <input id="q" placeholder="🔎 Szukaj po nazwie, opisie lub tagu…" style="min-width:260px" aria-label="Szukaj">
+      <select id="fType" title="Typ pliku" aria-label="Typ pliku">
         <option value="">Typ: wszystkie</option>
         <option value="pdf">PDF</option>
         <option value="doc">DOC/DOCX</option>
@@ -161,7 +95,7 @@
         <option value="fav.desc">Sort: ulubione →</option>
         <option value="mod.desc">Sort: ostatnio modyfikowane</option>
       </select>
-      <span class="pill" aria-live="polite">Widocznych: <b id="countVis">0</b></span>
+      <span class="pill">Widocznych: <b id="countVis">0</b></span>
       <div class="right" style="margin-left:auto">
         <button id="btnExportCSV" class="btn ghost" type="button">CSV (lista)</button>
         <label class="btn ghost" title="Wczytaj lokalne pliki żeby pobrać ich datę modyfikacji (bez wysyłania)">
@@ -175,12 +109,12 @@
       <table id="tblDocs" role="grid" aria-label="Tabela dokumentów">
         <thead>
           <tr>
-            <th scope="col">★</th>
-            <th scope="col">Nazwa</th>
-            <th scope="col">Opis (edytowalny)</th>
-            <th scope="col">Tagi</th>
-            <th scope="col">Ost. modyfikacja</th>
-            <th scope="col">Akcje</th>
+            <th>★</th>
+            <th>Nazwa</th>
+            <th>Opis (edytowalny)</th>
+            <th>Tagi</th>
+            <th>Ost. modyfikacja</th>
+            <th>Akcje</th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
@@ -191,18 +125,18 @@
   <aside class="grid">
     <div class="card">
       <b>Szybkie filtry (tagi)</b>
-      <div style="margin-top:8px" class="small">
+      <div class="small" style="margin-top:8px">
         <div class="list-reset" id="quickTags"></div>
       </div>
       <div class="hint" style="margin-top:8px">Kliknij tag, aby filtrować. Ponowne kliknięcie usuwa filtr.</div>
     </div>
 
     <div class="card small">
-      <b>Uwagi, gdy plik „nie wczytuje się”:</b>
+      <b>Gdy PDF „nie wczytuje się”:</b>
       <ol>
-        <li>Sprawdź <i>dokładną</i> nazwę (w tym polskie znaki i myślniki).</li>
-        <li>Upewnij się, że plik leży w tym samym katalogu co ta strona.</li>
-        <li>Diakrytyki (np. Ś, Ą) mogą mieć różne formy Unicode (NFC/NFD). Jeśli serwer nie dopasowuje, rozważ zmianę nazwy na ASCII (np. <code>OSWIADCZENIE_WSPOLMAZONKA.docx</code>).</li>
+        <li>Sprawdź <i>dokładną</i> nazwę (polskie znaki, spacje/myślniki).</li>
+        <li>Plik musi leżeć w tym samym katalogu co ta strona.</li>
+        <li>Diakrytyki mogą mieć różne formy Unicode (NFC/NFD) — można też tymczasowo zmienić nazwę na ASCII.</li>
       </ol>
     </div>
   </aside>
@@ -232,10 +166,7 @@ const INT = new Intl.NumberFormat('pl-PL',{maximumFractionDigits:0});
 const fmtDate = ts => ts ? new Date(ts).toLocaleString('pl-PL') : '—';
 const fileExt = n => (n.split('.').pop()||'').toLowerCase();
 const sl = (s) => (s||'').toString().toLowerCase();
-const CSVesc = v => {
-  let s = String(v==null?'':v);
-  return /[\";\n]/.test(s) ? '"' + s.replace(/\"/g,'""') + '"' : s;
-};
+const CSVesc = v => { let s = String(v==null?'':v); return /[\";\n]/.test(s) ? '"' + s.replace(/\"/g,'""') + '"' : s; };
 
 /* ===== local storage for notes ===== */
 const LS_KEY = 'arkon_docs_notes_v1'; // { [fileName]: {desc, tags:string[], fav:boolean, mod?:number}}
@@ -249,7 +180,7 @@ function saveNotes(){
   buildQuickTags();
 }
 
-/* ===== Twoje pliki z podziałem na działy ===== */
+/* ===== pliki ===== */
 const FILES = [
   /* OGÓLNE */
   { name:'UMOWA Z WYKONAWCĄ  arkon.pdf', href:'UMOWA Z WYKONAWCĄ  arkon.pdf',
@@ -283,7 +214,7 @@ const FILES = [
 /* ===== stan & UI ===== */
 let filter = { q:'', type:'', sort:'name.asc', tag:'' };
 
-/* wstępne ustawienie tagu z URL (?tag=dofinansowanie) */
+/* tag z URL (?tag=dofinansowanie) */
 const usp = new URLSearchParams(location.search);
 if(usp.get('tag')){ filter.tag = usp.get('tag'); }
 
@@ -296,9 +227,6 @@ $('#btnReset').addEventListener('click', ()=>{
 });
 $('#btnExportCSV').addEventListener('click', exportCSV);
 $('#pickMeta').addEventListener('change', handlePickMeta);
-
-/* skrót klawiaturowy do wyszukiwania */
-window.addEventListener('keydown', (e)=>{ if(e.key==='/' && !e.metaKey && !e.ctrlKey){ e.preventDefault(); $('#q').focus(); }});
 
 /* szybkie filtry — działy */
 $('#btnAll').addEventListener('click', ()=>{ filter.tag=''; render(); });
@@ -359,8 +287,6 @@ function render(){
     const tdFav = document.createElement('td');
     const star = document.createElement('span');
     star.className = 'star' + (file._fav?' on':'');
-    star.setAttribute('role','button');
-    star.setAttribute('aria-label', file._fav ? 'Usuń z ulubionych' : 'Dodaj do ulubionych');
     star.textContent = file._fav ? '★' : '☆';
     star.title = file._fav ? 'Usuń z ulubionych' : 'Dodaj do ulubionych';
     star.addEventListener('click', ()=>{
@@ -388,7 +314,7 @@ function render(){
     box.appendChild(ico); box.appendChild(a);
     tdName.appendChild(box);
 
-    // Opis (edytowalny) + autosave
+    // Opis (edytowalny)
     const tdDesc = document.createElement('td');
     const ta = document.createElement('textarea'); ta.placeholder='Opis dokumentu…'; ta.value=file._desc||'';
     ta.addEventListener('input', debounce(()=>{ setNote(file.name, {desc:ta.value}); }, 200));
@@ -403,7 +329,7 @@ function render(){
     }, 200));
     tdTags.appendChild(inpTags);
 
-    // Ost. modyfikacja (z local metadanych jeśli wczytane)
+    // Ost. modyfikacja
     const tdMod = document.createElement('td');
     tdMod.textContent = file._mod ? fmtDate(file._mod) : '—';
 
@@ -437,31 +363,26 @@ function render(){
 function buildQuickTags(){
   const box = $('#quickTags'); box.innerHTML='';
   const map = new Map();
-  // zbierz z plików + z notes
-  FILES.forEach(f=>{
-    (f.tags||[]).forEach(t=> map.set(t, (map.get(t)||0)+1));
-  });
-  Object.values(notes).forEach(n=>{
-    (n.tags||[]).forEach(t=> map.set(t, (map.get(t)||0)+1));
-  });
-  if(map.size===0){ box.innerHTML='<div class="muted">Brak tagów. Dodaj w tabeli.</div>'; return; }
+  FILES.forEach(f=>{ (f.tags||[]).forEach(t=> map.set(t, (map.get(t)||0)+1)); });
+  Object.values(notes).forEach(n=>{ (n.tags||[]).forEach(t=> map.set(t, (map.get(t)||0)+1)); });
+
+  if(map.size===0){ box.innerHTML='<div class="small">Brak tagów. Dodaj w tabeli.</div>'; return; }
 
   const sorted = [...map.entries()].sort((a,b)=> b[1]-a[1]);
   sorted.slice(0,30).forEach(([tag,count])=>{
     const btn = document.createElement('button');
-    btn.className='tag';
-    btn.type='button';
+    btn.className='tag'; btn.type='button';
     btn.textContent = tag + ' ('+count+')';
     btn.addEventListener('click', ()=>{
       filter.tag = (filter.tag===tag ? '' : tag);
       render();
     });
-    if(filter.tag===tag){ btn.style.background='#1a2a66'; btn.style.borderColor='#4b65d2'; btn.style.color='#e9eeff'; }
+    if(filter.tag===tag){ btn.style.background='#262626'; btn.style.borderColor='#4a4a4a'; }
     box.appendChild(btn);
   });
 }
 
-/* ===== notatki - merge partial ===== */
+/* ===== notatki ===== */
 function setNote(name, part){
   const n = notes[name] || {};
   Object.assign(n, part);
@@ -483,7 +404,7 @@ function closePreview(){
   modal.classList.remove('open');
 }
 
-/* ===== wczytaj metadane z lokalnych plików (tylko po nazwie) ===== */
+/* ===== wczytaj metadane z lokalnych plików ===== */
 async function handlePickMeta(e){
   const files = Array.from(e.target.files||[]);
   if(!files.length) return;
@@ -525,12 +446,12 @@ function exportCSV(){
   URL.revokeObjectURL(a.href);
 }
 
-/* ===== debounce util ===== */
+/* ===== debounce ===== */
 function debounce(fn,ms){ let t; return function(){ const a=arguments; clearTimeout(t); t=setTimeout(()=>fn.apply(null,a), ms||180); }; }
 
 /* ===== init ===== */
 function init(){
-  // zasiej domyślne opisy/tagi jeśli nie ma notatek
+  // zasiej domyślne opisy/tagi jeśli brak notatek
   FILES.forEach(f=>{
     if(!notes[f.name]){
       notes[f.name] = { desc:f.desc||'', tags:(f.tags||[]), fav:false };
@@ -541,6 +462,453 @@ function init(){
   render();
 }
 init();
+</script>
+</body>
+</html>
+index.html (Pulpit / z dodatkowym przejściem „Przesył dokumentów → Dokumenty”)
+W Twoim pliku dodałam w sekcji Skróty przycisk, który prowadzi bezpośrednio do listy dokumentów — tak jak prosiłaś, „z przejścia – przesył dokumentów”.
+
+html
+Kopiuj
+Edytuj
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARKON — Pulpit / Indeks</title>
+<meta name="description" content="Strona główna ARKON CRM: logowanie, szybkie podglądy, skróty, ostatnie rekordy, nawigacja do wszystkich modułów.">
+<link rel="icon" type="image/svg+xml" href="pv-icon.svg">
+<link rel="alternate icon" href="pv-icon.svg">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%230b8d3b'/%3E%3Ctext x='50' y='62' font-size='60' text-anchor='middle' fill='white' font-family='Arial,Helvetica,sans-serif'%3EA%3C/text%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#0b1020; --grad1:#0a1028; --grad2:#0d1536;
+    --ink:#e8edff; --muted:#aeb8da; --line:#22306a;
+    --card:#0f1636; --chip:#16245a; --accent:#4cc9f0;
+    --ok:#2fbf71; --warn:#ffb84d; --bad:#ff6b6b;
+    --focus:#82c4ff;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;font:15px/1.55 system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,var(--grad1),var(--grad2));color:var(--ink)}
+  a{color:#cfe0ff;text-decoration:none}
+  header{padding:16px;border-bottom:1px solid var(--line);background:#0e1534;position:sticky;top:0;z-index:8}
+  header h1{margin:0;font-size:22px}
+  header .muted{color:var(--muted);font-size:13px}
+  nav{display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line);background:#121a44}
+  nav a{padding:8px 12px;border-radius:999px;border:1px solid #2a3a75}
+  nav a:hover{background:#1a2758}
+  .wrap{max-width:1280px;margin:0 auto;padding:16px}
+  .grid{display:grid;gap:14px}
+  @media(min-width:1100px){ .cols-3{grid-template-columns:repeat(3,1fr)} .cols-2{grid-template-columns:2fr 1fr} }
+  .card{background:linear-gradient(180deg,#0f1636,#0f1a42);border:1px solid var(--line);border-radius:14px;padding:14px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
+  .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px dashed #3a4ca3}
+  .btn.bad{background:#3a1f2a;border-color:#7b3341}
+  .btn.ok{background:#194d34;border-color:#2f9762}
+  .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
+  table{width:100%;border-collapse:separate;border-spacing:0}
+  th,td{padding:8px 6px;border-bottom:1px solid #1a244d;text-align:left;vertical-align:top}
+  th{font-size:12px;color:var(--muted)}
+  .small{font-size:12px;color:var(--muted)}
+  .right{display:flex;gap:8px;justify-content:flex-end}
+  .kpi{display:flex;align-items:center;gap:12px}
+  .kpi .n{font-weight:700;font-size:20px}
+  .ok{color:#7ee2ab} .warn{color:#ffd699} .bad{color:#ffb1b1}
+  .list-reset{list-style:none;margin:0;padding:0}
+  .status{padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid #2a3a75;background:#0f1a44}
+  .status.lead{background:#19224e}
+  .status.q{background:#21305f}
+  .status.w{background:#24336b}
+  .status.c{background:#1d3d2f}
+  .status.l{background:#4a1d1d}
+  .apps{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+  .app{display:block;padding:14px;border-radius:12px;background:#111a42;border:1px solid #2a3a75}
+  .app b{display:block;margin-bottom:4px}
+  .app:hover{background:#16235a}
+  .tag{display:inline-block;margin:2px 6px 0 0;padding:3px 8px;border:1px solid #3a4ca3;border-radius:999px;font-size:12px}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  @media(max-width:720px){ .grid-2{grid-template-columns:1fr} }
+  @media print{ #lock,nav,.btn,.kbd{display:none!important} }
+
+  /* ===== LOCK / LOGIN OVERLAY ===== */
+  #lock{position:fixed;inset:0;background:radial-gradient(1200px 600px at 60% -10%,#19307144,transparent),linear-gradient(180deg,#0a0f22 0%,#0a0f22 30%,#0b1130 100%);backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;z-index:9999}
+  #lock.open{display:flex}
+  .login-panel{width:460px;max-width:94vw;background:linear-gradient(180deg,#0f1636,#101a44);border:1px solid #2a3a75;border-radius:16px;padding:16px;box-shadow:0 20px 60px #0008}
+  .login-panel h2{margin:0 0 4px}
+  .login-panel .muted{margin-bottom:8px}
+  .field{width:100%;background:#0d1530;border:1px solid #28356c;color:#e8edff;border-radius:10px;padding:10px 12px;outline:0}
+  .field:focus{border-color:#3e61cc;box-shadow:0 0 0 3px #3e61cc33}
+  .row-sb{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .social{display:flex;gap:8px}
+  .btn.icon{display:inline-flex;align-items:center;gap:8px}
+  .g{background:#1f3b7a} .f{background:#2d3f75}
+  .err{color:#ffb1b1;font-size:13px;height:16px}
+  .shake{animation:shake .36s}
+  @keyframes shake{10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(2px)}30%,50%,70%{transform:translateX(-4px)}40%,60%{transform:translateX(4px)}}
+
+  /* user bar */
+  .userbar{position:fixed;right:10px;top:10px;display:flex;align-items:center;gap:8px;z-index:9}
+  .avatar{width:30px;height:30px;border-radius:50%;display:inline-grid;place-items:center;background:#133; border:1px solid #2a3a75;font-weight:700}
+  .online{width:8px;height:8px;border-radius:50%;background:#2fbf71;border:1px solid #0b1}
+  .link-like{background:transparent;border:0;color:#cfe0ff;text-decoration:underline;cursor:pointer}
+</style>
+</head>
+<body>
+
+<!-- USER BAR -->
+<div class="userbar">
+  <span id="ubName" class="small">Gość</span>
+  <span class="online" title="online"></span>
+  <div id="ubAvatar" class="avatar">A</div>
+  <button id="btnLogout" class="btn ghost" title="Wyloguj">Wyloguj</button>
+  <button id="btnLock" class="btn ghost" title="Zablokuj ekran">Zablokuj</button>
+</div>
+
+<header>
+  <h1>Pulpit • ARKON CRM</h1>
+  <div class="small">Szybki podgląd i skróty. Wszystkie dane lokalnie (LocalStorage/IndexedDB).</div>
+</header>
+
+<nav aria-label="Nawigacja główna">
+  <a href="index.html" aria-current="page">🏠 Pulpit</a>
+  <a href="klienci.html">👥 Klienci</a>
+  <a href="lidy.html">🧲 Lidy</a>
+  <a href="komponenty.html">🧩 Komponenty</a>
+  <a href="upload.html">📤 Przesył plików</a>
+  <a href="dokumenty.html">📄 Dokumenty</a>
+  <a href="chat.html">💬 Komunikator</a>
+  <a href="ustawienia.html">⚙ Ustawienia</a>
+  <a href="kalkulator.html" target="_blank" rel="noopener">🧮 Kalkulator ↗️</a>
+  <a href="baza.html">🗃 Baza (storage)</a>
+  <a href="kalendarz-montaze.html">📅 Kalendarz montaży</a>
+</nav>
+
+<div class="wrap grid cols-2" id="panel">
+  <!-- LEWA KOLUMNA -->
+  <section class="grid">
+    <!-- KPI -->
+    <div class="grid cols-3">
+      <div class="card"><div class="kpi"><div>👥</div><div><div class="small">Klienci</div><div id="kpiClients" class="n">0</div></div></div></div>
+      <div class="card"><div class="kpi"><div>🧲</div><div><div class="small">Lidy</div><div id="kpiLeads" class="n">0</div></div></div></div>
+      <div class="card"><div class="kpi"><div>🧩</div><div><div class="small">Komponenty</div><div id="kpiComp" class="n">0</div></div></div></div>
+    </div>
+
+    <!-- Skróty -->
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <div><b>Skróty</b></div>
+        <div class="small">Tip: <span class="kbd">/</span> — szukaj klienta • <span class="kbd">Alt+N</span> — nowy klient</div>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <a class="btn ok" href="klienci.html">+ Nowy klient</a>
+        <a class="btn" href="lidy.html">+ Nowy lead</a>
+        <a class="btn ghost" href="komponenty.html">Dodaj komponent</a>
+        <a class="btn ghost" href="upload.html">Wyślij pliki</a>
+        <!-- NOWY skrót: Przesył dokumentów -> Dokumenty -->
+        <a class="btn" href="dokumenty.html" title="Po przesyłce przejdź do listy dokumentów">Przesył dokumentów → Dokumenty</a>
+        <a class="btn" href="kalkulator.html" target="_blank" rel="noopener">Kalkulator ↗️</a>
+      </div>
+    </div>
+
+    <!-- Ostatni klienci -->
+    <div class="card">
+      <div class="row" style="justify-content:space-between"><b>Ostatnio dodani klienci</b><a class="small" href="klienci.html">Zobacz wszystkich →</a></div>
+      <div style="overflow:auto;margin-top:6px">
+        <table id="tblClients">
+          <thead><tr><th>Nazwa</th><th>Status</th><th>Kontakt</th><th>Tagi</th><th>Dodano</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Ostatnie lidy -->
+    <div class="card">
+      <div class="row" style="justify-content:space-between"><b>Ostatnie lidy</b><a class="small" href="lidy.html">Zobacz wszystkie →</a></div>
+      <div style="overflow:auto;margin-top:6px">
+        <table id="tblLeads">
+          <thead><tr><th>Tytuł</th><th>Źródło</th><th>Status</th><th>Data</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRAWA KOLUMNA -->
+  <aside class="grid">
+    <!-- Moduły -->
+    <div class="card">
+      <b>Moduły</b>
+      <div class="apps" style="margin-top:8px">
+        <a class="app" href="klienci.html"><b>Klienci</b><span class="small">Lista, edycja, projekty, dokumenty, pola własne.</span></a>
+        <a class="app" href="lidy.html"><b>Lidy</b><span class="small">Zbieranie i kwalifikacja leadów.</span></a>
+        <a class="app" href="komponenty.html"><b>Komponenty</b><span class="small">Pompy, piece, PV, ocieplenie, bramy.</span></a>
+        <a class="app" href="upload.html"><b>Przesył plików</b><span class="small">Po wgraniu: przejdź do <a href="dokumenty.html"><u>Dokumentów</u></a>.</span></a>
+        <a class="app" href="dokumenty.html"><b>Dokumenty</b><span class="small">Wzory umów i szablony.</span></a>
+        <a class="app" href="chat.html"><b>Komunikator</b><span class="small">Zespołowy czat + załączniki.</span></a>
+        <a class="app" href="ustawienia.html"><b>Ustawienia</b><span class="small">Preferencje, wydruk do PDF.</span></a>
+        <a class="app" href="baza.html"><b>Baza</b><span class="small">Podgląd pamięci lokalnej.</span></a>
+        <a class="app" href="kalkulator.html" target="_blank" rel="noopener"><b>Kalkulator</b><span class="small">Symulacje i kosztorysy.</span></a>
+        <a class="app" href="kalendarz-montaze.html"><b>Kalendarz montaży</b><span class="small">Planowanie ekip i terminów.</span></a>
+      </div>
+    </div>
+
+    <!-- Komponenty szybki podgląd -->
+    <div class="card">
+      <b>Komponenty — szybki podgląd</b>
+      <div class="grid-2 small" style="margin-top:6px">
+        <div>Pompy: <b id="cmp_pumps">0</b></div>
+        <div>Piece/Kotły: <b id="cmp_boilers">0</b></div>
+        <div>Fotowoltaika: <b id="cmp_pv">0</b></div>
+        <div>Ocieplenie: <b id="cmp_insul">0</b></div>
+        <div>Bramy: <b id="cmp_garage">0</b></div>
+      </div>
+      <div class="right" style="margin-top:8px">
+        <a class="btn ghost" href="komponenty.html">Otwórz komponenty</a>
+      </div>
+    </div>
+
+    <!-- Notatki -->
+    <div class="card">
+      <b>Szybka notatka</b>
+      <textarea id="note" placeholder="Twoja notatka (zapis lokalny)" style="width:100%;min-height:100px;margin-top:8px"></textarea>
+      <div class="right" style="margin-top:8px"><button id="btnClearNote" class="btn ghost">Wyczyść</button></div>
+      <div class="small" style="margin-top:6px">Przechowywane w <code>localStorage</code> (klucz: <code>arkon_note</code>).</div>
+    </div>
+  </aside>
+</div>
+
+<!-- LOCK / LOGIN -->
+<div id="lock" class="open" aria-modal="true" role="dialog">
+  <form id="loginForm" class="login-panel" autocomplete="off">
+    <h2>🔒 ARKON CRM — logowanie</h2>
+    <div class="muted">Zabezpieczony dostęp do pulpitu (pozostałe moduły bez hasła).</div>
+    <div class="row" style="gap:10px;align-items:center;margin:8px 0">
+      <div class="avatar" id="lpAvatar" aria-hidden="true">A</div>
+      <div class="small" id="lpWelcome">Witaj! Zaloguj się, aby przejść do panelu.</div>
+    </div>
+    <div style="display:grid;gap:8px;margin-top:6px">
+      <label class="small">Użytkownik</label>
+      <input id="loginUser" class="field" inputmode="email" placeholder="np. użytkownik" aria-label="Użytkownik" required>
+      <label class="small">Hasło</label>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:6px">
+        <input id="loginPass" class="field" type="password" placeholder="••••••••" aria-label="Hasło" required>
+        <button type="button" id="togglePass" class="btn ghost" aria-label="Pokaż/ukryj hasło">👁</button>
+      </div>
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <label class="small" style="display:flex;align-items:center;gap:6px">
+          <input id="rememberMe" type="checkbox"> Pamiętaj mnie (7 dni)
+        </label>
+        <button type="button" id="forgot" class="link-like">Zapomniałeś hasła?</button>
+      </div>
+      <div id="err" class="err"></div>
+      <button class="btn ok" type="submit">Zaloguj</button>
+      <div class="small" style="text-align:center;opacity:.85">lub</div>
+      <div class="social">
+        <button type="button" id="loginGoogle" class="btn icon g">G Zaloguj przez Google</button>
+        <button type="button" id="loginFacebook" class="btn icon f">f Zaloguj przez Facebook</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+'use strict';
+/* ===== helpers ===== */
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const INT = new Intl.NumberFormat('pl-PL',{maximumFractionDigits:0});
+const fmtDate = ts => new Date(ts||Date.now()).toLocaleString('pl-PL');
+function escapeHtml(s){ return (s==null?'':String(s)).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* ===== storage keys ===== */
+const LS = {
+  clients: 'arkon_clients_v1',
+  leads:   'arkon_leads_v1',
+  cmp: {
+    pumps:  'arkon_cmp_pumps_v1',
+    boilers:'arkon_cmp_boilers_v1',
+    pv:     'arkon_cmp_pv_v1',
+    insul:  'arkon_cmp_insul_v1',
+    garage: 'arkon_cmp_garage_v1'
+  },
+  note: 'arkon_note',
+  authToken: 'arkon_auth_token_v1',
+  authSession: 'arkon_auth_session_v1'
+};
+
+/* ===== AUTH (local-only) ===== */
+const USER_HASH = 'cc6c7f1d16552c14bc8aaa46f3f869743c08c26d7e3c66fd58ee6c304cf5d5ac'; // sha256("Arkon2")
+const PASS_HASH = '2fdc3bfddb6c06d9572b7a69c5012742b63d83a1f01c5254dc1fd0fa33352a93'; // sha256("Szybkakasa")
+
+async function sha256Hex(str){
+  const enc = new TextEncoder().encode(str);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function isTokenValid(obj){ return obj && obj.exp && obj.exp>Date.now() && obj.user && obj.sig; }
+function genSig(uh,ph){ return btoa(uh.slice(0,16)+':'+ph.slice(-16)+':'+Date.now()); }
+function setAvatarFromName(name, el){ el.textContent=(name||'A').trim().charAt(0).toUpperCase()||'A'; }
+
+/* ===== LOCK / LOGIN ===== */
+const lock = $('#lock');
+const loginForm = $('#loginForm');
+const loginUser = $('#loginUser');
+const loginPass = $('#loginPass');
+const rememberMe = $('#rememberMe');
+const errBox = $('#err');
+
+$('#togglePass').addEventListener('click', ()=>{ loginPass.type = loginPass.type==='password' ? 'text' : 'password'; });
+$('#forgot').addEventListener('click', ()=>{ const u = prompt('Podaj identyfikator użytkownika:'); if(u) alert('Instrukcje resetu wysłane (symulacja).'); });
+
+$('#loginGoogle').addEventListener('click', ()=>{
+  const name='Google User';
+  const token={user:name,exp:Date.now()+7*24*3600*1000,sig:genSig(USER_HASH,PASS_HASH),idp:'google'};
+  localStorage.setItem(LS.authToken, JSON.stringify(token));
+  afterLogin(name,true);
+});
+$('#loginFacebook').addEventListener('click', ()=>{
+  const name='Facebook User';
+  const token={user:name,exp:Date.now()+7*24*3600*1000,sig:genSig(USER_HASH,PASS_HASH),idp:'facebook'};
+  localStorage.setItem(LS.authToken, JSON.stringify(token));
+  afterLogin(name,true);
+});
+
+loginForm.addEventListener('submit', async (e)=>{
+  e.preventDefault(); errBox.textContent='';
+  const uh = await sha256Hex(loginUser.value||'');
+  const ph = await sha256Hex(loginPass.value||'');
+  if(uh===USER_HASH && ph===PASS_HASH){
+    const name = loginUser.value || 'Użytkownik';
+    const token = { user:name, exp:Date.now()+(rememberMe.checked?7*24*3600*1000:2*3600*1000), sig:genSig(uh,ph) };
+    if(rememberMe.checked){ localStorage.setItem(LS.authToken, JSON.stringify(token)); sessionStorage.removeItem(LS.authSession); }
+    else{ sessionStorage.setItem(LS.authSession, JSON.stringify(token)); localStorage.removeItem(LS.authToken); }
+    afterLogin(name, rememberMe.checked);
+  }else{
+    errBox.textContent='Nieprawidłowe dane logowania.';
+    loginForm.classList.remove('shake'); void loginForm.offsetWidth; loginForm.classList.add('shake');
+    loginPass.value=''; loginPass.focus();
+  }
+});
+
+function afterLogin(name){
+  lock.classList.remove('open'); document.body.style.overflow='';
+  $('#ubName').textContent=name; setAvatarFromName(name, $('#ubAvatar'));
+  $('#panel').setAttribute('tabindex','-1'); $('#panel').focus({preventScroll:true});
+}
+
+/* autologin */
+(function(){
+  try{
+    const rawL=localStorage.getItem(LS.authToken), rawS=sessionStorage.getItem(LS.authSession);
+    const obj = rawL ? JSON.parse(rawL) : rawS ? JSON.parse(rawS) : null;
+    if(isTokenValid(obj)){ $('#ubName').textContent=obj.user||'Użytkownik'; setAvatarFromName(obj.user, $('#ubAvatar')); lock.classList.remove('open'); document.body.style.overflow=''; }
+    else{ lock.classList.add('open'); document.body.style.overflow='hidden'; }
+  }catch{ lock.classList.add('open'); document.body.style.overflow='hidden'; }
+})();
+
+/* Blokuj/wyloguj */
+$('#btnLock').addEventListener('click', ()=>{ lock.classList.add('open'); document.body.style.overflow='hidden'; });
+$('#btnLogout').addEventListener('click', ()=>{
+  if(confirm('Wylogować z pulpitu?')){
+    localStorage.removeItem(LS.authToken); sessionStorage.removeItem(LS.authSession);
+    lock.classList.add('open'); document.body.style.overflow='hidden';
+    loginUser.value=''; loginPass.value=''; rememberMe.checked=false;
+    $('#ubName').textContent='Gość'; setAvatarFromName('A', $('#ubAvatar'));
+  }
+});
+
+/* ===== KPI ===== */
+function load(key, fallback){ try{ return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }catch{ return fallback; } }
+function refreshKPI(){
+  const clients = load(LS.clients, []);
+  const leads   = load(LS.leads,   []);
+  const cmpSum = ['pumps','boilers','pv','insul','garage'].map(k=>load(LS.cmp[k],[]).length).reduce((a,b)=>a+b,0);
+  $('#kpiClients').textContent = clients.length;
+  $('#kpiLeads').textContent   = leads.length;
+  $('#kpiComp').textContent    = cmpSum;
+
+  // komponenty by cat
+  $('#cmp_pumps').textContent  = load(LS.cmp.pumps, []).length;
+  $('#cmp_boilers').textContent= load(LS.cmp.boilers, []).length;
+  $('#cmp_pv').textContent     = load(LS.cmp.pv, []).length;
+  $('#cmp_insul').textContent  = load(LS.cmp.insul, []).length;
+  $('#cmp_garage').textContent = load(LS.cmp.garage, []).length;
+}
+
+/* ===== Recent Clients ===== */
+function renderRecentClients(){
+  const tb = $('#tblClients tbody'); tb.innerHTML = '';
+  const clients = load(LS.clients, []).slice().sort((a,b)=>(b.created||0)-(a.created||0)).slice(0,8);
+  if(!clients.length){
+    tb.innerHTML = '<tr><td colspan="5" class="small">Brak danych. Dodaj pierwszego klienta w module „Klienci”.</td></tr>'; return;
+  }
+  clients.forEach(c=>{
+    const tr = document.createElement('tr');
+    const tags = (c.tags||[]).slice(0,3).map(t=>'<span class="tag">'+escapeHtml(t)+'</span>').join('');
+    tr.innerHTML = `
+      <td><a href="klienci.html" title="Otwórz w Klienci"><b>${escapeHtml(c.name||'—')}</b></a></td>
+      <td><span class="status ${statusClass(c.status)}">${escapeHtml(c.status||'—')}</span></td>
+      <td>${escapeHtml(c.email||'')}<div class="small">${escapeHtml(c.phone||'')}</div></td>
+      <td>${tags}</td>
+      <td>${fmtDate(c.created)}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+/* ===== Recent Leads ===== */
+function renderRecentLeads(){
+  const tb = $('#tblLeads tbody'); tb.innerHTML = '';
+  const leads = load(LS.leads, []).slice().sort((a,b)=>(b.created||0)-(a.created||0)).slice(0,8);
+  if(!leads.length){ tb.innerHTML = '<tr><td colspan="4" class="small">Brak leadów. Dodaj w module „Lidy”.</td></tr>'; return; }
+  leads.forEach(l=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><a href="lidy.html"><b>${escapeHtml(l.title||'Lead')}</b></a></td>
+      <td>${escapeHtml(l.source||'')}</td>
+      <td>${escapeHtml(l.status||'NOWY')}</td>
+      <td>${fmtDate(l.created)}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+/* ===== Notatka ===== */
+function initNote(){
+  const el = $('#note');
+  el.value = localStorage.getItem(LS.note) || '';
+  el.addEventListener('input', ()=> localStorage.setItem(LS.note, el.value));
+  $('#btnClearNote').addEventListener('click', ()=>{ if(confirm('Wyczyścić notatkę?')){ el.value=''; localStorage.removeItem(LS.note); } });
+}
+
+/* ===== utils ===== */
+function statusClass(s){
+  switch((s||'').toUpperCase()){
+    case 'LEAD': return 'lead';
+    case 'ZAPYTANIE': return 'q';
+    case 'W TOKU': return 'w';
+    case 'KLIENT': return 'c';
+    case 'UTRACONY': return 'l';
+    default: return '';
+  }
+}
+
+/* ===== keyboard shortcuts ===== */
+window.addEventListener('keydown', (e)=>{
+  if(e.key === '/'){ e.preventDefault(); location.href = 'klienci.html'; }
+  if(e.altKey && (e.key==='n' || e.key==='N')){ e.preventDefault(); location.href = 'klienci.html#new'; }
+});
+
+/* ===== boot ===== */
+refreshKPI();
+renderRecentClients();
+renderRecentLeads();
+initNote();
+
+/* focus helpers */
+$('#loginUser').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); $('#loginPass').focus(); }});
 </script>
 </body>
 </html>
