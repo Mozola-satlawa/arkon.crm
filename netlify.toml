@@ -1,13 +1,15 @@
-// Export Netlify TOML content as a string to avoid JS parse errors (consider renaming this file to `netlify.toml`)
-module.exports = `[build]
+# === Build ===
+[build]
   publish = "."
   node_bundler = "esbuild"
 
+# === Functions ===
 [functions]
-  node_bundler = "esbuild"
   directory = "netlify/functions"
+  node_bundler = "esbuild"
 
-# --- API aliasy ---
+# === API aliasy (rewrites do Functions) ===
+
 # contracts
 [[redirects]]
   from = "/api/contracts"
@@ -18,7 +20,7 @@ module.exports = `[build]
   to   = "/.netlify/functions/contracts/:splat"
   status = 200
 
-# docs
+# docs (upload/list/pobieranie plików)
 [[redirects]]
   from = "/api/docs"
   to   = "/.netlify/functions/docs"
@@ -38,15 +40,40 @@ module.exports = `[build]
   to   = "/.netlify/functions/tasks/:splat"
   status = 200
 
-# messages (chat)
+# chat: messages
 [[redirects]]
   from = "/api/messages"
   to   = "/.netlify/functions/messages"
   status = 200
+[[redirects]]
+  from = "/api/messages/*"
+  to   = "/.netlify/functions/messages/:splat"
+  status = 200
 
-# upload (chat attachments)
+# chat: upload załączników
 [[redirects]]
   from = "/api/upload"
   to   = "/.netlify/functions/upload"
   status = 200
-`;
+[[redirects]]
+  from = "/api/upload/*"
+  to   = "/.netlify/functions/upload/:splat"
+  status = 200
+
+# (opcjonalnie) ping/hello — jeśli masz hello.js
+[[redirects]]
+  from = "/api/hello"
+  to   = "/.netlify/functions/hello"
+  status = 200
+
+# (opcjonalnie) wyłączieserwerowe cachowanie dla HTML
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+# (opcjonalnie) podstawowe CORS dla statycznych (funkcje mają swoje nagłówki)
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*
