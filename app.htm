@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARKON • Aplikacje / Hub</title>
+<meta name="description" content="Szybki hub aplikacji ARKON: ostatnie leady, skróty, statusy modułów.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%23121a34'/%3E%3Ctext x='50' y='62' font-size='60' text-anchor='middle' fill='%23fff' font-family='Arial,Helvetica,sans-serif'%3EA%3C/text%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#0b1020; --g1:#0a1028; --g2:#0d1536;
+  --ink:#e8edff; --muted:#aeb8da; --line:#22306a;
+  --card:#0f1636; --chip:#16245a; --accent:#4cc9f0;
+  --ok:#2fbf71; --warn:#ffb84d; --bad:#ff6b6b;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font:15px/1.55 system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,var(--g1),var(--g2));color:#e8edff}
+a{color:#cfe0ff;text-decoration:none}
+header{padding:18px 16px;border-bottom:1px solid var(--line);background:#0e1534;position:sticky;top:0;z-index:8}
+h1{margin:0;font-size:22px}
+.small{font-size:12px;color:#aeb8da}
+.wrap{max-width:1280px;margin:0 auto;padding:16px}
+.grid{display:grid;gap:14px}
+@media(min-width:1100px){ .cols-2{grid-template-columns:2fr 1fr} .cols-3{grid-template-columns:repeat(3,1fr)} }
+.card{background:linear-gradient(180deg,#0f1636,#0f1a42);border:1px solid var(--line);border-radius:14px;padding:14px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.right{display:flex;gap:8px;justify-content:flex-end}
+.kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
+.btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
+.btn.ghost{background:transparent;border:1px dashed #3a4ca3}
+.apps{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.app{display:block;padding:14px;border-radius:12px;background:#111a42;border:1px solid #2a3a75}
+.app:hover{background:#16235a}
+.status{padding:2px 8px;border:1px solid #2a3a75;border-radius:999px;font-size:12px;background:#0f1a44}
+.status.new{background:#19224e}
+.status.wip{background:#24336b}
+.status.done{background:#1d3d2f}
+table{width:100%;border-collapse:separate;border-spacing:0}
+th,td{padding:8px 6px;border-bottom:1px solid #1a244d;text-align:left;vertical-align:top}
+th{font-size:12px;color:#aeb8da}
+.pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
+.search{min-width:260px}
+input,select{background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:8px 10px;color:#e8edff;font:inherit}
+.tag{display:inline-block;margin:2px 6px 0 0;padding:3px 8px;border:1px solid #3a4ca3;border-radius:999px;font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>ARKON • Hub aplikacji</h1>
+  <div class="small">Przegląd modułów i ostatnich rekordów. <span class="kbd">/</span> – szukaj leadu • <a href="lidy.html">pełna lista →</a></div>
+</header>
+
+<div class="wrap grid cols-2">
+  <section class="grid">
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <b>Ostatnie leady</b>
+        <div class="row">
+          <input id="q" class="search" placeholder="🔎 Imię, telefon, e‑mail, źródło, tag…">
+          <span class="pill">Widocznych: <b id="vis">0</b></span>
+        </div>
+      </div>
+      <div style="overflow:auto;margin-top:8px">
+        <table id="tblLeads">
+          <thead>
+            <tr>
+              <th>Tytuł / Klient</th>
+              <th>Źródło</th>
+              <th>Status</th>
+              <th>Kontakt</th>
+              <th>Tagi</th>
+              <th>Data</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="right" style="margin-top:8px">
+        <a class="btn" href="lidy.html">Otwórz moduł „Lidy”</a>
+        <a class="btn" href="dokumenty.html">Dokumenty</a>
+        <a class="btn" href="dokumenty.html?tag=prefinansowanie">Prefinansowanie</a>
+        <a class="btn" href="dokumenty.html?tag=dofinansowanie">Dofinansowanie</a>
+        <button id="btnSeed" class="btn ghost" type="button">Dodaj przykładowe</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <b>Skróty</b>
+      <div class="row" style="margin-top:6px">
+        <a class="btn" href="index.html">Pulpit</a>
+        <a class="btn" href="klienci.html">Klienci</a>
+        <a class="btn" href="komponenty.html">Komponenty</a>
+        <a class="btn" href="kalendarz-montaze.html">Kalendarz montaży</a>
+        <a class="btn" href="dokumenty.html?tag=prefinansowanie">Prefinansowanie</a>
+        <a class="btn" href="dokumenty.html?tag=dofinansowanie">Dofinansowanie</a>
+        <a class="btn" href="kalkulator.html" target="_blank" rel="noopener">Kalkulator ↗️</a>
+      </div>
+    </div>
+  </section>
+
+  <aside class="grid">
+    <div class="card">
+      <b>Moduły</b>
+      <div class="apps" style="margin-top:8px">
+        <a class="app" href="index.html"><b>📊 Pulpit</b><div class="small">KPI + ostatnie rekordy.</div></a>
+        <a class="app" href="klienci.html"><b>👥 Klienci</b><div class="small">Lista, projekty, umowy.</div></a>
+        <a class="app" href="lidy.html"><b>🧲 Lidy</b><div class="small">Zbieranie i kwalifikacja.</div></a>
+        <a class="app" href="komponenty.html"><b>🧩 Komponenty</b><div class="small">Pompy, piece, PV, ocieplenie, stolarka, bramy.</div></a>
+        <a class="app" href="kalendarz-montaze.html"><b>📅 Kalendarz montaży</b><div class="small">Plan ekip i terminów.</div></a>
+        <a class="app" href="baza.html"><b>🗃 Baza</b><div class="small">Podgląd localStorage/IDB.</div></a>
+        <a class="app" href="dokumenty.html"><b>📑 Dokumenty</b><div class="small">Umowy, oświadczenia, pełnomocnictwa.</div></a>
+        <a class="app" href="dokumenty.html?tag=prefinansowanie"><b>💳 Prefinansowanie</b><div class="small">Zaliczki, upoważnienia.</div></a>
+        <a class="app" href="dokumenty.html?tag=dofinansowanie"><b>💸 Dofinansowanie</b><div class="small">Wnioski, załączniki, oświadczenia.</div></a>
+      </div>
+    </div>
+
+    <div class="card">
+      <b>Statystyki (lokalne)</b>
+      <div class="grid cols-3 small" style="margin-top:6px">
+        <div>Leady: <b id="cntLeads">0</b></div>
+        <div>Klienci: <b id="cntClients">0</b></div>
+        <div>Komponenty: <b id="cntCmp">0</b></div>
+      </div>
+      <div class="small" style="margin-top:6px;color:#9fb4ff">Dane są tylko w Twojej przeglądarce.</div>
+    </div>
+  </aside>
+</div>
+
+<script>
+'use strict';
+const $=s=>document.querySelector(s);
+const INT=new Intl.NumberFormat('pl-PL',{maximumFractionDigits:0});
+const fmt=n=>INT.format(Math.round(Number(n)||0));
+const LS={
+  leads:'arkon_leads_v1',
+  clients:'arkon_clients_v1',
+  cmp:{ pumps:'arkon_cmp_pumps_v1', boilers:'arkon_cmp_boilers_v1', pv:'arkon_cmp_pv_v1', insul:'arkon_cmp_insul_v1', garage:'arkon_cmp_garage_v1' }
+};
+function load(key, fallback){ try{ return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback)); }catch{ return fallback; } }
+function save(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+
+function seedLeads(){
+  let arr=load(LS.leads,[]);
+  if(arr.length) return;
+  arr=[
+    {id:uid(), title:'Pompa 12 kW – Przemków', source:'www', status:'NOWY', name:'Jan Kowalski', email:'jan@kow.pl', phone:'+48 500 000 111', tags:['pompa'], created:Date.now()-86400000*2},
+    {id:uid(), title:'Fotowoltaika 9,9 kWp', source:'FB', status:'W TOKU', name:'Anna Nowak', email:'anna@nowak.pl', phone:'+48 600 100 200', tags:['pv'], created:Date.now()-86400000},
+    {id:uid(), title:'Ocieplenie 180 m²', source:'polecenie', status:'ZAMKNIĘTY', name:'Firma XYZ', email:'biuro@xyz.pl', phone:'+48 700 222 333', tags:['ocieplenie'], created:Date.now()-3600*1000}
+  ];
+  save(LS.leads, arr);
+}
+function uid(){ return Math.random().toString(36).slice(2)+Date.now().toString(36); }
+
+let leads=[], qtext='';
+function renderLeads(){
+  const tb=document.querySelector('#tblLeads tbody'); tb.innerHTML='';
+  const rows=leads.slice().sort((a,b)=>(b.created||0)-(a.created||0)).filter(fmatch);
+  document.querySelector('#vis').textContent=rows.length;
+  if(!rows.length){ tb.innerHTML='<tr><td colspan="6" class="small">Brak danych. Dodaj w module „Lidy”.</td></tr>'; return; }
+  rows.slice(0,30).forEach(l=>{
+    const tr=document.createElement('tr');
+    const tags=(l.tags||[]).map(t=>'<span class="tag">'+escape(t)+'</span>').join('');
+    tr.innerHTML = `
+      <td><b>${escape(l.title||'—')}</b><div class="small">${escape(l.name||'')}</div></td>
+      <td>${escape(l.source||'')}</td>
+      <td><span class="status ${cls(l.status)}">${escape(l.status||'')}</span></td>
+      <td>${escape(l.email||'')}<div class="small">${escape(l.phone||'')}</div></td>
+      <td>${tags}</td>
+      <td>${new Date(l.created||Date.now()).toLocaleString('pl-PL')}</td>`;
+    tb.appendChild(tr);
+  });
+}
+function fmatch(l){
+  if(!qtext) return true;
+  const q=qtext.toLowerCase();
+  return ['title','name','email','phone','source','status'].some(k=>(l[k]||'').toString().toLowerCase().includes(q)) ||
+         (l.tags||[]).some(t=>t.toLowerCase().includes(q));
+}
+function cls(s){
+  s=(s||'').toUpperCase();
+  if(s==='NOWY'||s==='LEAD') return 'new';
+  if(s==='W TOKU') return 'wip';
+  if(s==='ZAMKNIĘTY'||s==='KLIENT') return 'done';
+  return '';
+}
+function escape(s){ return (s==null?'':String(s)).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+function refreshKPI(){
+  document.querySelector('#cntLeads').textContent = load(LS.leads,[]).length;
+  const cc = load('arkon_clients_v2', null) || load(LS.clients, []);
+  document.querySelector('#cntClients').textContent = (Array.isArray(cc)?cc.length:0);
+  const cmp = ['pumps','boilers','pv','insul','garage'].map(k=>load(LS.cmp[k],[]).length).reduce((a,b)=>a+b,0);
+  document.querySelector('#cntCmp').textContent = cmp;
+}
+
+function init(){
+  seedLeads();
+  leads = load(LS.leads, []);
+  refreshKPI();
+  renderLeads();
+  document.querySelector('#q').addEventListener('input', e=>{ qtext=e.target.value.trim(); renderLeads(); });
+  window.addEventListener('keydown', e=>{ if(e.key==='/'){ e.preventDefault(); document.querySelector('#q').focus(); } });
+  document.querySelector('#btnSeed').addEventListener('click', ()=>{ seedLeads(); leads=load(LS.leads,[]); refreshKPI(); renderLeads(); });
+}
+init();
+</script>
+</body>
+</html>
