@@ -1,56 +1,16 @@
-# ============ BUILD ============
 [build]
   publish = "."
-  # (opcjonalnie) jeśli używasz starej konwencji:
-  # functions = "netlify/functions"
+  node_bundler = "esbuild"
 
 [functions]
   node_bundler = "esbuild"
-  directory    = "netlify/functions"
+  directory = "netlify/functions"
 
-# (opcjonalnie lokalny dev dla stron statycznych)
-[dev]
-  framework = "#static"
-
-# ============ API REDIRECTS / REWRITES ============
-# contracts
-[[redirects]]
-  from = "/api/contracts"
-  to   = "/.netlify/functions/contracts"
-  status = 200
-[[redirects]]
-  from = "/api/contracts/*"
-  to   = "/.netlify/functions/contracts/:splat"
-  status = 200
-
-# docs
-[[redirects]]
-  from = "/api/docs"
-  to   = "/.netlify/functions/docs"
-  status = 200
-[[redirects]]
-  from = "/api/docs/*"
-  to   = "/.netlify/functions/docs/:splat"
-  status = 200
-
-# tasks
-[[redirects]]
-  from = "/api/tasks"
-  to   = "/.netlify/functions/tasks"
-  status = 200
-[[redirects]]
-  from = "/api/tasks/*"
-  to   = "/.netlify/functions/tasks/:splat"
-  status = 200
-
+# --- API aliasy ---
 # messages (chat)
 [[redirects]]
   from = "/api/messages"
   to   = "/.netlify/functions/messages"
-  status = 200
-[[redirects]]
-  from = "/api/messages/*"
-  to   = "/.netlify/functions/messages/:splat"
   status = 200
 
 # upload (chat attachments)
@@ -58,47 +18,17 @@
   from = "/api/upload"
   to   = "/.netlify/functions/upload"
   status = 200
+
+# (opcjonalnie) ładne 404 dla SPA / statycznych
 [[redirects]]
-  from = "/api/upload/*"
-  to   = "/.netlify/functions/upload/:splat"
+  from = "/*"
+  to   = "/chat.html"
   status = 200
 
-# store (dodatkowy backend czatu na Blobs)
-[[redirects]]
-  from = "/api/store"
-  to   = "/.netlify/functions/store"
-  status = 200
-[[redirects]]
-  from = "/api/store/*"
-  to   = "/.netlify/functions/store/:splat"
-  status = 200
-
-# hello (test)
-[[redirects]]
-  from = "/api/hello"
-  to   = "/.netlify/functions/hello"
-  status = 200
-
-# ============ CORS DLA /api/* ============
-# Te nagłówki dodajemy na ścieżce, której używasz z frontendu.
-# (Nie wstawiaj tu backticków! Wartości MUSZĄ być w cudzysłowach.)
-[[headers]]
-  for = "/api/*"
-  [headers.values]
-    Access-Control-Allow-Origin  = "*"
-    Access-Control-Allow-Methods = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-    Access-Control-Allow-Headers = "Content-Type, Authorization"
-
-# (opcjonalnie) te same nagłówki bezpośrednio dla adresów funkcji
+# CORS dla funkcji (bez żadnych niedomkniętych cudzysłowów)
 [[headers]]
   for = "/.netlify/functions/*"
   [headers.values]
-    Access-Control-Allow-Origin  = "*"
-    Access-Control-Allow-Methods = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET,POST,PUT,PATCH,DELETE,OPTIONS"
     Access-Control-Allow-Headers = "Content-Type, Authorization"
-
-# ============ STATIC CACHE (opcjonalnie) ============
-[[headers]]
-  for = "/assets/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
