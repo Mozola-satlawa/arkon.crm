@@ -1,4 +1,3 @@
-// Netlify TOML file content preserved as a string to avoid JavaScript parse errors.
 const netlifyToml = `[build]
   publish = "."
   node_bundler = "esbuild"
@@ -43,3 +42,13 @@ const netlifyToml = `[build]
   from = "/api/messages"
   to   = "/.netlify/functions/messages"
   status = 200
+
+# upload (chat attachments)
+[[redirects]]
+  from = "/api/upload"
+  to   = "/.netlify/functions/upload"
+  status = 200
+`;
+
+// Export the TOML string so other scripts can write it to a .toml file or use it as needed.
+module.exports = netlifyToml;
