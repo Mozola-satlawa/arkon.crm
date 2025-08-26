@@ -1,11 +1,78 @@
+# === Netlify config ===
+# Umieszczony w katalogu głównym repo: netlify.toml
 
+[build]
+  # Nie używamy bundlera ani komendy build — serwujemy statyczne pliki z repo.
+  # Upewnij się, że Twoje .html (np. index.html, chat.html, upload.html itd.)
+  # leżą w katalogu głównym repo lub w podkatalogu, który tu wskażesz.
+  publish = "."
+  # command można pominąć, zostawiamy puste
+
+[functions]
+  # Domyślny katalog funkcji
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+  # (opcjonalnie) region wykonywania — jeśli chcesz
+  # region = "eu-central-1"
+
+# --- API endpoints → Functions ---
+# /api/hello → /.netlify/functions/hello
+[[redirects]]
+  from = "/api/hello"
+  to   = "/.netlify/functions/hello"
+  status = 200
+
+# /api/messages (lista / POST) i /api/messages/* (po ID / pod-ścieżki)
+[[redirects]]
+  from = "/api/messages"
+  to   = "/.netlify/functions/messages"
+  status = 200
+
+[[redirects]]
+  from = "/api/messages/*"
+  to   = "/.netlify/functions/messages/:splat"
+  status = 200
+
+# /api/upload → funkcja upload (np. multipart/form-data)
+[[redirects]]
+  from = "/api/upload"
+  to   = "/.netlify/functions/upload"
+  status = 200
+
+# /api/contracts → Blobs CRUD (lista / tworzenie)
 [[redirects]]
   from = "/api/contracts"
   to   = "/.netlify/functions/contracts"
   status = 200
 
-# Obsługa ścieżek typu /api/contracts/ID → ta sama funkcja
+# /api/contracts/:id → Blobs CRUD (GET/PUT/PATCH/DELETE pojedynczego wpisu)
 [[redirects]]
   from = "/api/contracts/*"
   to   = "/.netlify/functions/contracts/:splat"
   status = 200
+
+# (Jeśli masz jeszcze funkcję /api/task — odkomentuj poniżej i zapewnij plik task.js)
+# [[redirects]]
+#   from = "/api/task"
+#   to   = "/.netlify/functions/task"
+#   status = 200
+# [[redirects]]
+#   from = "/api/task/*"
+#   to   = "/.netlify/functions/task/:splat"
+#   status = 200
+
+# --- CORS dla funkcji (fallback, większość i tak ustawiamy w samej funkcji nagłówkami) ---
+[[headers]]
+  for = "/.netlify/functions/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+
+# --- SPA fallback (jeśli potrzebujesz client-side routingu) ---
+# Odkomentuj tylko jeśli masz SPA i chcesz, żeby nieistniejące ścieżki trafiały do index.html
+# [[redirects]]
+#   from = "/*"
+#   to   = "/index.html"
+#   status = 200
