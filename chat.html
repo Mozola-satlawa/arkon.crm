@@ -4,85 +4,223 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ARKON • Sypasny Komunikator (ulepszony)</title>
-<meta name="description" content="Komunikator ARKON na Netlify Functions + Blobs: pokoje, emoji, załączniki, wątki, eksport, router.">
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<title>ARKON • Chat (Netlify + Neon)</title>
+<meta name="description" content="Lekki czat ARKON działający na Netlify Functions i Neon (serverless Postgres).">
 <style>
   :root{ --bg:#0b1020; --p1:#101736; --p2:#0f1a44; --ink:#e8edff; --muted:#aeb8da; --accent:#4cc9f0;
-    --ok:#2b8a57; --bad:#ff6b6b; --line:#253166; --chip:#162357; --card:#0f1533; --hover:#172152; --focus:#6aa3ff }
+    --ok:#2b8a57; --bad:#ff6b6b; --line:#253166; --chip:#162357; --card:#0f1533; --hover:#172152 }
   *{box-sizing:border-box} html,body{height:100%}
   body{margin:0;background:linear-gradient(180deg,#0a0f1e,#0c1230 55%,#0a0f1e);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
-  header{padding:12px 16px;border-bottom:1px solid var(--line);background:#11183a;position:sticky;top:0;z-index:5}
+  header{padding:12px 16px;border-bottom:1px solid var(--line);background:#11183a;position:sticky;top:0;z-index:3}
   h1{margin:0;font-size:20px}
-  .wrap{display:grid;grid-template-columns:300px 1fr;gap:12px;height:calc(100% - 58px);padding:12px;max-width:1500px;margin:auto}
+  .wrap{display:grid;grid-template-columns:280px 1fr;gap:12px;max-width:1400px;margin:10px auto;padding:0 12px 16px}
   .panel{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;overflow:hidden}
   .left{display:flex;flex-direction:column}
   .section{padding:10px;border-bottom:1px solid var(--line)}
   .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  .pill{display:inline-flex;align-items:center;gap:6px;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:12px}
-  .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:9px 12px;cursor:pointer}
-  .btn:focus,input:focus,select:focus,textarea:focus{outline:2px solid var(--focus);outline-offset:2px}
+  .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 10px;cursor:pointer}
   .btn.ghost{background:transparent;border:1px dashed #3a4ca3}
   .btn.ok{background:#194d34;border-color:var(--ok)}
-  .btn.bad{background:#42202a;border-color:#7b3341}
-  input,select,textarea{width:100%;background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:9px;color:var(--ink)}
-  .topbar{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
-  .meta{font-size:11px;color:#aeb8da}
+  input,select,textarea{width:100%;background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:8px;color:var(--ink)}
   .badge{display:inline-block;padding:1px 6px;border:1px solid #5672d1;border-radius:999px;font-size:10px;background:#0e184a;color:#cfe1ff}
-  .msg-wrap{height:calc(100% - 200px);overflow:auto;padding:12px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth}
+  .meta{font-size:11px;color:#aeb8da}
+  .msg-wrap{height:calc(100vh - 210px);overflow:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
   .day{display:flex;align-items:center;gap:10px;margin:2px 0}
   .day::before,.day::after{content:"";height:1px;background:#223160;flex:1}
   .msg{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:flex-start}
-  .bubble{background:linear-gradient(180deg,#111a3c,#0f1a44);border:1px solid #2a3a75;border-radius:12px;padding:8px 10px;max-width:980px;word-break:break-word}
+  .bubble{background:linear-gradient(180deg,#111a3c,#0f1a44);border:1px solid #2a3a75;border-radius:12px;padding:8px 10px;max-width:900px;word-break:break-word}
   .bubble.me{background:#16204d;border-color:#3d58c1}
-  .bubble .tools{display:flex;gap:6px;opacity:.85;margin-top:4px}
-  .bubble .tools .btn-icon{background:transparent;border:1px solid #2d3e86;border-radius:8px;padding:2px 6px;cursor:pointer;color:#cfe1ff}
-  .bubble .file{display:inline-flex;gap:6px;align-items:center;padding:3px 6px;border:1px dashed #3a4ca3;border-radius:8px;margin-top:4px}
-  .reactions{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap}
-  .react{background:#0e184a;border:1px solid #3f57c1;border-radius:999px;padding:2px 6px;font-size:12px;cursor:pointer}
-  .children{margin-left:22px;margin-top:6px;border-left:1px dashed #2b3a77;padding-left:10px}
+  .file{display:inline-flex;gap:6px;align-items:center;padding:3px 6px;border:1px dashed #3a4ca3;border-radius:8px;margin-top:6px}
   .composer{border-top:1px solid var(--line);padding:10px;display:grid;grid-template-columns:1fr auto;gap:8px}
-  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-  .tabbar{display:flex;gap:8px}
-  .tab{padding:6px 10px;border:1px solid #2b3a77;border-radius:999px;cursor:pointer;font-size:12px}
-  .tab.active{background:#14225a}
-  .typing{font-size:12px;color:#9cc3ff}
-  .presence{display:flex;gap:6px;flex-wrap:wrap}
   .loadmore{padding:8px 10px;text-align:center;border:1px dashed #2b3a77;border-radius:10px;cursor:pointer;background:#0d1530}
   .hoverable:hover{background:var(--hover)}
-  .toast{position:fixed;right:12px;bottom:12px;background:#142150;border:1px solid #3852b0;color:#e8edff;padding:10px 12px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:99;display:none}
-  @media(max-width:1060px){ .wrap{grid-template-columns:1fr} .msg-wrap{height:50vh} }
-  a{color:#cfe1ff}
+  @media(max-width:1080px){ .wrap{grid-template-columns:1fr} .msg-wrap{height:60vh} }
 </style>
-<script>
-// Wycisz błąd z rozszerzeń: "A listener indicated an asynchronous response..."
-window.addEventListener('unhandledrejection', (ev) => {
-  const msg = String((ev.reason && ev.reason.message) || ev.reason || '');
-  if (msg.includes('A listener indicated an asynchronous response')) {
-    ev.preventDefault();
-  }
-});
-</script>
 </head>
 <body>
-<!-- ... reszta HTML jak wcześniej ... -->
-<script>
-// ... wcześniejsze funkcje ...
+<header>
+  <h1 style="display:flex;align-items:center;gap:10px">
+    ARKON – Chat <span class="badge">Netlify + Neon</span>
+  </h1>
+</header>
 
-/*** HISTORIA + POLLING ***/
+<div class="wrap">
+  <!-- LEWA KOLUMNA -->
+  <aside class="panel left">
+    <div class="section">
+      <div class="meta">Pokój</div>
+      <div class="row" style="margin-top:6px">
+        <select id="roomSel" style="flex:1">
+          <option value="global">global</option>
+          <option value="krolowa">krolowa</option>
+          <option value="adrian">adrian</option>
+          <option value="emil">emil</option>
+        </select>
+        <button class="btn ghost" id="btnRoom">Zmień</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="meta">Ja</div>
+      <div class="row" style="margin-top:6px">
+        <input id="meInput" placeholder="Twój podpis (np. Pracownik)">
+        <button class="btn ghost" id="btnMe">Zapisz</button>
+      </div>
+      <div class="meta" id="conn" style="margin-top:6px">łączenie…</div>
+    </div>
+
+    <div class="section">
+      <div class="meta">Szukaj</div>
+      <div class="row" style="margin-top:6px">
+        <input id="q" placeholder="fraza…">
+        <button class="btn ghost" id="btnFind">Szukaj</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="meta">Eksport</div>
+      <div class="row" style="margin-top:6px">
+        <button class="btn ghost" id="btnCSV">CSV</button>
+        <button class="btn ghost" id="btnJSON">JSON</button>
+        <button class="btn ghost" onclick="window.print()">Drukuj</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- PRAWA KOLUMNA -->
+  <main class="panel" style="display:flex;flex-direction:column">
+    <div class="row" style="justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--line)">
+      <div>
+        Pokój: <b id="roomTitle">global</b>
+        <span id="readBadge" class="badge" title="lokalne potwierdzenia">✓✓</span>
+      </div>
+      <div class="row">
+        <button class="btn ghost" id="btnAttach">📎 Załącz</button>
+        <input id="file" type="file" hidden>
+      </div>
+    </div>
+
+    <div id="msgs" class="msg-wrap" aria-live="polite">
+      <div class="loadmore hoverable" id="older">⟲ Załaduj starsze…</div>
+    </div>
+
+    <div class="composer">
+      <textarea id="txt" placeholder="Napisz wiadomość… (Ctrl+Enter wysyła)" rows="2"></textarea>
+      <div class="row">
+        <button class="btn ok" id="btnSend">Wyślij ▶</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+'use strict';
+
+/*** ENDPOINTY FUNKCJI (zmień tu jeśli używasz /api/...) ***/
+const API_MESSAGES = '/.netlify/functions/messages';
+const API_UPLOAD   = '/.netlify/functions/upload';
+
+/*** UTIL ***/
+const $ = s => document.querySelector(s);
+const el = (t,a={}) => Object.assign(document.createElement(t), a);
+const INT = new Intl.DateTimeFormat('pl-PL',{dateStyle:'short', timeStyle:'short'});
+const linkify = t => (t||'').replace(/(https?:\/\/\S+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+
+/*** STAN ***/
+let state = {
+  room: localStorage.getItem('chat_room') || 'global',
+  me:   localStorage.getItem('chat_me')   || 'Pracownik',
+  messages: [],
+  oldestCursor: null,
+  poller: null
+};
+$('#roomSel').value = state.room;
+$('#roomTitle').textContent = state.room;
+$('#meInput').value = state.me;
+
+/*** RENDER ***/
+function fileChip(url){
+  if(!url) return '';
+  const name = url.split('/').pop();
+  const isImg = /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name);
+  return '<a class="file" href="'+url+'" target="_blank" rel="noopener">📎 '+name+'</a>' +
+         (isImg ? ('<div style="margin-top:6px"><img src="'+url+'" alt="" style="max-width:280px;border:1px solid #2b3a77;border-radius:10px"></div>'):'');
+}
+function dayDiv(ts){ return '<div class="day"><span>'+INT.format(new Date(ts)).split(',')[0]+'</span></div>'; }
+function bubble(m){
+  const me = m.author===state.me;
+  const when = INT.format(new Date(m.created_at));
+  return [
+    '<div class="msg" id="m-'+m.id+'">',
+      '<div class="meta">', (me?'Ja':m.author||'—') ,'</div>',
+      '<div class="bubble ', (me?'me':''), '">',
+        linkify(m.body||''),
+        (m.file_url?fileChip(m.file_url):''),
+        '<div class="meta" style="margin-top:4px">'+when+(m.edited_at?' • ed.':'')+'</div>',
+      '</div>',
+    '</div>'
+  ].join('');
+}
+function render(scrollBottom=true){
+  const box = $('#msgs');
+  let out=[], lastDay='';
+  state.messages.forEach(m=>{
+    const d=(m.created_at||'').slice(0,10);
+    if(d!==lastDay){ out.push(dayDiv(m.created_at)); lastDay=d; }
+    out.push(bubble(m));
+  });
+  const older = $('#older').outerHTML;
+  box.innerHTML = older + out.join('');
+  if(scrollBottom) box.scrollTop = box.scrollHeight;
+}
+
+/*** API ***/
+async function apiList(room, opts={}){
+  let url = API_MESSAGES+'?room='+encodeURIComponent(room);
+  if(opts.before) url += '&before='+encodeURIComponent(opts.before);
+  if(opts.limit)  url += '&limit='+Number(opts.limit);
+  const r = await fetch(url, { headers:{'Accept':'application/json'} });
+  if(!r.ok) throw new Error('GET messages '+r.status);
+  const data = await r.json();
+  const arr = Array.isArray(data) ? data : (data.messages||[]);
+  return arr.map(x=>({
+    id: x.id, room_id: x.room_id||room, author: x.author||'Anon',
+    body: x.body||x.text||'', file_url: x.file_url||null,
+    created_at: x.created_at||new Date().toISOString()
+  }));
+}
+async function apiSend({room_id, author, body, file_url}){
+  const r = await fetch(API_MESSAGES, {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body: JSON.stringify({ room:room_id, author, text:body, file_url:file_url||null })
+  });
+  if(!r.ok) throw new Error('POST messages '+r.status);
+  return await r.json();
+}
+async function apiUpload(file){
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('room', state.room);
+  const r = await fetch(API_UPLOAD, { method:'POST', body: fd });
+  if(!r.ok) throw new Error('POST upload '+r.status);
+  const data = await r.json();
+  if(!data || !data.url) throw new Error('Brak url z upload');
+  return data.url;
+}
+
+/*** ŁADOWANIE + POLLING ***/
 async function loadInitial(){
+  $('#conn').textContent='pobieram…';
   try{
-    $('#conn').textContent = 'pobieram…';
     const data = await apiList(state.room, { limit: 50 });
     state.messages = data.sort((a,b)=> new Date(a.created_at)-new Date(b.created_at));
-    state.messages.forEach(m=>state.cache.set(m.id,m));
-    if(state.messages.length) state.oldestCursor = state.messages[0].created_at;
-    renderMessages(true);
-    $('#conn').textContent = 'gotowe';
+    state.oldestCursor = state.messages[0]?.created_at || null;
+    render(true);
+    $('#conn').textContent='gotowe';
   }catch(e){
-    if(e?.name === 'AbortError') return;
+    $('#conn').textContent='błąd listy';
     console.error(e);
-    toast('Błąd pobierania wiadomości');
   }
 }
 function startPolling(){
@@ -95,39 +233,87 @@ function startPolling(){
       data.forEach(m=>{ if(!known.has(m.id)) merged.push(m); });
       merged.sort((a,b)=> new Date(a.created_at)-new Date(b.created_at));
       if(merged.length !== state.messages.length){
-        state.messages = merged; renderMessages(true); ding();
+        state.messages = merged; render(true);
       }
-    }catch(e){
-      if(e?.name === 'AbortError') return;
-      console.error(e);
-    }
+    }catch(e){/* cicho */}
   }, 3000);
 }
-
-// Paginacja "w górę"
-async function loadOlder(){
+$('#older').addEventListener('click', async ()=>{
   if(!state.oldestCursor) return;
-  try {
+  try{
     const older = await apiList(state.room, { before: state.oldestCursor, limit: 50 });
-    if(older.length){
-      const box = $('#msgs');
-      const prevHeight = box.scrollHeight;
-      state.messages = [...older, ...state.messages].sort((a,b)=> new Date(a.created_at)-new Date(b.created_at));
-      state.messages.forEach(m=>state.cache.set(m.id,m));
-      state.oldestCursor = state.messages[0]?.created_at || state.oldestCursor;
-      renderMessages(false);
-      const newHeight = box.scrollHeight; box.scrollTop = newHeight - prevHeight;
-    } else {
-      toast('Brak starszych wiadomości');
-    }
-  } catch(e){
-    if(e?.name === 'AbortError') return;
-    console.error("loadOlder error", e);
-    toast('Błąd ładowania starszych');
-  }
-}
+    if(!older.length) return alert('Brak starszych danych.');
+    const box = $('#msgs'); const prevH = box.scrollHeight;
+    state.messages = [...older, ...state.messages].sort((a,b)=> new Date(a.created_at)-new Date(b.created_at));
+    state.oldestCursor = state.messages[0]?.created_at || state.oldestCursor;
+    render(false); const newH = box.scrollHeight; box.scrollTop = newH - prevH;
+  }catch(e){ console.error(e); }
+});
 
-// ... dalsza logika aplikacji ...
+/*** WYSYŁKA ***/
+$('#btnSend').addEventListener('click', async ()=>{
+  const t = ($('#txt').value||'').trim(); if(!t) return;
+  try{
+    await apiSend({ room_id: state.room, author: state.me, body: t, file_url: null });
+    $('#txt').value=''; await loadInitial();
+  }catch(e){ alert('Błąd wysyłania: '+e.message); }
+});
+$('#txt').addEventListener('keydown', e=>{
+  if(e.key==='Enter' && (e.ctrlKey||e.metaKey)){ e.preventDefault(); $('#btnSend').click(); }
+});
+
+/*** ZAŁĄCZNIKI ***/
+$('#btnAttach').addEventListener('click', ()=> $('#file').click());
+$('#file').addEventListener('change', async (e)=>{
+  const f = e.target.files[0]; if(!f) return;
+  try{
+    const url = await apiUpload(f);
+    await apiSend({ room_id: state.room, author: state.me, body: '', file_url: url });
+    await loadInitial();
+  }catch(err){
+    console.error(err); alert('Upload nieudany: '+err.message);
+  }finally{
+    e.target.value='';
+  }
+});
+
+/*** SZUKAJ + EKSPORT ***/
+$('#btnFind').addEventListener('click', ()=>{
+  const q = ($('#q').value||'').trim(); if(!q){ render(true); return; }
+  const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i');
+  const bak = state.messages;
+  state.messages = bak.filter(m=> rx.test(m.body||'') || rx.test(m.file_url||'') );
+  render(true);
+  setTimeout(()=>{ state.messages=bak; render(false); }, 6000);
+});
+$('#btnCSV').addEventListener('click', ()=>{
+  const rows = [['id','author','body','file','time']].concat(state.messages.map(m=>[
+    m.id, m.author, m.body||'', m.file_url||'', m.created_at
+  ]));
+  const csv = rows.map(r=>r.map(s=>{s=(s??'').toString(); return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s}).join(';')).join('\n');
+  const a=el('a',{href:URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})), download:'chat.csv'}); a.click();
+});
+$('#btnJSON').addEventListener('click', ()=>{
+  const a=el('a',{href:URL.createObjectURL(new Blob([JSON.stringify(state.messages,null,2)],{type:'application/json'})), download:'chat.json'}); a.click();
+});
+
+/*** ROOM & JA ***/
+$('#btnRoom').addEventListener('click', async ()=>{
+  state.room = $('#roomSel').value || 'global';
+  localStorage.setItem('chat_room', state.room);
+  $('#roomTitle').textContent = state.room;
+  await loadInitial();
+});
+$('#btnMe').addEventListener('click', ()=>{
+  state.me = ($('#meInput').value||'Pracownik').trim() || 'Pracownik';
+  localStorage.setItem('chat_me', state.me);
+});
+
+/*** START ***/
+(async function init(){
+  await loadInitial();
+  startPolling();
+})();
 </script>
 </body>
 </html>
