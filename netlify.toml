@@ -1,15 +1,8 @@
-# netlify.toml
 [functions]
   node_bundler = "esbuild"
+  external_node_modules = ["@netlify/neon"]
 
-# API proxy
 [[redirects]]
-  from = "/api/messages"
-  to   = "/.netlify/functions/messages"
-  status = 200
-
-# (opcjonalnie — jeżeli kiedyś dodasz upload)
-[[redirects]]
-  from = "/api/upload"
-  to   = "/.netlify/functions/upload"
+  from = "/api/*"
+  to   = "/.netlify/functions/:splat"
   status = 200
