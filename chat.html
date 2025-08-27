@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ARKON • Sypasny Komunikator</title>
+<title>ARKON • Sypasny Komunikator (ulepszony)</title>
 <meta name="description" content="Komunikator ARKON na Netlify Functions + Blobs: pokoje, emoji, załączniki, wątki, eksport, router.">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <style>
   :root{ --bg:#0b1020; --p1:#101736; --p2:#0f1a44; --ink:#e8edff; --muted:#aeb8da; --accent:#4cc9f0;
-    --ok:#2b8a57; --bad:#ff6b6b; --line:#253166; --chip:#162357; --card:#0f1533; --hover:#172152; }
+    --ok:#2b8a57; --bad:#ff6b6b; --line:#253166; --chip:#162357; --card:#0f1533; --hover:#172152; --focus:#6aa3ff }
   *{box-sizing:border-box} html,body{height:100%}
   body{margin:0;background:linear-gradient(180deg,#0a0f1e,#0c1230 55%,#0a0f1e);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
   header{padding:12px 16px;border-bottom:1px solid var(--line);background:#11183a;position:sticky;top:0;z-index:5}
@@ -20,6 +20,7 @@
   .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .pill{display:inline-flex;align-items:center;gap:6px;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:12px}
   .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:9px 12px;cursor:pointer}
+  .btn:focus,input:focus,select:focus,textarea:focus{outline:2px solid var(--focus);outline-offset:2px}
   .btn.ghost{background:transparent;border:1px dashed #3a4ca3}
   .btn.ok{background:#194d34;border-color:var(--ok)}
   .btn.bad{background:#42202a;border-color:#7b3341}
@@ -27,14 +28,14 @@
   .topbar{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
   .meta{font-size:11px;color:#aeb8da}
   .badge{display:inline-block;padding:1px 6px;border:1px solid #5672d1;border-radius:999px;font-size:10px;background:#0e184a;color:#cfe1ff}
-  .msg-wrap{height:calc(100% - 200px);overflow:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+  .msg-wrap{height:calc(100% - 200px);overflow:auto;padding:12px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth}
   .day{display:flex;align-items:center;gap:10px;margin:2px 0}
   .day::before,.day::after{content:"";height:1px;background:#223160;flex:1}
   .msg{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:flex-start}
   .bubble{background:linear-gradient(180deg,#111a3c,#0f1a44);border:1px solid #2a3a75;border-radius:12px;padding:8px 10px;max-width:980px;word-break:break-word}
   .bubble.me{background:#16204d;border-color:#3d58c1}
   .bubble .tools{display:flex;gap:6px;opacity:.85;margin-top:4px}
-  .bubble .tools .btn-icon{background:transparent;border:1px solid #2d3e86;border-radius:8px;padding:2px 6px;cursor:pointer}
+  .bubble .tools .btn-icon{background:transparent;border:1px solid #2d3e86;border-radius:8px;padding:2px 6px;cursor:pointer;color:#cfe1ff}
   .bubble .file{display:inline-flex;gap:6px;align-items:center;padding:3px 6px;border:1px dashed #3a4ca3;border-radius:8px;margin-top:4px}
   .reactions{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap}
   .react{background:#0e184a;border:1px solid #3f57c1;border-radius:999px;padding:2px 6px;font-size:12px;cursor:pointer}
@@ -48,7 +49,9 @@
   .presence{display:flex;gap:6px;flex-wrap:wrap}
   .loadmore{padding:8px 10px;text-align:center;border:1px dashed #2b3a77;border-radius:10px;cursor:pointer;background:#0d1530}
   .hoverable:hover{background:var(--hover)}
+  .toast{position:fixed;right:12px;bottom:12px;background:#142150;border:1px solid #3852b0;color:#e8edff;padding:10px 12px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:99;display:none}
   @media(max-width:1060px){ .wrap{grid-template-columns:1fr} .msg-wrap{height:50vh} }
+  a{color:#cfe1ff}
 </style>
 </head>
 <body>
@@ -56,11 +59,11 @@
   <h1 style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
     Komunikator • ARKON <span class="badge">Netlify Blobs</span>
   </h1>
-  <div class="tabbar">
-    <a class="tab" href="#/chat">💬 Czat</a>
-    <a class="tab" href="#/contracts">📄 Umowy</a>
-    <a class="tab" href="#/docs">📂 Dokumenty</a>
-    <a class="tab" href="#/tasks">✅ Zadania</a>
+  <div class="tabbar" role="tablist">
+    <a class="tab" href="#/chat" role="tab" aria-controls="page-chat">💬 Czat</a>
+    <a class="tab" href="#/contracts" role="tab" aria-controls="page-contracts">📄 Umowy</a>
+    <a class="tab" href="#/docs" role="tab" aria-controls="page-docs">📂 Dokumenty</a>
+    <a class="tab" href="#/tasks" role="tab" aria-controls="page-tasks">✅ Zadania</a>
   </div>
 </header>
 
@@ -77,14 +80,14 @@
       </div>
     </div>
 
-    <div class="section">
+    <div class="section" role="search">
       <div class="meta">Wyszukiwanie</div>
       <div class="row" style="margin-top:6px">
-        <input id="q" placeholder="fraza… (Enter)">
+        <input id="q" placeholder="fraza… (Enter)" aria-label="fraza wyszukiwania">
         <button class="btn ghost" onclick="searchMessages()">Szukaj</button>
       </div>
       <div class="row" style="margin-top:6px">
-        <select id="authorFilter" style="flex:1">
+        <select id="authorFilter" style="flex:1" aria-label="Filtr autora">
           <option value="">— Autor —</option>
           <option>Królowa</option><option>Adrian</option><option>Emil</option><option>Pracownik</option>
         </select>
@@ -124,7 +127,7 @@
         <span id="readBadge" class="badge" title="Lokalne potwierdzenia">✓✓</span>
       </div>
       <div class="toolbar">
-        <button class="btn ghost" onclick="toggleEmoji()">😊 Emoji</button>
+        <button class="btn ghost" onclick="toggleEmoji()" aria-label="Wstaw emoji">😊 Emoji</button>
         <button class="btn ghost" onclick="document.getElementById('file').click()">📎 Załącz</button>
         <input id="file" type="file" hidden>
       </div>
@@ -161,6 +164,8 @@
   </main>
 </div>
 
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
 <script>
 'use strict';
 
@@ -173,6 +178,10 @@ const $ = s => document.querySelector(s);
 const el = (tag, attrs={}) => Object.assign(document.createElement(tag), attrs);
 const INT = new Intl.DateTimeFormat('pl-PL', { dateStyle:'short', timeStyle:'short' });
 const EMOJI = '😀😁😂🤣😊😉😍😘😎🤩🥰😇🤓🤠🫶👍👏🔥✨🎉🎯🚀🔧💡📎📷🖨📁✅❗❌🤝📝💬🔗📌🕒'.split('');
+const esc = s => (s==null?'' : String(s)).replace(/[&<>\"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const csvEsc = v => { let s = v==null ? '' : String(v); if(/[;"\n]/.test(s)) s = '"' + s.replace(/"/g,'""') + '"'; return s; };
+const debounce = (fn,ms=250)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
+const toast = (msg, t=2500)=>{ const box=$('#toast'); box.textContent=msg; box.style.display='block'; clearTimeout(box._t); box._t=setTimeout(()=>box.style.display='none', t); };
 
 /*** STAN ***/
 let state = {
@@ -193,9 +202,7 @@ $('#conn').textContent = 'łączenie…';
 function route(){
   const hash = location.hash || '#/chat';
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.getAttribute('href')===hash));
-  ['chat','contracts','docs','tasks'].forEach(id=>{
-    $('#page-'+id).style.display = (hash==='#/'+id) ? 'block' : 'none';
-  });
+  ['chat','contracts','docs','tasks'].forEach(id=>{ $('#page-'+id).style.display = (hash==='#/'+id) ? 'block' : 'none'; });
 }
 window.addEventListener('hashchange', route); route();
 
@@ -204,286 +211,17 @@ let picker=null;
 function toggleEmoji(){
   if(picker){ document.body.removeChild(picker); picker=null; return; }
   picker = el('div');
-  Object.assign(picker.style, {position:'fixed', bottom:'120px', right:'40px', background:'#0e1740', border:'1px solid #2b3a77', padding:'8px', borderRadius:'10px', zIndex:10});
-  picker.innerHTML = EMOJI.map(e => '<span class="emoji" style="font-size:22px;padding:6px;cursor:pointer">'+e+'</span>').join('');
+  Object.assign(picker.style,{position:'fixed', bottom:'120px', right:'40px', background:'#0e1740', border:'1px solid #2b3a77', padding:'8px', borderRadius:'10px', zIndex:10});
+  picker.innerHTML = EMOJI.map(e => '<button type="button" class="emoji" aria-label="'+e+'" style="font-size:22px;padding:6px;cursor:pointer;background:transparent;border:0">'+e+'</button>').join('');
   picker.addEventListener('click', ev=>{
-    if(ev.target.classList.contains('emoji')){
-      $('#txt').value += ev.target.textContent;
-      document.body.removeChild(picker); picker=null; $('#txt').focus(); showTyping(true);
-    }
+    if(ev.target.classList.contains('emoji')){ $('#txt').value += ev.target.textContent; document.body.removeChild(picker); picker=null; $('#txt').focus(); showTyping(true); }
   });
   document.body.appendChild(picker);
 }
 
 /*** RENDER ***/
-const linkify = (t='') => t.replace(/(https?:\/\/\S+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
-function dayDivider(ts){ return '<div class="day"><span>'+INT.format(new Date(ts)).split(',')[0]+'</span></div>'; }
-function fileChip(url){
-  const name = (url||'').split('/').pop();
-  const isImg = /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name);
-  return '<a class="file" href="'+url+'" target="_blank" rel="noopener">📎 '+name+'</a>' + (isImg?('<div style="margin-top:6px"><img src="'+url+'" alt="" style="max-width:280px;border:1px solid #2b3a77;border-radius:10px"></div>'):'');
+function linkifySafe(text=''){
+  // najpierw escapujemy, potem linkujemy
+  const safe = esc(text);
+  return safe.replace(/https?:\/\/[^\s<]+/g, m => '<a href="'+m+'" target="_blank" rel="noopener noreferrer">'+m+'</a>');
 }
-function bubbleHtml(m, children){
-  const me = m.author===state.me;
-  const body = linkify(m.body||'');
-  const when = INT.format(new Date(m.created_at||Date.now()));
-  return [
-    '<div class="msg" id="m-'+m.id+'">',
-      '<div class="meta">', (me?'Ja':(m.author||'—')) ,'</div>',
-      '<div class="bubble ', (me?'me':''), '">',
-        (m.deleted_at ? '<i class="meta">[wiadomość usunięta]</i>' : body),
-        (m.file_url ? fileChip(m.file_url) : ''),
-        '<div class="tools"><span class="meta" style="margin-left:auto">'+when+(m.edited_at?' • ed.':'')+'</span></div>',
-        (children && children.length ? '<div class="children">'+children.map(c=>bubbleHtml(c,[])).join('')+'</div>' : ''),
-      '</div>',
-    '</div>'
-  ].join('');
-}
-function indexByParent(list){
-  const byId=new Map(), children=new Map();
-  list.forEach(m=>{
-    byId.set(m.id,m);
-    if(m.parent_id){
-      if(!children.has(m.parent_id)) children.set(m.parent_id, []);
-      children.get(m.parent_id).push(m);
-    }
-  });
-  return { byId, children };
-}
-function renderMessages(scrollToBottom=true){
-  const box = $('#msgs');
-  const { children } = indexByParent(state.messages);
-  let out=[], lastDay='';
-  state.messages.filter(m=>!m.parent_id).forEach(m=>{
-    const d=(m.created_at||'').slice(0,10);
-    if(d && d!==lastDay){ out.push(dayDivider(m.created_at)); lastDay=d; }
-    out.push(bubbleHtml(m, children.get(m.id)||[]));
-  });
-  const older = $('#older').outerHTML;
-  box.innerHTML = older + out.join('');
-  if(scrollToBottom) box.scrollTop = box.scrollHeight;
-}
-
-/*** API ***/
-async function apiList(room, opts={}){
-  let url = API_MESSAGES+'?room='+encodeURIComponent(room);
-  if(opts.before) url += '&before='+encodeURIComponent(opts.before);
-  if(opts.limit)  url += '&limit='+Number(opts.limit);
-  const r = await fetch(url, { headers:{'Accept':'application/json'} });
-  if(!r.ok) throw new Error('GET /api/messages HTTP '+r.status);
-  const json = await r.json();
-  const arr = Array.isArray(json) ? json : (json.messages || []);
-  return arr.map((m, i)=>({
-    id: m.id || String(i+1),
-    room_id: m.room_id || room,
-    author: m.author || 'Anon',
-    body: m.body || m.text || '',
-    file_url: m.file_url || null,
-    created_at: m.created_at || new Date().toISOString(),
-    parent_id: m.parent_id || null
-  }));
-}
-async function apiSend(payload){
-  const r = await fetch(API_MESSAGES, {
-    method:'POST',
-    headers:{'Content-Type':'application/json','Accept':'application/json'},
-    body: JSON.stringify({
-      room: payload.room_id,
-      author: payload.author,
-      text: payload.body,
-      file_url: payload.file_url || null,
-      parent_id: payload.parent_id || null
-    })
-  });
-  if(!r.ok) throw new Error('POST /api/messages HTTP '+r.status);
-  return await r.json();
-}
-async function apiUpload(file){
-  const fd = new FormData();
-  fd.append('file', file);
-  fd.append('room', state.room);
-  const r = await fetch(API_UPLOAD, { method:'POST', body: fd });
-  if(!r.ok) throw new Error('POST /api/upload HTTP '+r.status);
-  const data = await r.json();
-  const url = data.url || '';
-  if(!url) throw new Error('Brak URL z upload');
-  return url;
-}
-
-/*** HISTORIA + POLLING ***/
-async function loadInitial(){
-  try{
-    $('#conn').textContent = 'pobieram…';
-    const data = await apiList(state.room, { limit: 50 });
-    state.messages = data.sort((a,b)=> new Date(a.created_at)-new Date(b.created_at));
-    state.messages.forEach(m=>state.cache.set(m.id,m));
-    if(state.messages.length) state.oldestCursor = state.messages[0].created_at;
-    renderMessages(true);
-    $('#conn').textContent = 'gotowe';
-  }catch(err){
-    console.error(err);
-    $('#conn').textContent = 'błąd listy';
-  }
-}
-function startPolling(){
-  if(state.poller) clearInterval(state.poller);
-  state.poller = setInterval(async ()=>{
-    try{
-      const data = await apiList(state.room, { limit: 50 });
-      const oldNewest = state.messages[state.messages.length-1]?.created_at || '';
-      const merged = [...state.messages];
-      const known = new Set(state.messages.map(m=>m.id));
-      data.forEach(m=>{ if(!known.has(m.id)) merged.push(m); });
-      merged.sort((a,b)=> new Date(a.created_at)-new Date(b.created_at));
-      const newNewest = merged[merged.length-1]?.created_at || '';
-      if(newNewest !== oldNewest){
-        state.messages = merged;
-        renderMessages(true);
-        ding();
-      }
-    }catch(e){ /* cicho */ }
-  }, 3000);
-}
-
-// Paginacja "w górę" (starsze)
-async function loadOlder(){
-  if(!state.oldestCursor) return;
-  try {
-    const older = await apiList(state.room, { before: state.oldestCursor, limit: 50 });
-    if(older.length){
-      // wstawiamy na początek
-      state.messages = [...older, ...state.messages].sort((a,b)=> new Date(a.created_at)-new Date(b.created_at));
-      state.messages.forEach(m=>state.cache.set(m.id,m));
-      state.oldestCursor = state.messages[0]?.created_at || state.oldestCursor;
-      const box = $('#msgs');
-      const prevHeight = box.scrollHeight;
-      renderMessages(false);
-      // utrzymanie przybliżonej pozycji przewinięcia:
-      const newHeight = box.scrollHeight;
-      box.scrollTop = newHeight - prevHeight;
-    } else {
-      alert('Brak starszych wiadomości.');
-    }
-  } catch(e){
-    console.error("loadOlder error", e);
-  }
-}
-
-/*** WYSYŁANIE ***/
-async function sendMessage(text, fileUrl){
-  text = (text||'').trim();
-  if(!text && !fileUrl) return;
-  const payload = { room_id: state.room, author: state.me, body: text, file_url: fileUrl||null, parent_id: null };
-  try{
-    await apiSend(payload);
-    $('#txt').value='';
-    // po zapisie: dociągnij najnowsze
-    const data = await apiList(state.room, { limit: 50 });
-    state.messages = data.sort((a,b)=> new Date(a.created_at)-new Date(b.created_at));
-    state.messages.forEach(m=>state.cache.set(m.id,m));
-    renderMessages(true);
-  }catch(err){
-    alert('Błąd wysyłania: '+err.message);
-  }
-}
-
-/*** ZAŁĄCZNIKI ***/
-$('#file').addEventListener('change', async (e)=>{
-  const f=e.target.files[0]; if(!f) return;
-  try{
-    const url = await apiUpload(f);
-    await sendMessage('', url);
-  }catch(err){
-    console.error(err);
-    if(f.size <= 1024*1024){
-      const reader=new FileReader();
-      reader.onload = async ()=>{ await sendMessage('', reader.result); };
-      reader.readAsDataURL(f);
-    }else{
-      alert('Nie udało się zapisać pliku (i zbyt duży na dataURL).');
-    }
-  }
-  e.target.value='';
-});
-
-/*** PISANIE (UI) ***/
-function showTyping(on){
-  const set = window._typingSet || new Set();
-  window._typingSet = set;
-  if(on) set.add(state.me); else set.delete(state.me);
-  const names = [...set];
-  let label='';
-  if(names.length===1) label = names[0]+' pisze…';
-  else if(names.length===2) label = names.join(' i ')+' piszą…';
-  else if(names.length>2) label = names.slice(0,2).join(', ')+' i inni piszą…';
-  $('#typing').textContent = label;
-  clearTimeout(state.typingViewTimer);
-  state.typingViewTimer = setTimeout(()=>{ set.clear(); $('#typing').textContent=''; }, 1200);
-}
-$('#txt').addEventListener('input', ()=>{
-  clearTimeout(state.typingTimer);
-  showTyping(true);
-  state.typingTimer = setTimeout(()=>showTyping(false), 800);
-});
-$('#txt').addEventListener('keydown', (e)=>{
-  if(e.key==='Enter' && (e.ctrlKey||e.metaKey)){ e.preventDefault(); $('#btnSend').click(); }
-});
-$('#btnSend').addEventListener('click', async ()=>{ await sendMessage($('#txt').value, null); });
-
-/*** SZUKANIE ***/
-function exportCSV(){
-  const rows=[['id','author','body','file','time']].concat(state.messages.map(m=>[
-    m.id, m.author, m.body||'', m.file_url||'', m.created_at
-  ]));
-  const csv = rows.map(r=>r.map(s=>{s=(s??'').toString(); return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s}).join(';')).join('\n');
-  const a=el('a',{href:URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})), download:'chat.csv'}); a.click();
-}
-function exportJSON(){
-  const a=el('a',{href:URL.createObjectURL(new Blob([JSON.stringify(state.messages,null,2)],{type:'application/json'})), download:'chat.json'}); a.click();
-}
-async function searchMessages(){
-  const q = ($('#q').value||'').trim();
-  const a = ($('#authorFilter').value||'').trim();
-  let arr = [...state.messages];
-  if(a) arr = arr.filter(m=>m.author===a);
-  if(q){
-    const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i');
-    arr = arr.filter(m=> rx.test(m.body||'') || rx.test(m.file_url||'') );
-  }
-  const bak = state.messages;
-  state.messages = arr;
-  renderMessages(true);
-  setTimeout(()=>{ state.messages = bak; renderMessages(false); }, 8000);
-}
-
-/*** DŹWIĘK ***/
-function ding(){ try{ new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABYAAAABAACAgICAAAAA').play(); }catch{} }
-
-/*** ROOM SWITCH ***/
-async function setRoom(id){
-  if(state.room===id) return;
-  state.room=id; localStorage.setItem('chat_room', id);
-  $('#roomTitle').innerHTML = '<b>'+id.toUpperCase()+'</b>';
-  $('#msgs').scrollTop=0; state.messages=[]; state.oldestCursor=null; renderMessages(false);
-  await loadInitial();
-}
-
-/*** JA ***/
-$('#btnName').addEventListener('click', ()=>{
-  const n = prompt('Twój podpis (imię w czacie):', state.me) || state.me;
-  state.me=n; localStorage.setItem('chat_me', n); $('#meName').textContent=n;
-});
-
-/*** START ***/
-(async function init(){
-  try{
-    await loadInitial();
-    startPolling();
-    $('#conn').textContent='gotowe';
-  }catch(e){
-    console.error(e); $('#conn').textContent='błąd inicjalizacji';
-  }
-})();
-</script>
-</body>
-</html>
