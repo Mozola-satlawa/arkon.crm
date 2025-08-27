@@ -1,54 +1,54 @@
-// Netlify Function: upload załączników do Netlify Blobs
-import { getStore } from "@netlify/blobs";
 
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST,OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type"
-};
+// netlify/functions/upload.js
+export const config = { path: '/api/upload' };
 
-export async function handler(event) {
-  if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers: CORS };
-  if (event.httpMethod !== "POST") return { statusCode: 405, headers: CORS, body: "Method Not Allowed" };
-
+export default async (req, ctx) => {
   try {
-    // Odbieramy multipart/form-data (Netlify daje base64 w event.body)
-    const contentType = event.headers["content-type"] || event.headers["Content-Type"] || "";
-    if (!contentType.startsWith("multipart/form-data")) {
-      return { statusCode: 400, headers: CORS, body: JSON.stringify({ ok: false, error: "Wymagane multipart/form-data (pole 'file')" }) };
+    if (req.method !== 'POST') {
+      return json({ error: 'Method not allowed' }, 405);
     }
 
-    const raw = Buffer.from(event.body || "", event.isBase64Encoded ? "base64" : "utf8");
-    const req = new Request("http://local/upload", { method: "POST", headers: { "content-type": contentType }, body: raw });
+    // Wymagane: Netlify Blobs (DANE PERSISTENTNE)
+    // W Netlify włącz Blobs, a w funkcji ctx.blobs będzie dostępny store.
+    const store = ctx?.blobs?.site;
+    if (!store) {
+      return json({
+        error: 'Netlify Blobs nieaktywne. Włącz Blobs w projekcie i daj funkcji dostęp (ctx.blobs.site).'
+      }, 501);
+    }
+
     const form = await req.formData();
-    const file = form.get("file");
-    if (!file || typeof file.arrayBuffer !== "function") {
-      return { statusCode: 400, headers: CORS, body: JSON.stringify({ ok: false, error: "Pole 'file' wymagane" }) };
+    const file = form.get('file');
+    const room = (form.get('room') || 'global').toString();
+
+    if (!file || typeof file === 'string') {
+      return json({ error: 'Brak pliku w form-data pod kluczem "file".' }, 400);
     }
 
-    const room = (form.get("room") || "global").toString().trim();
-    const ext = (file.name?.split(".").pop() || "bin").toLowerCase();
-    const ts = new Date().toISOString().replace(/[:.]/g, "-");
-    const key = uploads/${encodeURIComponent(room)}/${ts}-${crypto.randomUUID()}.${ext};
+    const arrayBuf = await file.arrayBuffer();
+    const ext = (file.name || 'file').split('.').pop();
+    const key = uploads/${room}/${Date.now()}_${sanitize(file.name || 'plik')};
 
-    const store = getStore("chat-uploads");
-    await store.set(key, await file.arrayBuffer(), {
-      metadata: { name: file.name || "", type: file.type || "application/octet-stream", room }
+    // Zapis do Blobs
+    await store.set(key, new Uint8Array(arrayBuf), {
+      contentType: file.type || 'application/octet-stream'
     });
 
-    // Publiczny URL do pobrania pliku:
-    const url = /.netlify/blobs/${encodeURIComponent("chat-uploads")}/${encodeURIComponent(key)};
+    // Publiczny URL (Netlify Blobs hostuje pod ich subdomeną)
+    const url = await store.getPublicUrl(key);
 
-    return {
-      statusCode: 201,
-      headers: { ...CORS, "Content-Type": "application/json" },
-      body: JSON.stringify({ ok: true, url, key })
-    };
-  } catch (e) {
-    return {
-      statusCode: 500,
-      headers: { ...CORS, "Content-Type": "application/json" },
-      body: JSON.stringify({ ok: false, error: e?.message || String(e) })
-    };
+    return json({ url, key, size: file.size, type: file.type || null }, 200);
+  } catch (err) {
+    return json({ error: err.message }, 500);
   }
+};
+
+function sanitize(s='') {
+  return s.normalize('NFKD').replace(/[^\w.\-]+/g, '_').slice(0, 140);
+}
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json' }
+  });
 }
