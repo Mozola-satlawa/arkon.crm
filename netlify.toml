@@ -1,13 +1,15 @@
-[build]
-  publish = "."
-  node_bundler = "esbuild"
-
+# netlify.toml
 [functions]
-  directory = "netlify/functions"
   node_bundler = "esbuild"
 
-# Alias HTTP -> Function
+# API proxy
 [[redirects]]
-  from = "/api/blobs-health"
-  to   = "/.netlify/functions/blobs-health"
+  from = "/api/messages"
+  to   = "/.netlify/functions/messages"
+  status = 200
+
+# (opcjonalnie — jeżeli kiedyś dodasz upload)
+[[redirects]]
+  from = "/api/upload"
+  to   = "/.netlify/functions/upload"
   status = 200
