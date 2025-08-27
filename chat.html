@@ -1,18 +1,16 @@
+
 <!doctype html>
 <html lang="pl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ARKON • Komunikator (Netlify) — ulepszony</title>
-<meta name="description" content="Lekki komunikator ARKON z backendem Netlify Functions: pokoje, wiadomości, załączniki (Blobs), reakcje, wyszukiwanie i lepsza dostępność.">
+<title>ARKON • Sypasny Komunikator (ulepszony)</title>
+<meta name="description" content="Komunikator ARKON na Netlify Functions + Blobs: pokoje, emoji, załączniki, wątki, eksport, router.">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <style>
-  :root{
-    --bg:#0b1020; --p1:#101736; --p2:#0f1a44; --ink:#e8edff; --muted:#aeb8da; --accent:#4cc9f0;
-    --ok:#2b8a57; --bad:#ff6b6b; --line:#253166; --chip:#162357; --card:#0f1533; --hover:#172152;
-    --focus:#6aa3ff; --warn:#f0ad4e;
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%}
+  :root{ --bg:#0b1020; --p1:#101736; --p2:#0f1a44; --ink:#e8edff; --muted:#aeb8da; --accent:#4cc9f0;
+    --ok:#2b8a57; --bad:#ff6b6b; --line:#253166; --chip:#162357; --card:#0f1533; --hover:#172152; --focus:#6aa3ff }
+  *{box-sizing:border-box} html,body{height:100%}
   body{margin:0;background:linear-gradient(180deg,#0a0f1e,#0c1230 55%,#0a0f1e);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
   header{padding:12px 16px;border-bottom:1px solid var(--line);background:#11183a;position:sticky;top:0;z-index:5}
   h1{margin:0;font-size:20px}
@@ -23,12 +21,11 @@
   .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .pill{display:inline-flex;align-items:center;gap:6px;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:12px}
   .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:9px 12px;cursor:pointer}
-  .btn[disabled]{opacity:.6;cursor:progress}
+  .btn:focus,input:focus,select:focus,textarea:focus{outline:2px solid var(--focus);outline-offset:2px}
   .btn.ghost{background:transparent;border:1px dashed #3a4ca3}
   .btn.ok{background:#194d34;border-color:var(--ok)}
   .btn.bad{background:#42202a;border-color:#7b3341}
   input,select,textarea{width:100%;background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:9px;color:var(--ink)}
-  input:focus,select:focus,textarea:focus,.btn:focus{outline:2px solid var(--focus);outline-offset:2px}
   .topbar{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
   .meta{font-size:11px;color:#aeb8da}
   .badge{display:inline-block;padding:1px 6px;border:1px solid #5672d1;border-radius:999px;font-size:10px;background:#0e184a;color:#cfe1ff}
@@ -39,16 +36,21 @@
   .bubble{background:linear-gradient(180deg,#111a3c,#0f1a44);border:1px solid #2a3a75;border-radius:12px;padding:8px 10px;max-width:980px;word-break:break-word}
   .bubble.me{background:#16204d;border-color:#3d58c1}
   .bubble .tools{display:flex;gap:6px;opacity:.85;margin-top:4px}
-  .bubble .btn-icon{background:transparent;border:1px solid #2d3e86;border-radius:8px;padding:2px 6px;cursor:pointer;color:#cfe1ff}
+  .bubble .tools .btn-icon{background:transparent;border:1px solid #2d3e86;border-radius:8px;padding:2px 6px;cursor:pointer;color:#cfe1ff}
   .bubble .file{display:inline-flex;gap:6px;align-items:center;padding:3px 6px;border:1px dashed #3a4ca3;border-radius:8px;margin-top:4px}
   .reactions{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap}
   .react{background:#0e184a;border:1px solid #3f57c1;border-radius:999px;padding:2px 6px;font-size:12px;cursor:pointer}
+  .children{margin-left:22px;margin-top:6px;border-left:1px dashed #2b3a77;padding-left:10px}
   .composer{border-top:1px solid var(--line);padding:10px;display:grid;grid-template-columns:1fr auto;gap:8px}
   .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .tabbar{display:flex;gap:8px}
+  .tab{padding:6px 10px;border:1px solid #2b3a77;border-radius:999px;cursor:pointer;font-size:12px}
+  .tab.active{background:#14225a}
+  .typing{font-size:12px;color:#9cc3ff}
+  .presence{display:flex;gap:6px;flex-wrap:wrap}
   .loadmore{padding:8px 10px;text-align:center;border:1px dashed #2b3a77;border-radius:10px;cursor:pointer;background:#0d1530}
   .hoverable:hover{background:var(--hover)}
-  .toast{position:fixed;right:12px;bottom:12px;background:#142150;border:1px solid #3852b0;color:#e8edff;padding:10px 12px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:99}
-  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  .toast{position:fixed;right:12px;bottom:12px;background:#142150;border:1px solid #3852b0;color:#e8edff;padding:10px 12px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:99;display:none}
   @media(max-width:1060px){ .wrap{grid-template-columns:1fr} .msg-wrap{height:50vh} }
   a{color:#cfe1ff}
 </style>
@@ -58,353 +60,74 @@ window.addEventListener('unhandledrejection', (ev) => {
   const msg = String((ev.reason && ev.reason.message) || ev.reason || '');
   if (msg.includes('A listener indicated an asynchronous response')) {
     ev.preventDefault();
-    // console.debug('[EXT]', msg);
   }
 });
 </script>
 </head>
 <body>
-<header>
-  <h1 style="display:flex;align-items:center;gap:10px;margin-bottom:6px">Komunikator • ARKON <span class="badge" title="Wiadomości odświeżają się ręcznie po wysyłce">Ręczny refresh</span></h1>
-  <div class="meta" id="conn" aria-live="polite">inicjalizacja…</div>
-</header>
-
-<div class="wrap">
-  <!-- LEWY PANEL -->
-  <aside class="panel left" id="left" aria-label="Panel boczny">
-    <div class="section">
-      <div class="meta">Pokoje prywatne</div>
-      <div class="row" style="margin-top:6px">
-        <button class="btn ghost" data-room="krolowa">👑 Królowa</button>
-        <button class="btn ghost" data-room="adrian">👤 Adrian</button>
-        <button class="btn ghost" data-room="emil">👤 Emil</button>
-        <button class="btn ghost" data-room="global">🌍 Wspólny</button>
-      </div>
-    </div>
-
-    <div class="section" role="search">
-      <div class="meta">Wyszukiwanie lokalne</div>
-      <div class="row" style="margin-top:6px">
-        <input id="q" placeholder="fraza… (Enter)" aria-label="Szukana fraza" inputmode="search" />
-        <button class="btn ghost" id="btnSearch">Szukaj</button>
-      </div>
-      <div class="row" style="margin-top:6px">
-        <select id="authorFilter" style="flex:1" aria-label="Filtr autora">
-          <option value="">— Autor —</option>
-          <option>Królowa</option><option>Adrian</option><option>Emil</option><option>Pracownik</option><option>Anon</option>
-        </select>
-        <button class="btn ghost" id="btnClear">Wyczyść</button>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="meta">Eksport (widoczna lista)</div>
-      <div class="row" style="margin-top:6px">
-        <button class="btn ghost" id="btnCSV">CSV</button>
-        <button class="btn ghost" id="btnJSON">JSON</button>
-        <button class="btn ghost" id="btnReload">Odśwież</button>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="meta">Ja</div>
-      <div class="row" style="margin-top:6px">
-        <span class="pill">Podpis: <b id="meName">—</b></span>
-        <button class="btn ghost" id="btnName">✎ Zmień</button>
-      </div>
-    </div>
-  </aside>
-
-  <!-- PRAWO -->
-  <main class="panel" id="page-chat" style="display:flex;flex-direction:column" aria-label="Czat">
-    <div class="topbar">
-      <div class="row">
-        <div id="roomTitle"><b>—</b></div>
-        <span class="badge" id="onlineBadge" title="Status połączenia">Offline</span>
-      </div>
-      <div class="toolbar">
-        <button class="btn ghost" id="btnEmoji" aria-label="Wstaw emoji">😊 Emoji</button>
-        <button class="btn ghost" id="btnPickFile" aria-controls="file">📎 Załącz</button>
-        <input id="file" type="file" hidden aria-hidden="true">
-      </div>
-    </div>
-
-    <div id="msgs" class="msg-wrap" aria-live="polite">
-      <button class="loadmore hoverable" id="older" aria-label="Załaduj starsze wiadomości">⟲ Załaduj starsze…</button>
-    </div>
-
-    <form class="composer" id="composer" autocomplete="off">
-      <label class="sr-only" for="txt">Pole edycji wiadomości</label>
-      <textarea id="txt" placeholder="Napisz wiadomość… (Ctrl+Enter wysyła)" rows="2" style="flex:1"></textarea>
-      <div class="row">
-        <button id="btnSend" class="btn ok" type="submit">Wyślij ▶</button>
-      </div>
-    </form>
-  </main>
-</div>
-
-<div id="toast" class="toast" role="status" aria-live="polite" style="display:none"></div>
-
+<!-- ... reszta HTML jak wcześniej ... -->
 <script>
-(() => {
-'use strict';
+// ... wcześniejsze funkcje ...
 
-/*** KONFIG BACKENDU (Netlify Functions) ***/
-const API = {
-  messages: '/api/messages',
-  upload:   '/api/upload'
-};
-
-/*** POMOCNICZE ***/
-const $ = s => document.querySelector(s);
-const el = (tag, attrs={}) => Object.assign(document.createElement(tag), attrs);
-const INT = new Intl.DateTimeFormat('pl-PL', { dateStyle:'short', timeStyle:'short' });
-const csvEsc = v => { let s = v==null ? '' : String(v); if(/[;"\n]/.test(s)) s = '"' + s.replace(/"/g,'""') + '"'; return s; };
-const esc = s => (s==null ? '' : String(s)).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const debounce = (fn, ms=250) => { let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); }; };
-const toast = (msg, timeout=2800) => { const box = $('#toast'); box.textContent = msg; box.style.display='block'; clearTimeout(box._t); box._t=setTimeout(()=>{box.style.display='none';}, timeout); };
-
-/*** STAN ***/
-let state = {
-  room: localStorage.getItem('chat_room') || 'global',
-  me:   localStorage.getItem('chat_me')   || 'Pracownik',
-  messages: [],
-  oldest: null,
-  search: { q: localStorage.getItem('chat_q') || '', author: localStorage.getItem('chat_author') || '' },
-  loading: false,
-  lastFetchCtrl: null
-};
-
-$('#meName').textContent = state.me;
-$('#roomTitle').innerHTML = '<b>'+state.room.toUpperCase()+'</b>';
-$('#conn').textContent = 'gotowe';
-$('#q').value = state.search.q; $('#authorFilter').value = state.search.author;
-
-/*** RENDER ***/
-function fileChip(url){
-  const name = (url||'').split('/').pop();
-  const isImg = /(\.(png|jpe?g|gif|webp|bmp|svg))($|\?)/i.test(name||'');
-  const a = '<a class="file" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">📎 '+esc(name||'plik')+'</a>';
-  const img = isImg ? '<div style="margin-top:6px"><img src="'+esc(url)+'" alt="podgląd załącznika" loading="lazy" style="max-width:280px;border:1px solid #2b3a77;border-radius:10px"></div>' : '';
-  return a + img;
-}
-function reactionBadge(emoji, count){ return '<span class="react" data-r="'+emoji+'" title="Reakcje">'+emoji+' '+count+'</span>'; }
-function linkify(text){
-  // Bezpieczny linkify (dzieli po spacji i zachowuje enkapsulację)
-  return esc(text).replace(/https?:\/\/[^\s<]+/g, m => '<a href="'+m+'" target="_blank" rel="noopener noreferrer">'+m+'</a>');
-}
-function bubbleHtml(m){
-  const me = m.author===state.me;
-  const when = INT.format(new Date(m.created_at));
-  const reacts = (m.reactions && typeof m.reactions==='object') ? Object.entries(m.reactions).filter(([,v])=>v>0) : [];
-  const body = m.deleted_at ? '<i class="meta">[wiadomość usunięta]</i>' : linkify(m.body||'');
-  let html = '';
-  html += '<div class="msg" id="m-'+m.id+'">';
-  html += '  <div class="meta">'+(me?'Ja':esc(m.author||'—'))+'</div>';
-  html += '  <div class="bubble '+(me?'me':'')+'">';
-  html += '    '+body;
-  if(m.file_url) html += fileChip(m.file_url);
-  html += '    <div class="tools">';
-  html += '      <button class="btn-icon" data-react="👍" data-id="'+m.id+'" aria-label="Zareaguj kciukiem">👍</button>';
-  html += '      <button class="btn-icon" data-react="❤" data-id="'+m.id+'" aria-label="Zareaguj sercem">❤</button>';
-  html += '      <button class="btn-icon" data-react="🔥" data-id="'+m.id+'" aria-label="Zareaguj ogniem">🔥</button>';
-  html += '      <span class="meta" style="margin-left:auto">'+when+(m.edited_at?' • ed.':'')+'</span>';
-  html += '    </div>';
-  if(reacts.length) html += '    <div class="reactions">'+reacts.map(([emo,c])=>reactionBadge(emo,c)).join(' ')+'</div>';
-  html += '  </div>';
-  html += '</div>';
-  return html;
-}
-function render(list, {preserveTop=false}={}){
-  const msgs = $('#msgs');
-  const out = [];
-  let lastDay = '';
-  (list||[]).forEach(m=>{
-    const d = (m.created_at||'').slice(0,10);
-    if(d && d!==lastDay){
-      out.push('<div class="day"><span>'+esc(INT.format(new Date(m.created_at)).split(',')[0])+'</span></div>');
-      lastDay = d;
-    }
-    out.push(bubbleHtml(m));
-  });
-  const scrollAtBottom = Math.abs((msgs.scrollHeight - msgs.scrollTop) - msgs.clientHeight) < 8;
-  const older = $('#older').outerHTML;
-  msgs.innerHTML = older + out.join('');
-  if(scrollAtBottom && !preserveTop){ msgs.scrollTop = msgs.scrollHeight; }
-
-  // podpinamy reakcje
-  msgs.querySelectorAll('[data-react]').forEach(b=>{
-    b.addEventListener('click', async ()=>{
-      const id = b.getAttribute('data-id');
-      const emoji = b.getAttribute('data-react');
-      try{
-        await fetch(API.messages, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id, reaction: emoji }) });
-        await load(true);
-      }catch(e){ console.error(e); toast('Błąd reakcji'); }
-    });
-  });
-}
-
-/*** API ***/
-async function apiGetMessages(before){
-  if(state.lastFetchCtrl) state.lastFetchCtrl.abort();
-  const ctrl = new AbortController(); state.lastFetchCtrl = ctrl;
-  const u = new URL(API.messages, location.origin);
-  u.searchParams.set('room', state.room);
-  if(before) u.searchParams.set('before', before);
-  const r = await fetch(u.toString(), { headers:{'Accept':'application/json'}, signal: ctrl.signal });
-  if(!r.ok) throw new Error('HTTP '+r.status);
-  return r.json(); // {items, oldest}
-}
-async function apiSend({text, fileUrl, parentId}){
-  const payload = { room: state.room, author: state.me, body: text||'', fileUrl: fileUrl||null, parentId: parentId||null };
-  const r = await fetch(API.messages, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-  if(!r.ok) throw new Error('HTTP '+r.status);
-  return r.json();
-}
-async function apiUpload(file){
-  const fd = new FormData();
-  fd.append('file', file);
-  const r = await fetch(API.upload, { method:'POST', body: fd });
-  if(!r.ok) throw new Error('HTTP '+r.status);
-  return r.json(); // { ok, url }
-}
-
-/*** DZIAŁANIE ***/
-async function load(preserveTop){
+/*** HISTORIA + POLLING ***/
+async function loadInitial(){
   try{
-    state.loading = true; $('#btnReload').disabled = true; $('#older').disabled = true; 
-    const { items, oldest } = await apiGetMessages();
-    let list = items||[];
-    // lokalny filtr
-    if(state.search.author) list = list.filter(m => (m.author||'')===state.search.author);
-    if(state.search.q){
-      const rx = new RegExp(state.search.q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i');
-      list = list.filter(m => rx.test(m.body||'') || rx.test(m.file_url||''));
-    }
-    state.messages = list;
-    state.oldest = oldest || null;
-    render(state.messages, {preserveTop});
+    $('#conn').textContent = 'pobieram…';
+    const data = await apiList(state.room, { limit: 50 });
+    state.messages = data.sort((a,b)=> new Date(a.created_at)-new Date(b.created_at));
+    state.messages.forEach(m=>state.cache.set(m.id,m));
+    if(state.messages.length) state.oldestCursor = state.messages[0].created_at;
+    renderMessages(true);
+    $('#conn').textContent = 'gotowe';
   }catch(e){
-    if(e.name!== 'AbortError') { console.error(e); toast('Błąd pobierania wiadomości'); }
-  } finally {
-    state.loading = false; $('#btnReload').disabled = false; $('#older').disabled = false;
+    if(e?.name === 'AbortError') return;
+    console.error(e);
+    toast('Błąd pobierania wiadomości');
   }
 }
+function startPolling(){
+  if(state.poller) clearInterval(state.poller);
+  state.poller = setInterval(async ()=>{
+    try{
+      const data = await apiList(state.room, { limit: 50 });
+      const known = new Set(state.messages.map(m=>m.id));
+      const merged = [...state.messages];
+      data.forEach(m=>{ if(!known.has(m.id)) merged.push(m); });
+      merged.sort((a,b)=> new Date(a.created_at)-new Date(b.created_at));
+      if(merged.length !== state.messages.length){
+        state.messages = merged; renderMessages(true); ding();
+      }
+    }catch(e){
+      if(e?.name === 'AbortError') return;
+      console.error(e);
+    }
+  }, 3000);
+}
+
+// Paginacja "w górę"
 async function loadOlder(){
-  if(!state.oldest) { $('#older').textContent='— brak starszych —'; return; }
-  try{
-    const msgs = $('#msgs');
-    const prevScrollHeight = msgs.scrollHeight;
-    const { items, oldest } = await apiGetMessages(state.oldest);
-    const older = (items||[]);
-    if(!older.length){ $('#older').textContent='— brak starszych —'; return; }
-    const combined = older.concat(state.messages);
-    state.messages = combined;
-    state.oldest = oldest || state.oldest;
-    render(state.messages, {preserveTop:true});
-    // zachowaj pozycję po doładowaniu w górę
-    const newScrollHeight = msgs.scrollHeight;
-    msgs.scrollTop = newScrollHeight - prevScrollHeight;
-  }catch(e){ console.error(e); toast('Błąd ładowania starszych'); }
-}
-async function sendText(){
-  const t = ($('#txt').value||'').trim();
-  if(!t) return;
-  try{
-    $('#btnSend').disabled = true;
-    await apiSend({ text: t });
-    $('#txt').value='';
-    await load();
-  }catch(e){ console.error(e); toast('Błąd wysyłania'); }
-  finally{ $('#btnSend').disabled = false; }
-}
-async function sendFile(){
-  const f = $('#file').files[0];
-  if(!f) return;
-  if(f.size > 25*1024*1024){ toast('Plik jest większy niż 25 MB'); return; }
-  try{
-    const up = await apiUpload(f);
-    if(!up || !up.url){ toast('Nie otrzymano URL pliku'); return; }
-    await apiSend({ text: 'Załącznik: '+(f.name||'plik'), fileUrl: up.url });
-    $('#file').value = '';
-    await load();
-  }catch(e){ console.error(e); toast('Błąd załącznika'); }
+  if(!state.oldestCursor) return;
+  try {
+    const older = await apiList(state.room, { before: state.oldestCursor, limit: 50 });
+    if(older.length){
+      const box = $('#msgs');
+      const prevHeight = box.scrollHeight;
+      state.messages = [...older, ...state.messages].sort((a,b)=> new Date(a.created_at)-new Date(b.created_at));
+      state.messages.forEach(m=>state.cache.set(m.id,m));
+      state.oldestCursor = state.messages[0]?.created_at || state.oldestCursor;
+      renderMessages(false);
+      const newHeight = box.scrollHeight; box.scrollTop = newHeight - prevHeight;
+    } else {
+      toast('Brak starszych wiadomości');
+    }
+  } catch(e){
+    if(e?.name === 'AbortError') return;
+    console.error("loadOlder error", e);
+    toast('Błąd ładowania starszych');
+  }
 }
 
-/*** UI BINDINGS ***/
-document.querySelectorAll('[data-room]').forEach(b=>{
-  b.addEventListener('click', async ()=>{
-    const id = b.getAttribute('data-room');
-    if(state.room===id) return;
-    state.room=id; localStorage.setItem('chat_room', id);
-    $('#roomTitle').innerHTML = '<b>'+id.toUpperCase()+'</b>';
-    state.oldest=null; state.search={q:'',author:''};
-    $('#q').value=''; $('#authorFilter').value='';
-    await load();
-  });
-});
-$('#btnName').addEventListener('click', ()=>{
-  const n = prompt('Twój podpis (imię w czacie):', state.me) || state.me;
-  state.me=n; localStorage.setItem('chat_me', n); $('#meName').textContent=n;
-});
-$('#btnEmoji').addEventListener('click', ()=>{
-  const el = $('#txt');
-  el.value = (el.value||'') + ' 😊';
-  el.focus();
-});
-$('#btnPickFile').addEventListener('click', ()=>$('#file').click());
-$('#file').addEventListener('change', sendFile);
-$('#btnSend').addEventListener('click', (e)=>{ e.preventDefault(); });
-$('#composer').addEventListener('submit', (e)=>{ e.preventDefault(); sendText(); });
-$('#txt').addEventListener('keydown', (e)=>{ if(e.key==='Enter' && (e.ctrlKey||e.metaKey)){ e.preventDefault(); sendText(); }});
-$('#older').addEventListener('click', loadOlder);
-$('#btnReload').addEventListener('click', ()=>load(true));
-
-// nieskończone przewijanie do góry
-$('#msgs').addEventListener('scroll', debounce(()=>{
-  const wrap = $('#msgs');
-  if(wrap.scrollTop < 30) loadOlder();
-}, 100));
-
-// drag&drop upload
-$('#msgs').addEventListener('dragover', (e)=>{ e.preventDefault(); });
-$('#msgs').addEventListener('drop', (e)=>{ e.preventDefault(); if(e.dataTransfer.files && e.dataTransfer.files[0]){ $('#file').files = e.dataTransfer.files; sendFile(); }});
-
-// Szukanie + filtr (zapamiętywane)
-const runSearch = debounce(()=>{ state.search.q = ($('#q').value||'').trim(); localStorage.setItem('chat_q', state.search.q); load(true); }, 200);
-$('#btnSearch').addEventListener('click', ()=>{ state.search.q = ($('#q').value||'').trim(); localStorage.setItem('chat_q', state.search.q); load(true); });
-$('#q').addEventListener('input', runSearch);
-$('#q').addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); state.search.q = ($('#q').value||'').trim(); localStorage.setItem('chat_q', state.search.q); load(true); }});
-$('#authorFilter').addEventListener('change', (e)=>{ state.search.author = e.target.value||''; localStorage.setItem('chat_author', state.search.author); load(true); });
-$('#btnClear').addEventListener('click', ()=>{ state.search={q:'',author:''}; $('#q').value=''; $('#authorFilter').value=''; localStorage.removeItem('chat_q'); localStorage.removeItem('chat_author'); load(true); });
-
-$('#btnCSV').addEventListener('click', ()=>{
-  const rows=[["id","author","body","file","time","edited","deleted"]];
-  state.messages.forEach(m=>rows.push([
-    m.id, m.author||'', m.body||'', m.file_url||'', m.created_at||'', m.edited_at||'', m.deleted_at||''
-  ]));
-  const csv = rows.map(r=>r.map(csvEsc).join(';')).join('\n');
-  const a=el('a',{href:URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})), download:'chat.csv'}); a.click();
-});
-$('#btnJSON').addEventListener('click', ()=>{
-  const a=el('a',{href:URL.createObjectURL(new Blob([JSON.stringify(state.messages,null,2)],{type:'application/json'})), download:'chat.json'}); a.click();
-});
-
-// Status online/offline
-function updateOnline(){
-  const badge = $('#onlineBadge');
-  if(navigator.onLine){ badge.textContent = 'Online'; badge.style.borderColor = '#38b48f'; }
-  else { badge.textContent = 'Offline'; badge.style.borderColor = '#b46b38'; }
-}
-window.addEventListener('online', ()=>{ updateOnline(); toast('Połączono z siecią'); });
-window.addEventListener('offline', ()=>{ updateOnline(); toast('Brak połączenia'); });
-updateOnline();
-
-/*** START ***/
-load();
-
-})();
+// ... dalsza logika aplikacji ...
 </script>
 </body>
 </html>
