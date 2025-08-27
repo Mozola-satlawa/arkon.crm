@@ -1,79 +1,42 @@
+import { neon } from '@neondatabase/serverless';
 
-// netlify/functions/messages.js
-import { neon } from '@netlify/neon';
+const sql = neon(process.env.NETLIFY_DATABASE_URL);
 
-const sql = neon(); // użyje NETLIFY_DATABASE_URL
+export default async (req, context) => {
+  try {
+    if (req.method === 'GET') {
+      const { room, before, limit } = req.query;
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type'
-};
-
-const json = (data, init = {}) =>
-  new Response(JSON.stringify(data), {
-    headers: { 'Content-Type': 'application/json', ...CORS },
-    ...init
-  });
-
-export default async function handler(request) {
-  if (request.method === 'OPTIONS') return new Response('', { headers: CORS });
-
-  // --- GET: lista wiadomości ---
-  if (request.method === 'GET') {
-    try {
-      const url = new URL(request.url);
-      const room  = (url.searchParams.get('room') || 'global').slice(0, 80);
-      const before = url.searchParams.get('before'); // ISO
-      const limit  = Math.min(200, Math.max(1, Number(url.searchParams.get('limit') || 50)));
-
-      const params = [room];
-      let where = 'room_id = $1';
-      if (before) {
-        params.push(before);
-        where += ` AND created_at < $${params.length}`;
+      if (!room) {
+        return new Response(JSON.stringify({ error: 'Missing room' }), { status: 400 });
       }
 
+      let q = `
+        SELECT * FROM messages
+        WHERE room_id = ${room}
+      `;
+      if (before) q += ` AND created_at < ${before}`;
+      q += ` ORDER BY created_at DESC LIMIT ${limit || 50}`;
+
+      const rows = await sql.unsafe(q);
+      return new Response(JSON.stringify(rows), { status: 200 });
+    }
+
+    if (req.method === 'POST') {
+      const body = await req.json();
+
       const rows = await sql`
-        SELECT id, room_id, author, body, file_url, parent_id,
-               created_at, edited_at, deleted_at
-        FROM messages
-        WHERE ${sql.unsafe(where)}
-        ORDER BY created_at DESC
-        LIMIT ${limit}
-      `;
-
-      // front zwykle sortuje sam, ale jak chcesz rosnąco:
-      rows.reverse();
-      return json(rows);
-    } catch (err) {
-      return json({ error: err.message }, { status: 500 });
-    }
-  }
-
-  // --- POST: zapisz wiadomość ---
-  if (request.method === 'POST') {
-    try {
-      const b = await request.json();
-      const room      = (b.room || b.room_id || 'global').slice(0, 80);
-      const author    = (b.author || 'Anon').slice(0, 80);
-      const text      = (b.text || b.body || '').toString();
-      const file_url  = (b.file_url || null);
-      const parent_id = b.parent_id || null;
-
-      if (!room)   return json({ error: 'room required' }, { status: 400 });
-      if (!author) return json({ error: 'author required' }, { status: 400 });
-
-      const [row] = await sql`
         INSERT INTO messages (room_id, author, body, file_url, parent_id)
-        VALUES (${room}, ${author}, ${text}, ${file_url}, ${parent_id})
-        RETURNING id, room_id, author, body, file_url, parent_id, created_at
+        VALUES (${body.room}, ${body.author}, ${body.text || ''}, ${body.file_url || null}, ${body.parent_id || null})
+        RETURNING *
       `;
-      return json(row, { status: 201 });
-    } catch (err) {
-      return json({ error: err.message }, { status: 500 });
-    }
-  }
 
-  return json({ error: 'Method not allowed' }, { status: 405 });
-}
+      return new Response(JSON.stringify(rows[0]), { status: 200 });
+    }
+
+    return new Response('Method not allowed', { status: 405 });
+  } catch (err) {
+    console.error('DB error', err);
+    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+  }
+};
