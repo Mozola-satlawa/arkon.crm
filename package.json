@@ -16,3 +16,7 @@
     "node": ">=18"
   }
 }
+"dependencies": {
+  "@neondatabase/serverless": "^0.10.0"
+}
+
