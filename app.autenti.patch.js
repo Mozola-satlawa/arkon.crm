@@ -1,1 +1,0 @@
-// Autenti UI patch placeholder
