@@ -1,12 +1,12 @@
-
 [build]
-  publish = "public"          # katalog z HTML/CSS/JS (podmień jeśli inny, np. ".")
+  publish = "."
   functions = "netlify/functions"
 
 [functions]
   node_bundler = "esbuild"
-  # nie musisz podawać external_node_modules, esbuild sam zbierze @neondatabase/serverless
+  # external_node_modules nie jest potrzebne, esbuild sam zbierze @neondatabase/serverless
 
+# Opcjonalny skrót: /api/messages → /.netlify/functions/messages
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
