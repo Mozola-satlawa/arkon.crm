@@ -1,15 +1,17 @@
-// netlify/functions/messages.js  (ESM – zgodny z "type":"module")
+
+// netlify/functions/messages.js
+// ESM + Neon. Używa env: NETLIFY_DATABASE_URL (lub NETLIFY_DATABASE_URL_UNPOOLED)
 import { neon } from '@neondatabase/serverless';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type'
+  'Access-Control-Allow-Headers': 'Content-Type',
 };
 
 const sql = (() => {
   const url = process.env.NETLIFY_DATABASE_URL || process.env.NETLIFY_DATABASE_URL_UNPOOLED;
-  if (!url) console.warn('⚠ Brak NETLIFY_DATABASE_URL w env.');
+  if (!url) console.warn('⚠ Brak NETLIFY_DATABASE_URL w env (Site configuration → Environment variables).');
   return url ? neon(url) : null;
 })();
 
@@ -21,7 +23,7 @@ export async function handler(event) {
   try {
     if (!sql) throw new Error('Database connection not configured.');
 
-    // GET: lista wiadomości w pokoju
+    // GET: ?room=XXX [&before=ISO] [&limit=1..200]
     if (event.httpMethod === 'GET') {
       const { room, before, limit } = event.queryStringParameters || {};
       if (!room) {
@@ -36,10 +38,14 @@ export async function handler(event) {
         ORDER BY created_at DESC
         LIMIT ${lim}
       `;
-      return { statusCode: 200, headers: { ...CORS, 'Content-Type': 'application/json' }, body: JSON.stringify(rows) };
+      return {
+        statusCode: 200,
+        headers: { ...CORS, 'Content-Type': 'application/json' },
+        body: JSON.stringify(rows),
+      };
     }
 
-    // POST: dodanie wiadomości
+    // POST: { room, author?, text, file_url?, parent_id? }
     if (event.httpMethod === 'POST') {
       if (!event.body) {
         return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'No body' }) };
@@ -53,7 +59,11 @@ export async function handler(event) {
         VALUES (${data.room}, ${data.author || 'Anon'}, ${data.text}, ${data.file_url || null}, ${data.parent_id || null})
         RETURNING id, room_id, author, body, file_url, parent_id, created_at
       `;
-      return { statusCode: 200, headers: { ...CORS, 'Content-Type': 'application/json' }, body: JSON.stringify(row) };
+      return {
+        statusCode: 200,
+        headers: { ...CORS, 'Content-Type': 'application/json' },
+        body: JSON.stringify(row),
+      };
     }
 
     return { statusCode: 405, headers: CORS, body: 'Method Not Allowed' };
