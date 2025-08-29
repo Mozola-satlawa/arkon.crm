@@ -1,107 +1,153 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pl">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Komunikat ogólny</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
   <style>
-    /* Drobne uzupełnienia do ogólnego style.css */
-    #messages {
-      border: 1px solid #ddd;
-      background: #fafafa;
-      padding: 10px;
-      height: 350px;
-      overflow-y: auto;
-      margin-bottom: 15px;
-    }
-    .msg {
-      padding: 6px 8px;
-      border-bottom: 1px solid #eee;
-    }
-    .msg:last-child {
-      border-bottom: none;
-    }
-    .author {
-      font-weight: bold;
-      margin-right: 6px;
-      color: #333;
-    }
-    form {
-      display: flex;
-      gap: 10px;
-    }
-    form input[type="text"] {
-      flex: 1;
-      padding: 6px 8px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    form button {
-      background: #0066cc;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      padding: 6px 14px;
-      cursor: pointer;
-    }
-    form button:hover {
-      background: #004c99;
-    }
+    /* Drobne uzupełnienia, zgodne z Twoim stylem */
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 12px; }
+    .panel { background: var(--panel, #0f0f12); border: 1px solid var(--line, #2a2a2e); border-radius: 12px; padding: 12px; }
+    .row { display: flex; gap: 10px; align-items: center; }
+    .stack { display: grid; gap: 10px; }
+    #feed { height: 56vh; overflow: auto; background: var(--p2, #121216); border: 1px solid var(--line, #2a2a2e); border-radius: 10px; }
+    .msg { padding: 10px 12px; border-bottom: 1px solid var(--line, #2a2a2e); line-height: 1.4; }
+    .msg:last-child { border-bottom: 0; }
+    .who { font-weight: 600; margin-right: 8px; }
+    .time { opacity: .6; font-size: 12px; margin-left: 8px; }
+    .input { flex: 1; min-width: 180px; }
+    .error { color: #ff9f9f; background: #2a0f0f; border: 1px solid #512; padding: 8px 10px; border-radius: 8px; display:none; }
+    .muted { opacity:.7; }
+    button[disabled] { opacity:.6; cursor:not-allowed; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Komunikat ogólny</h1>
+  <header class="topbar">
+    <div>
+      <h1 style="margin:0">Komunikat ogólny</h1>
+      <div class="meta">Wszyscy widzą ten sam strumień wiadomości (kanał: <code>ogolny</code>).</div>
+    </div>
+    <div class="badge">Neon</div>
   </header>
 
-  <main>
-    <div id="messages">Ładowanie wiadomości...</div>
+  <main class="wrap stack">
+    <section class="panel stack">
+      <div id="error" class="error"></div>
 
-    <form id="form">
-      <input id="author" type="text" placeholder="Twoje imię" required>
-      <input id="text" type="text" placeholder="Napisz wiadomość..." required>
-      <button type="submit">Wyślij</button>
-    </form>
+      <div id="feed" aria-live="polite">
+        <div class="muted" style="padding:12px">Ładowanie…</div>
+      </div>
+
+      <form id="form" class="row" autocomplete="off">
+        <input id="author" class="input" placeholder="Twoje imię" />
+        <input id="text" class="input" placeholder="Napisz wiadomość…" required />
+        <button id="send" class="btn ok" type="submit">Wyślij</button>
+      </form>
+    </section>
   </main>
 
   <script>
+    // === KONFIG ===
     const API = "/.netlify/functions/messages";
-    const room = "ogolny"; // stały kanał
+    const ROOM = "ogolny";
+    const POLL_MS = 5000;
 
-    async function loadMessages() {
-      try {
-        const r = await fetch(${API}?room=${room}&limit=50);
-        const msgs = await r.json();
-        const box = document.getElementById("messages");
-        box.innerHTML = "";
-        msgs.reverse().forEach(m => {
-          const div = document.createElement("div");
-          div.className = "msg";
-          div.innerHTML = <span class="author">${m.author || "Anon"}:</span> ${m.body};
-          box.appendChild(div);
-        });
-      } catch (err) {
-        console.error("Błąd ładowania:", err);
+    // === POMOCNICZE ===
+    const $ = s => document.querySelector(s);
+    const fmt = iso => new Date(iso).toLocaleString('pl-PL', {
+      hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'
+    });
+
+    const feed = $("#feed");
+    const form = $("#form");
+    const authorEl = $("#author");
+    const textEl = $("#text");
+    const sendBtn = $("#send");
+    const errBox = $("#error");
+
+    let lastScrollBottom = true; // auto-scroll tylko gdy user jest na dole
+
+    function showError(msg){
+      errBox.textContent = msg || "Wystąpił błąd.";
+      errBox.style.display = "block";
+      setTimeout(()=> errBox.style.display="none", 4000);
+    }
+
+    function render(messages){
+      // zachowaj informację czy user był przy dole listy
+      lastScrollBottom = Math.abs(feed.scrollHeight - feed.scrollTop - feed.clientHeight) < 10;
+
+      feed.innerHTML = "";
+      if (!messages.length){
+        feed.innerHTML = '<div class="muted" style="padding:12px">Brak wiadomości. Napisz pierwszą!</div>';
+        return;
+      }
+      // Najstarsze na górze
+      for(const m of messages){
+        const row = document.createElement("div");
+        row.className = "msg";
+        row.innerHTML = `
+          <span class="who">${m.author || "Anon"}:</span>
+          <span class="body">${(m.body || "").replace(/</g,"&lt;")}</span>
+          <span class="time">${fmt(m.created_at)}</span>
+        `;
+        feed.appendChild(row);
+      }
+      // auto-scroll tylko jeśli wcześniej byliśmy przy końcu
+      if (lastScrollBottom) feed.scrollTop = feed.scrollHeight;
+    }
+
+    async function load(){
+      try{
+        const r = await fetch(\\${API}?room=\${encodeURIComponent(ROOM)}&limit=100\);
+        if(!r.ok) throw new Error(await r.text());
+        const data = await r.json();
+        render(data.reverse()); // API zwraca DESC → odwracamy
+      }catch(e){
+        console.error(e);
+        showError("Nie udało się pobrać wiadomości.");
       }
     }
 
-    document.getElementById("form").addEventListener("submit", async (e) => {
+    async function send(author, text){
+      try{
+        sendBtn.disabled = true;
+        const r = await fetch(API, {
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({ room: ROOM, author, text })
+        });
+        if(!r.ok) throw new Error(await r.text());
+        // szybki refresh po wysłaniu
+        await load();
+        textEl.value = "";
+        textEl.focus();
+      }catch(e){
+        console.error(e);
+        showError("Nie udało się wysłać wiadomości.");
+      }finally{
+        sendBtn.disabled = false;
+      }
+    }
+
+    // === ZDARZENIA ===
+    form.addEventListener("submit", (e)=>{
       e.preventDefault();
-      const author = document.getElementById("author").value.trim() || "Anon";
-      const text = document.getElementById("text").value.trim();
-      if (!text) return;
-      await fetch(API, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ room, author, text })
-      });
-      document.getElementById("text").value = "";
-      loadMessages();
+      const a = (authorEl.value || "Anon").trim();
+      const t = (textEl.value || "").trim();
+      if(!t) return;
+      send(a, t);
     });
 
-    // automatyczne odświeżanie
-    loadMessages();
-    setInterval(loadMessages, 5000);
+    // Auto-odświeżanie
+    load();
+    setInterval(load, POLL_MS);
+
+    // zapamiętaj scroll – jeśli user przewinie w górę, nie ściągamy go na dół
+    feed.addEventListener("scroll", ()=>{
+      lastScrollBottom = Math.abs(feed.scrollHeight - feed.scrollTop - feed.clientHeight) < 10;
+    });
   </script>
 </body>
 </html>
