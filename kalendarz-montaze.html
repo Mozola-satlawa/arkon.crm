@@ -1,15 +1,16 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ARKON — Kalendarz Montaży</title>
-<meta name="description" content="Kalendarz montażowy ARKON: planowanie, klienci, monterzy, statusy, eksport/import.">
+<meta name="description" content="Kalendarz montażowy ARKON: planowanie, klienci, monterzy, statusy, eksport/import, ICS, druk. Dane w Neon przez Netlify Functions.">
 <style>
   :root{
     --bg:#0b1020; --p1:#121a34; --p2:#172142; --ink:#e8edff; --muted:#aeb8da;
     --accent:#4cc9f0; --ok:#2fbf71; --warn:#ffb84d; --bad:#ff6b6b;
     --card:#0f1533; --line:#1c2750; --grid:#243059; --chip:#0d1530;
+    --shadow:0 10px 40px #0007;
   }
   *{box-sizing:border-box}
   body{margin:0;background:linear-gradient(180deg,#0a0f1e,#0c1230 60%,#0a0f1e);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
@@ -21,7 +22,7 @@
   .wrap{max-width:1300px;margin:auto;padding:16px}
   .grid{display:grid;gap:14px}
   @media(min-width:1100px){ .cols-2{grid-template-columns:2fr 1fr} }
-  .card{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;padding:14px}
+  .card{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--shadow)}
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
   .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
   .btn.ghost{background:transparent;border:1px dashed #3a4ca3}
@@ -36,6 +37,25 @@
   .dot .c{width:10px;height:10px;border-radius:50%}
   .right{display:flex;gap:8px;justify-content:flex-end}
   .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
+
+  /* Status bar */
+  .statusbar{display:flex;gap:8px;align-items:center;padding:8px 16px;border-bottom:1px solid var(--line);
+             background:linear-gradient(180deg,#0f1740,#101a4a)}
+  .chip{display:inline-flex;gap:8px;align-items:center;border:1px solid #2a3a77;background:#0d1530;border-radius:999px;padding:4px 10px;font-size:12px}
+  .i{width:8px;height:8px;border-radius:50%}
+  .i.online{background:var(--ok)}
+  .i.offline{background:var(--bad)}
+  .i.apiok{background:var(--ok)}
+  .i.apibad{background:var(--warn)}
+
+  /* Error banner */
+  .err{
+    position: sticky; top: 0; z-index: 60;
+    background: #3a1d1d; color: #ffdede;
+    border: 1px solid #7b3341; border-left: 6px solid #ff6b6b;
+    padding: 10px 14px; font-size: 14px;
+    box-shadow: 0 8px 24px #0007;
+  }
 
   /* Calendar */
   .calendar{border:1px solid var(--line);border-radius:12px;overflow:hidden}
@@ -55,7 +75,7 @@
   th,td{padding:8px 6px;border-bottom:1px solid #1a244d;text-align:left;vertical-align:top}
   th{font-size:12px;color:var(--muted)}
 
-  /* Drawer (editor) */
+  /* Drawer */
   .drawer{position:fixed;right:0;top:0;height:100%;width:520px;max-width:100%;background:linear-gradient(180deg,#0e1433,#0e173d);border-left:1px solid #2b3a77;box-shadow:-20px 0 60px #0008;transform:translateX(100%);transition:.25s;z-index:20;overflow:auto}
   .drawer.open{transform:none}
   .drawer .hd{position:sticky;top:0;background:#101a45;border-bottom:1px solid #2b3a77;padding:12px}
@@ -70,8 +90,14 @@
   .status.done{background:#1d3d2f}
   .status.canc{background:#4a1d1d}
 
+  /* Loader overlay */
+  .loader{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#0006;z-index:50}
+  .loader.show{display:flex}
+  .spin{width:42px;height:42px;border:4px solid #2b3a77;border-top-color:#7aa2ff;border-radius:50%;animation:rot .9s linear infinite}
+  @keyframes rot{to{transform:rotate(360deg)}}
+
   @media print{
-    nav,.btn,.drawer{display:none!important}
+    nav,.btn,.drawer,.statusbar{display:none!important}
     .wrap{max-width:none}
     .calendar .cell{min-height:120px}
   }
@@ -81,8 +107,19 @@
 
 <header>
   <h1>Kalendarz Montaży • ARKON</h1>
-  <div class="small">Planowanie ekip i terminów. Dane: <code>localStorage</code> — eksport JSON/ICS, druk do PDF.</div>
+  <div class="small">Planowanie ekip i terminów. Dane: <code>API (Netlify → Neon)</code> + cache offline. Eksport JSON/ICS, druk.</div>
 </header>
+
+<!-- Pasek statusu: online/offline + API + Sync -->
+<div class="statusbar">
+  <span id="netChip" class="chip"><span class="i offline" id="netDot"></span><span id="netTxt">Offline</span></span>
+  <span id="apiChip" class="chip"><span class="i apibad" id="apiDot"></span><span id="apiTxt">API: brak połączenia</span></span>
+  <button id="btnSync" class="btn ghost" type="button" title="Pobierz aktualne dane z API">Synchronizuj teraz</button>
+  <span class="small">Gdy API padnie, pracujesz na cache. Po powrocie online zsynchronizuj.</span>
+</div>
+
+<!-- Baner błędów -->
+<div id="err" class="err" role="alert" hidden></div>
 
 <nav>
   <a href="index.html">Pulpit</a>
@@ -115,7 +152,7 @@
             <option value="ANULOWANY">ANULOWANY</option>
           </select>
           <input id="q" placeholder="🔎 Szukaj: klient/adres/uwagi">
-          <button id="btnClear" class="btn ghost">Wyczyść filtry</button>
+          <button id="btnClear" class="btn ghost">Wyczyść</button>
           <button id="btnNew" class="btn ok">+ Nowy montaż</button>
         </div>
       </div>
@@ -124,12 +161,12 @@
         <div class="cal-head" id="calHead"></div>
         <div class="cal-grid" id="calGrid" aria-live="polite"></div>
       </div>
-      <div class="small" style="margin-top:6px">Kliknij w dzień, aby dodać montaż. Kliknij w kafelek montażu, aby edytować.</div>
+      <div class="small" style="margin-top:6px">Kliknij podwójnie w dzień, aby dodać. Kliknij w kafelek, aby edytować.</div>
     </div>
 
     <div class="card">
       <div class="row" style="justify-content:space-between">
-        <b>Lista montaży (widok tabeli)</b>
+        <b>Lista montaży (tabela)</b>
         <div class="right">
           <button id="btnExport" class="btn">Eksport JSON</button>
           <label class="btn ghost">Import JSON<input id="importJSON" type="file" accept="application/json" hidden></label>
@@ -168,7 +205,7 @@
 
     <div class="card">
       <b>Szybkie dodawanie</b>
-      <div class="small">Wypełnij i kliknij „Dodaj”. Wszystko możesz później edytować.</div>
+      <div class="small">Wypełnij i kliknij „Dodaj”. Potem edytuj w panelu.</div>
       <div class="grid" style="margin-top:8px">
         <input id="qDate" type="date">
         <div class="row"><input id="qTime" type="time" style="flex:1"><input id="qDur" type="number" min="1" value="4" title="Czas [h]" style="width:100px"><span class="pill">Czas [h]</span></div>
@@ -221,77 +258,174 @@
   </div>
 </aside>
 
+<!-- Loader -->
+<div id="loader" class="loader"><div class="spin" role="progressbar" aria-label="Ładowanie"></div></div>
+
 <script>
 'use strict';
 
-/* ===== helpers ===== */
+/* ====== Konfiguracja API / cache ====== */
+const API = '/.netlify/functions/montaze';
+const CACHE_KEY = 'arkon_montaze_cache_v2';
+const CLIENTS_LS = 'arkon_clients_v1';       // z modułu Klienci
+const INSTALLERS_LS = 'arkon_installers_v1'; // monterzy w localStorage
+
+/* ====== Helpers ====== */
 const $  = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
-const INT = new Intl.NumberFormat('pl-PL',{maximumFractionDigits:0});
-const fmtDate = ts => new Date(ts||Date.now()).toLocaleDateString('pl-PL');
-const fmtDT   = ts => new Date(ts||Date.now()).toLocaleString('pl-PL');
 const pad2 = n => String(n).padStart(2,'0');
-const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
+const toLocalDateStr = d => d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate());
+const fmtDate = ts => new Date(ts||Date.now()).toLocaleDateString('pl-PL');
 function escapeHtml(s){return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
-function toLocalDateStr(d){ return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
+const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 
-/* ===== storage keys ===== */
-const LS = {
-  events: 'arkon_montaze_v1',
-  installers: 'arkon_installers_v1',
-  clients: 'arkon_clients_v1'
-};
-
-/* ===== state ===== */
-let events = load(LS.events, []);
-let installers = load(LS.installers, []);
-let clients = load(LS.clients, []);
-let view = {year: new Date().getFullYear(), month: new Date().getMonth()}; // 0-11
+/* ====== Stan ====== */
+let events = [];                   // z API
+let installers = [];               // z localStorage (legenda/wybory)
+let view = {year: new Date().getFullYear(), month: new Date().getMonth()};
 let filter = {q:'', installer:'', status:''};
 let openId = null;
 
-/* ===== load/save ===== */
-function load(key, fb){ try{ return JSON.parse(localStorage.getItem(key)||JSON.stringify(fb)); }catch{ return fb; } }
-function saveEvents(){ localStorage.setItem(LS.events, JSON.stringify(events)); render(); }
-function saveInstallers(){ localStorage.setItem(LS.installers, JSON.stringify(installers)); fillInstallerFilters(); renderLegend(); renderQuickInstallerSelect(); render(); }
+/* ====== UI refs ====== */
+const calHead = $('#calHead');
+const calGrid = $('#calGrid');
+const drawer  = $('#drawer');
+const loader  = $('#loader');
+const netDot  = $('#netDot'), netTxt = $('#netTxt');
+const apiDot  = $('#apiDot'), apiTxt = $('#apiTxt');
+const btnSync = $('#btnSync');
+const errBox  = $('#err');
 
-/* ===== seed (gdy pusto) ===== */
-if(!installers.length){
-  installers = [
-    {id:uid(), name:'Emil Trynda',   color:'#60a5fa'},
-    {id:uid(), name:'Adrian Witka',  color:'#34d399'},
-    {id:uid(), name:'Szefowa Gwiazda', color:'#fbbf24'},
-  ];
-  saveInstallers();
+/* ====== Status online/offline ====== */
+function updateNetStatus(){
+  const on = navigator.onLine;
+  netDot.className = 'i ' + (on ? 'online' : 'offline');
+  netTxt.textContent = on ? 'Online' : 'Offline';
 }
-if(!events.length){
-  const d = new Date();
-  const y = d.getFullYear(), m=d.getMonth();
-  events = [
-    {id:uid(), date: toLocalDateStr(new Date(y,m, 5)), time:'08:00', dur:6, client:'Jan Kowalski', addr:'Przemków', scope:'Pompa 12 kW + bufor 100l', installers:[installers[0].id], status:'PLAN', notes:''},
-    {id:uid(), date: toLocalDateStr(new Date(y,m, 8)), time:'09:00', dur:8, client:'Firma XYZ', addr:'Legnica', scope:'PV 6kWp + pompa 9 kW', installers:[installers[1].id, installers[2].id], status:'POTWIERDZONY', notes:'Podjazd ciasny'},
-    {id:uid(), date: toLocalDateStr(new Date(y,m,15)), time:'07:30', dur:4, client:'Teresa Siek', addr:'Głogów', scope:'Serwis kotłowni', installers:[installers[0].id], status:'ZAKOŃCZONY', notes:'✔'},
-  ];
-  saveEvents();
+window.addEventListener('online', () => { updateNetStatus(); loadEventsFromApi(true); });
+window.addEventListener('offline', updateNetStatus);
+updateNetStatus();
+
+/* ====== Monterzy (localStorage) ====== */
+function loadLS(key, fb){ try { return JSON.parse(localStorage.getItem(key)||JSON.stringify(fb)); } catch { return fb; } }
+function saveInstallers(){
+  localStorage.setItem(INSTALLERS_LS, JSON.stringify(installers));
+  fillInstallerFilters(); renderLegend(); renderQuickInstallerSelect(); render(); renderLoad();
+}
+(function seedInstallers(){
+  installers = loadLS(INSTALLERS_LS, []);
+  if(!installers.length){
+    installers = [
+      {id:uid(), name:'Emil Trynda',   color:'#60a5fa'},
+      {id:uid(), name:'Adrian Witka',  color:'#34d399'},
+      {id:uid(), name:'Szefowa Gwiazda', color:'#fbbf24'},
+    ];
+    saveInstallers();
+  } else {
+    fillInstallerFilters(); renderLegend(); renderQuickInstallerSelect();
+  }
+})();
+
+/* ====== Loader / status API / errors ====== */
+async function withLoader(fn){ loader.classList.add('show'); try{ return await fn(); } finally{ loader.classList.remove('show'); } }
+function setApiStatus(ok, msgOk='API: OK', msgBad='API: błąd'){
+  apiDot.className = 'i ' + (ok ? 'apiok' : 'apibad');
+  apiTxt.textContent = ok ? msgOk : msgBad;
+}
+function showError(msg, timeoutMs = 6000){
+  if(!errBox) return;
+  errBox.textContent = typeof msg === 'string' ? msg : 'Wystąpił błąd.';
+  errBox.hidden = false;
+  if(timeoutMs){
+    clearTimeout(showError._t);
+    showError._t = setTimeout(() => { errBox.hidden = true; }, timeoutMs);
+  }
+}
+function hideError(){
+  if(!errBox) return;
+  errBox.hidden = true;
 }
 
-/* ===== UI init ===== */
-const calHead = $('#calHead'), calGrid = $('#calGrid');
-const drawer = $('#drawer');
+/* ====== API: GET/UPSERT/DELETE ====== */
+async function loadEventsFromApi(force = false){
+  return withLoader(async ()=>{
+    try{
+      const r = await fetch(API, { cache: force ? 'reload' : 'no-store' });
+      if(!r.ok) throw new Error(await r.text());
+      events = await r.json();
+      localStorage.setItem(CACHE_KEY, JSON.stringify(events));
+      setApiStatus(true);
+      hideError();
+      console.log('✅ Załadowano z API', events);
+    }catch(err){
+      console.warn('⚠ API niedostępne, używam cache', err);
+      events = loadLS(CACHE_KEY, []);
+      setApiStatus(false, 'API: cache (offline)');
+      showError('API niedostępne — pracujesz na pamięci przeglądarki (cache).');
+    }
+    render();
+  });
+}
+async function upsertEvent(ev){
+  return withLoader(async ()=>{
+    try{
+      const r = await fetch(API, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(ev)
+      });
+      if(!r.ok) throw new Error(await r.text());
+      const saved = await r.json();
+      const i = events.findIndex(x=>x.id===saved.id);
+      if(i>=0) events[i]=saved; else events.push(saved);
+      localStorage.setItem(CACHE_KEY, JSON.stringify(events));
+      setApiStatus(true);
+      hideError();
+      render();
+      return saved;
+    }catch(err){
+      console.error('❌ upsertEvent', err);
+      setApiStatus(false, 'API: błąd zapisu');
+      showError('Nie udało się zapisać wydarzenia (API). Sprawdź połączenie i spróbuj ponownie.');
+    }
+  });
+}
+async function removeEvent(id){
+  return withLoader(async ()=>{
+    try{
+      const r = await fetch(API, {
+        method:'DELETE',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({id})
+      });
+      if(!r.ok) throw new Error(await r.text());
+      events = events.filter(x=>x.id!==id);
+      localStorage.setItem(CACHE_KEY, JSON.stringify(events));
+      setApiStatus(true);
+      hideError();
+      render();
+    }catch(err){
+      console.error('❌ removeEvent', err);
+      setApiStatus(false, 'API: błąd usuwania');
+      showError('Nie udało się usunąć wydarzenia (API).');
+    }
+  });
+}
 
-/* toolbar */
-$('#prev').onclick = ()=>{ shiftMonth(-1); };
-$('#next').onclick = ()=>{ shiftMonth(+1); };
-$('#today').onclick = ()=>{ const d=new Date(); view.year=d.getFullYear(); view.month=d.getMonth(); render(); };
-$('#jump').onchange = (e)=>{ const [y,m]=e.target.value.split('-').map(Number); if(y) {view.year=y; view.month=(m||1)-1; render();} };
+/* ====== Toolbar ====== */
+$('#prev').onclick = ()=> shiftMonth(-1);
+$('#next').onclick = ()=> shiftMonth(+1);
+$('#today').onclick = ()=> { const d=new Date(); view.year=d.getFullYear(); view.month=d.getMonth(); render(); };
+$('#jump').onchange = e=>{ const [y,m]=e.target.value.split('-').map(Number); if(y){ view.year=y; view.month=(m||1)-1; render(); } };
 
-$('#q').oninput = e=>{ filter.q=e.target.value.trim().toLowerCase(); renderList(); renderCalendar(); };
-$('#fInstaller').onchange = e=>{ filter.installer=e.target.value; renderList(); renderCalendar(); };
-$('#fStatus').onchange = e=>{ filter.status=e.target.value; renderList(); renderCalendar(); };
-$('#btnClear').onclick = ()=>{ filter={q:'',installer:'',status:''}; $('#q').value=''; $('#fInstaller').value=''; $('#fStatus').value=''; render(); };
-$('#btnNew').onclick = ()=> openEditorForNew();
+$('#q').oninput = e=>{ filter.q=(e.target.value||'').trim().toLowerCase(); renderList(); renderCalendar(); };
+$('#fInstaller').onchange = e=>{ filter.installer=e.target.value||''; renderList(); renderCalendar(); };
+$('#fStatus').onchange    = e=>{ filter.status=e.target.value||''; renderList(); renderCalendar(); };
+$('#btnClear').onclick    = ()=>{ filter={q:'',installer:'',status:''}; $('#q').value=''; $('#fInstaller').value=''; $('#fStatus').value=''; render(); };
+$('#btnNew').onclick      = ()=> openEditorForNew();
+btnSync?.addEventListener('click', () => loadEventsFromApi(true));
 
-/* quick add */
+/* ====== Quick add ====== */
 $('#btnAddInstaller').onclick = ()=>{
   const name=$('#newInstName').value.trim();
   const color=$('#newInstColor').value||'#7dd3fc';
@@ -299,7 +433,7 @@ $('#btnAddInstaller').onclick = ()=>{
   installers.push({id:uid(), name, color}); saveInstallers();
   $('#newInstName').value='';
 };
-$('#btnQuickAdd').onclick = ()=>{
+$('#btnQuickAdd').onclick = async ()=>{
   const date=$('#qDate').value||toLocalDateStr(new Date());
   const time=$('#qTime').value||'08:00';
   const dur =Math.max(1, Number($('#qDur').value)||4);
@@ -309,40 +443,63 @@ $('#btnQuickAdd').onclick = ()=>{
   const status=$('#qStatus').value||'PLAN';
   const inst=Array.from($('#qInst').selectedOptions).map(o=>o.value);
   const notes=$('#qNotes').value.trim();
-  events.push({id:uid(), date,time,dur,client,addr,scope,status,installers:inst,notes});
-  saveEvents();
-  // skocz do miesiąca dodanej daty
-  const dt = new Date(date+'T00:00:00');
-  view.year=dt.getFullYear(); view.month=dt.getMonth(); render();
-  // wyczyść
+  const ev = {id:uid(), date,time,dur,client,addr,scope,status,installers:inst,notes};
+  await upsertEvent(ev);
+  const dt = new Date(date+'T00:00:00'); view.year=dt.getFullYear(); view.month=dt.getMonth(); render();
   ['#qClient','#qAddr','#qScope','#qNotes'].forEach(s=>$(s).value='');
 };
 
-/* drawer actions */
+/* ====== Drawer actions ====== */
 $('#btnClose').onclick = ()=> closeDrawer();
-$('#btnDel').onclick = ()=>{ if(!openId) return; if(confirm('Usunąć montaż?')){ events = events.filter(e=>e.id!==openId); saveEvents(); closeDrawer(); } };
-$('#btnDup').onclick = ()=>{ if(!openId) return; const src=events.find(x=>x.id===openId); const cp=JSON.parse(JSON.stringify(src)); cp.id=uid(); events.push(cp); saveEvents(); alert('Zduplikowano.'); };
-$('#btnIcs').onclick = ()=>{ if(!openId) return; const ev=events.find(x=>x.id===openId); if(!ev) return; exportICS(ev); };
+$('#btnDel').onclick = async ()=>{
+  if(!openId) return;
+  if(confirm('Usunąć montaż?')){
+    await removeEvent(openId);
+    closeDrawer();
+  }
+};
+$('#btnDup').onclick = async ()=>{
+  if(!openId) return;
+  const src = events.find(x=>x.id===openId);
+  if(!src) return;
+  const cp = {...src, id:uid()};
+  await upsertEvent(cp);
+  alert('Zduplikowano.');
+};
+$('#btnIcs').onclick = ()=>{
+  if(!openId) return;
+  const ev = events.find(x=>x.id===openId);
+  if(ev) exportICS(ev);
+};
 
-/* export/import/print */
+/* ====== Eksport/Import/Druk ====== */
 $('#btnExport').onclick = ()=> exportJSON();
-$('#importJSON').onchange = async (e)=>{ const f=e.target.files[0]; if(!f) return; try{ const dump=JSON.parse(await f.text()); if(!Array.isArray(dump)) throw 0; events=dump; saveEvents(); alert('Zaimportowano.'); }catch{ alert('Błędny plik JSON.'); } e.target.value=''; };
+$('#importJSON').onchange = async (e)=>{
+  const f=e.target.files[0]; if(!f) return;
+  try{
+    const dump=JSON.parse(await f.text());
+    if(!Array.isArray(dump)) throw new Error('Format nieobsługiwany');
+    for(const ev of dump){ if(!ev.id) ev.id=uid(); await upsertEvent(ev); }
+    alert('Zaimportowano.');
+  }catch(err){
+    showError('Błędny plik JSON (import nieudany).');
+  }
+  e.target.value='';
+};
 $('#btnPrint').onclick = ()=> window.print();
 
-/* keyboard */
+/* ====== Klawiatura ====== */
 window.addEventListener('keydown',(e)=>{
   if(e.key==='ArrowLeft' && (e.altKey||e.metaKey)) shiftMonth(-1);
   if(e.key==='ArrowRight'&& (e.altKey||e.metaKey)) shiftMonth(+1);
   if(e.key==='n' && e.altKey){ e.preventDefault(); openEditorForNew(); }
 });
 
-/* ===== RENDER ===== */
+/* ====== Render ====== */
 function render(){
-  // head labels
-  const days = ['Pon','Wt','Śr','Czw','Pt','Sob','Ndz'];
-  calHead.innerHTML = days.map(d=><div>${d}</div>).join('');
-  // set month picker
-  $('#jump').value = view.year+'-'+pad2(view.month+1);
+  const days=['Pon','Wt','Śr','Czw','Pt','Sob','Ndz'];
+  calHead.innerHTML = days.map(d => <div>${d}</div>).join('');
+  $('#jump').value = ${view.year}-${pad2(view.month+1)};
   renderCalendar();
   renderList();
   renderLegend();
@@ -352,94 +509,87 @@ function render(){
 }
 function renderCalendar(){
   const first = new Date(view.year, view.month, 1);
-  const start = new Date(first); // Monday-start
-  const wd = (first.getDay()+6)%7; // 0=Mon
-  start.setDate(first.getDate()-wd);
-  const cells = [];
+  const start = new Date(first);
+  const wd = (first.getDay()+6) % 7; // 0 = Pon
+  start.setDate(first.getDate() - wd);
+
   const todayStr = toLocalDateStr(new Date());
+  let html = '';
   for(let i=0;i<42;i++){
-    const d = new Date(start); d.setDate(start.getDate()+i);
+    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate()+i);
     const ds = toLocalDateStr(d);
-    const inMonth = d.getMonth()===view.month;
-    const tag = ds===todayStr ? '<span class="today">dziś</span>' : '';
-    cells.push(`<div class="cell" data-date="${ds}" aria-label="${fmtDate(d)}">
-      <div class="d">${d.getDate()} ${tag}</div>
-      <div class="list"></div>
-    </div>`);
+    html += `
+      <div class="cell" data-date="${ds}" aria-label="${fmtDate(d)}" tabindex="0">
+        <div class="d">${d.getDate()} ${ds===todayStr?'<span class="today">dziś</span>':''}</div>
+        <div class="list"></div>
+      </div>`;
   }
-  calGrid.innerHTML = cells.join('');
-  // fill events
+  calGrid.innerHTML = html;
+
   const filtered = filterEvents(events);
-  filtered.forEach(ev=>{
-    const el = calGrid.querySelector(.cell[data-date="${ev.date}"] .list);
-    if(!el) return;
+  for(const ev of filtered){
+    const listEl = calGrid.querySelector(.cell[data-date="${ev.date}"] .list);
+    if(!listEl) continue;
     const clr = colorFor(ev);
     const label = escapeHtml(shortEventText(ev));
-    const div = document.createElement('a');
-    div.href='#'; div.className='ev';
-    div.innerHTML = <span class="bar" style="background:${clr}"></span>${label};
-    div.title = ${ev.time} • ${ev.client} • ${ev.scope};
-    div.addEventListener('click',(e)=>{ e.preventDefault(); openDrawer(ev.id); });
-    el.appendChild(div);
-  });
-  // click to add
+    const a = document.createElement('a');
+    a.href = '#'; a.className='ev';
+    a.innerHTML = <span class="bar" style="background:${clr}"></span>${label};
+    a.title = ${ev.time||''} • ${ev.client||''} • ${ev.scope||''};
+    a.addEventListener('click', e=>{ e.preventDefault(); openDrawer(ev.id); });
+    listEl.appendChild(a);
+  }
+
   $$('.cell').forEach(c=>{
-    c.addEventListener('dblclick', ()=>{ openEditorForNew(c.dataset.date); });
-    c.addEventListener('click', (e)=>{
-      // single click does nothing to avoid misclicks; left for future
-    });
+    c.addEventListener('dblclick', ()=> openEditorForNew(c.dataset.date));
   });
 }
 function renderList(){
   const tb = $('#tbody'); tb.innerHTML='';
   const rows = filterEvents(events).slice().sort((a,b)=>{
-    const da = a.date+(a.time||'00:00'), db=b.date+(b.time||'00:00');
+    const da = (a.date||'') + (a.time||'00:00');
+    const db = (b.date||'') + (b.time||'00:00');
     return da.localeCompare(db);
   });
   if(!rows.length){
     tb.innerHTML = '<tr><td colspan="8" class="small">Brak pozycji dla aktualnych filtrów.</td></tr>';
     return;
   }
-  rows.forEach(ev=>{
-    const inst = (ev.installers||[]).map(id=>{
-      const ins = installers.find(x=>x.id===id);
-      if(!ins) return '';
+  for(const ev of rows){
+    const instHtml = (ev.installers||[]).map(id=>{
+      const ins=installers.find(x=>x.id===id); if(!ins) return '';
       return <span class="dot"><span class="c" style="background:${ins.color}"></span>${escapeHtml(ins.name)}</span>;
     }).join(' ');
     const stCl = statusClass(ev.status);
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${ev.date}</td>
-      <td>${ev.time||''} (${ev.dur||''}h)</td>
+      <td>${ev.date||''}</td>
+      <td>${ev.time||''} ${ev.dur?(${ev.dur}h):''}</td>
       <td>${escapeHtml(ev.client||'')}</td>
       <td>${escapeHtml(ev.addr||'')}</td>
       <td>${escapeHtml(ev.scope||'')}</td>
-      <td>${inst}</td>
-      <td><span class="status ${stCl}">${escapeHtml(ev.status)}</span></td>
+      <td>${instHtml}</td>
+      <td><span class="status ${stCl}">${escapeHtml(ev.status||'PLAN')}</span></td>
       <td class="row"><button class="btn ghost ed">Edytuj</button></td>
     `;
     tr.querySelector('.ed').onclick = ()=> openDrawer(ev.id);
     tb.appendChild(tr);
-  });
+  }
 }
 function renderLegend(){
   const box = $('#legend'); box.innerHTML='';
-  installers.forEach(i=>{
+  for(const i of installers){
     const div = document.createElement('span');
     div.className='dot';
     div.innerHTML = <span class="c" style="background:${i.color}"></span>${escapeHtml(i.name)};
     box.appendChild(div);
-  });
+  }
 }
 function renderLoad(){
-  // zlicz liczbę montaży /montera w bieżącym miesiącu
-  const ym = view.year+'-'+pad2(view.month+1);
-  const counts = {};
-  installers.forEach(i=>counts[i.id]=0);
+  const ym = ${view.year}-${pad2(view.month+1)};
+  const counts = {}; installers.forEach(i=>counts[i.id]=0);
   events.forEach(ev=>{
-    if((ev.date||'').startsWith(ym)){
-      (ev.installers||[]).forEach(id=>{ if(counts[id]!=null) counts[id]++; });
-    }
+    if((ev.date||'').startsWith(ym)){ (ev.installers||[]).forEach(id=>{ if(counts[id]!=null) counts[id]++; }); }
   });
   const html = installers.map(i=>{
     return `<div class="row" style="justify-content:space-between;border-bottom:1px dashed #28356c;padding:4px 0">
@@ -451,21 +601,21 @@ function renderLoad(){
 }
 function renderQuickInstallerSelect(){
   const sel = $('#qInst'); sel.innerHTML='';
-  installers.forEach(i=>{
+  for(const i of installers){
     const opt=document.createElement('option');
     opt.value=i.id; opt.textContent=i.name;
     sel.appendChild(opt);
-  });
+  }
 }
 
-/* ===== filters & colors ===== */
+/* ====== Filtrowanie / kolory ====== */
 function filterEvents(arr){
   return arr.filter(ev=>{
     if(filter.q){
       const hay = [ev.client, ev.addr, ev.scope, ev.notes].join(' ').toLowerCase();
       if(!hay.includes(filter.q)) return false;
     }
-    if(filter.status && ev.status!==filter.status) return false;
+    if(filter.status && (ev.status||'')!==filter.status) return false;
     if(filter.installer && !(ev.installers||[]).includes(filter.installer)) return false;
     return true;
   });
@@ -491,7 +641,7 @@ function shortEventText(ev){
   return ${time}${ev.client||''}${who};
 }
 
-/* ===== month nav ===== */
+/* ====== Nawigacja miesiąca ====== */
 function shiftMonth(delta){
   let y=view.year, m=view.month+delta;
   if(m<0){ m=11; y--; }
@@ -499,7 +649,7 @@ function shiftMonth(delta){
   view.year=y; view.month=m; render();
 }
 
-/* ===== drawer ===== */
+/* ====== Drawer (edycja) ====== */
 function openDrawer(id){
   openId=id; drawer.classList.add('open');
   const ev = events.find(x=>x.id===id);
@@ -512,36 +662,38 @@ function openDrawer(id){
   $('#e_scope').value= ev.scope||'';
   $('#e_status').value= ev.status||'PLAN';
   $('#e_notes').value = ev.notes||'';
-  // monterzy (chipsy z możliwością dod/usuń)
   drawInstallerChips(ev.installers||[]);
-  // powiązany klient
   fillClientSelect(ev.clientId||'');
 }
 function drawInstallerChips(list){
   const box=$('#e_instBox'); box.innerHTML='';
   const set=new Set(list||[]);
-  // aktywni
   (list||[]).forEach(id=>{
     const ins = installers.find(x=>x.id===id); if(!ins) return;
     const chip=document.createElement('span');
     chip.className='dot';
     chip.innerHTML = <span class="c" style="background:${ins.color}"></span>${escapeHtml(ins.name)} <a href="#" data-id="${ins.id}" title="Usuń" style="color:#ffb4b4;margin-left:6px">×</a>;
-    chip.querySelector('a').onclick = (e)=>{ e.preventDefault(); set.delete(ins.id); drawInstallerChips([...set]); saveFromEditor({installers:[...set]}); };
+    chip.querySelector('a').onclick = async (e)=>{
+      e.preventDefault(); set.delete(ins.id);
+      await saveFromEditor({installers:[...set]});
+      drawInstallerChips([...set]);
+    };
     box.appendChild(chip);
   });
-  // dodaj
   const sel=document.createElement('select');
   sel.innerHTML = '<option value="">+ Dodaj montera…</option>' + installers.map(i=><option value="${i.id}">${escapeHtml(i.name)}</option>).join('');
-  sel.onchange = ()=>{ if(sel.value){ set.add(sel.value); drawInstallerChips([...set]); saveFromEditor({installers:[...set]}); sel.value=''; } };
+  sel.onchange = async ()=>{
+    if(sel.value){ set.add(sel.value); await saveFromEditor({installers:[...set]}); sel.value=''; drawInstallerChips([...set]); }
+  };
   box.appendChild(sel);
 }
 function closeDrawer(){ drawer.classList.remove('open'); openId=null; }
 
-/* ===== editor bindings (autosave) ===== */
+/* ====== Autosave z edytora ====== */
 ['#e_date','#e_time','#e_dur','#e_client','#e_addr','#e_scope','#e_status','#e_notes','#e_clientId'].forEach(sel=>{
   const el=$(sel);
   const evType = el.tagName==='SELECT' ? 'change' : 'input';
-  el.addEventListener(evType, ()=> {
+  el.addEventListener(evType, async ()=>{
     const patch={};
     if(sel==='#e_date') patch.date=el.value;
     if(sel==='#e_time') patch.time=el.value;
@@ -552,18 +704,18 @@ function closeDrawer(){ drawer.classList.remove('open'); openId=null; }
     if(sel==='#e_status') patch.status=el.value;
     if(sel==='#e_notes') patch.notes=el.value;
     if(sel==='#e_clientId') patch.clientId=el.value||'';
-    saveFromEditor(patch);
+    await saveFromEditor(patch);
   });
 });
-function saveFromEditor(patch){
+async function saveFromEditor(patch){
   if(!openId) return;
   const i = events.findIndex(x=>x.id===openId); if(i<0) return;
-  events[i] = {...events[i], ...patch};
-  saveEvents();
-  // odśwież chipsy po zmianie klienta (linki itp. można dodać)
+  const merged = {...events[i], ...patch};
+  const saved  = await upsertEvent(merged);
+  if(saved && openId===saved.id) drawInstallerChips(saved.installers||[]);
 }
 
-/* ===== clients / installers in UI ===== */
+/* ====== Klienci / Monterzy w UI ====== */
 function fillInstallerFilters(){
   const sel=$('#fInstaller'); const v=sel.value;
   sel.innerHTML='<option value="">Monter (wszyscy)</option>'+installers.map(i=><option value="${i.id}">${escapeHtml(i.name)}</option>).join('');
@@ -571,12 +723,12 @@ function fillInstallerFilters(){
 }
 function fillClientSelect(selected){
   const sel=$('#e_clientId'); const v=selected||sel.value;
-  const data = load(LS.clients, []);
+  const data = loadLS(CLIENTS_LS, []);
   sel.innerHTML='<option value="">— niepowiązany —</option>'+data.map(c=><option value="${c.id}">${escapeHtml(c.name||'Klient')}</option>).join('');
   sel.value=v||'';
 }
 
-/* ===== exports ===== */
+/* ====== Eksporty ====== */
 function exportJSON(){
   const blob = new Blob([JSON.stringify(events,null,2)], {type:'application/json'});
   const a = document.createElement('a');
@@ -585,22 +737,23 @@ function exportJSON(){
   a.click(); URL.revokeObjectURL(a.href);
 }
 function exportICS(ev){
-  // Single VEVENT export (local time, no TZ)
-  const dt = (ev.date||'')+(ev.time? 'T'+ev.time.replace(':','')+'00' : 'T000000');
-  const durH = Math.max(1, Number(ev.dur)||1);
-  const end = new Date(ev.date+'T'+(ev.time||'00:00')+':00');
-  end.setHours(end.getHours()+durH);
-  const dtEnd = toLocalDateStr(end).replace(/-/g,'')+'T'+pad2(end.getHours())+pad2(end.getMinutes())+'00';
+  const start = new Date(ev.date+'T'+(ev.time||'00:00')+':00');
+  const end = new Date(start); end.setHours(end.getHours()+Math.max(1, +ev.dur||1));
+  const dtStart = ev.date.replace(/-/g,'') + 'T' + (ev.time? ev.time.replace(':','')+'00' : '000000');
+  const dtEnd   = toLocalDateStr(end).replace(/-/g,'') + 'T' + pad2(end.getHours()) + pad2(end.getMinutes()) + '00';
   const uidStr = ev.id+'@arkon';
   const sum = (ev.client||'Montaż')+' — '+(ev.scope||'');
-  const desc = Adres: ${ev.addr||''}\\nMonterzy: ${(ev.installers||[]).map(id=>installers.find(x=>x.id===id)?.name||'').join(', ')}\\nStatus: ${ev.status||''}\\nUwagi: ${ev.notes||''};
+  const montery = (ev.installers||[])
+      .map(id=>installers.find(x=>x.id===id)?.name||'')
+      .filter(Boolean).join(', ');
+  const desc = Adres: ${ev.addr||''}\\nMonterzy: ${montery}\\nStatus: ${ev.status||''}\\nUwagi: ${ev.notes||''};
   const ics = `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//ARKON//Kalendarz Montaży//PL
 BEGIN:VEVENT
 UID:${uidStr}
 DTSTAMP:${new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+Z/,'Z')}
-DTSTART:${(ev.date||'').replace(/-/g,'')}${ev.time? 'T'+ev.time.replace(':','')+'00' : 'T000000'}
+DTSTART:${dtStart}
 DTEND:${dtEnd}
 SUMMARY:${sum}
 DESCRIPTION:${desc}
@@ -613,21 +766,31 @@ END:VCALENDAR`;
   a.click(); URL.revokeObjectURL(a.href);
 }
 
-/* ===== start ===== */
-render();
-
-/* ===== accessibility/nice-to-have ===== */
-calGrid.addEventListener('keydown',(e)=>{
-  if(e.key==='Enter' && e.target.classList.contains('cell')){
-    openEditorForNew(e.target.dataset.date);
+/* ====== Shortcuts i New ====== */
+function renderQuickInstallerSelect(){
+  const sel = $('#qInst'); sel.innerHTML='';
+  for(const i of installers){
+    const opt=document.createElement('option');
+    opt.value=i.id; opt.textContent=i.name;
+    sel.appendChild(opt);
   }
-});
+}
+function initShortcuts(){
+  calGrid.addEventListener('keydown',(e)=>{
+    if(e.key==='Enter' && e.target.classList.contains('cell')){
+      openEditorForNew(e.target.dataset.date);
+    }
+  });
+}
 function openEditorForNew(dateStr){
   const d = dateStr || toLocalDateStr(new Date(view.year,view.month,1));
   const tmp = {id:uid(), date:d, time:'08:00', dur:4, client:'Nowy klient', addr:'', scope:'', installers:[], status:'PLAN', notes:''};
-  events.push(tmp); saveEvents();
-  openDrawer(tmp.id);
+  upsertEvent(tmp).then(()=> openDrawer(tmp.id));
 }
+
+/* ====== Start ====== */
+initShortcuts();
+loadEventsFromApi();
 </script>
 </body>
 </html>
