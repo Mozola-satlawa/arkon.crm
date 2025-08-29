@@ -3,48 +3,93 @@
 <head>
   <meta charset="UTF-8">
   <title>Komunikat ogólny</title>
+  <link rel="stylesheet" href="style.css">
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    #messages { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: auto; }
-    .msg { margin-bottom: 8px; padding: 6px; border-bottom: 1px solid #eee; }
-    .author { font-weight: bold; margin-right: 5px; }
-    form { margin-top: 10px; display: flex; gap: 10px; }
-    input[type="text"] { flex: 1; padding: 5px; }
-    button { padding: 5px 10px; }
+    /* Drobne uzupełnienia do ogólnego style.css */
+    #messages {
+      border: 1px solid #ddd;
+      background: #fafafa;
+      padding: 10px;
+      height: 350px;
+      overflow-y: auto;
+      margin-bottom: 15px;
+    }
+    .msg {
+      padding: 6px 8px;
+      border-bottom: 1px solid #eee;
+    }
+    .msg:last-child {
+      border-bottom: none;
+    }
+    .author {
+      font-weight: bold;
+      margin-right: 6px;
+      color: #333;
+    }
+    form {
+      display: flex;
+      gap: 10px;
+    }
+    form input[type="text"] {
+      flex: 1;
+      padding: 6px 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    form button {
+      background: #0066cc;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 14px;
+      cursor: pointer;
+    }
+    form button:hover {
+      background: #004c99;
+    }
   </style>
 </head>
 <body>
-  <h1>Komunikat ogólny</h1>
+  <header>
+    <h1>Komunikat ogólny</h1>
+  </header>
 
-  <div id="messages">Ładowanie...</div>
+  <main>
+    <div id="messages">Ładowanie wiadomości...</div>
 
-  <form id="form">
-    <input id="author" type="text" placeholder="Twoje imię" required>
-    <input id="text" type="text" placeholder="Napisz wiadomość..." required>
-    <button type="submit">Wyślij</button>
-  </form>
+    <form id="form">
+      <input id="author" type="text" placeholder="Twoje imię" required>
+      <input id="text" type="text" placeholder="Napisz wiadomość..." required>
+      <button type="submit">Wyślij</button>
+    </form>
+  </main>
 
   <script>
     const API = "/.netlify/functions/messages";
-    const room = "ogolny"; // stały "pokój" dla komunikatu ogólnego
+    const room = "ogolny"; // stały kanał
 
     async function loadMessages() {
-      const r = await fetch(${API}?room=${room}&limit=50);
-      const msgs = await r.json();
-      const box = document.getElementById("messages");
-      box.innerHTML = "";
-      msgs.reverse().forEach(m => {
-        const div = document.createElement("div");
-        div.className = "msg";
-        div.innerHTML = <span class="author">${m.author}:</span> ${m.body};
-        box.appendChild(div);
-      });
+      try {
+        const r = await fetch(${API}?room=${room}&limit=50);
+        const msgs = await r.json();
+        const box = document.getElementById("messages");
+        box.innerHTML = "";
+        msgs.reverse().forEach(m => {
+          const div = document.createElement("div");
+          div.className = "msg";
+          div.innerHTML = <span class="author">${m.author || "Anon"}:</span> ${m.body};
+          box.appendChild(div);
+        });
+      } catch (err) {
+        console.error("Błąd ładowania:", err);
+      }
     }
 
     document.getElementById("form").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const author = document.getElementById("author").value || "Anon";
-      const text = document.getElementById("text").value;
+      const author = document.getElementById("author").value.trim() || "Anon";
+      const text = document.getElementById("text").value.trim();
+      if (!text) return;
       await fetch(API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -54,7 +99,7 @@
       loadMessages();
     });
 
-    // Odświeżanie co 5 sekund
+    // automatyczne odświeżanie
     loadMessages();
     setInterval(loadMessages, 5000);
   </script>
