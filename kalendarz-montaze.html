@@ -1,16 +1,15 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ARKON — Kalendarz Montaży</title>
-<meta name="description" content="Kalendarz montażowy ARKON: planowanie, klienci, monterzy, statusy, eksport/import, ICS, druk. Dane w Neon przez Netlify Functions.">
+<meta name="description" content="Kalendarz montażowy ARKON: planowanie, klienci, monterzy, statusy, eksport/import.">
 <style>
   :root{
     --bg:#0b1020; --p1:#121a34; --p2:#172142; --ink:#e8edff; --muted:#aeb8da;
     --accent:#4cc9f0; --ok:#2fbf71; --warn:#ffb84d; --bad:#ff6b6b;
     --card:#0f1533; --line:#1c2750; --grid:#243059; --chip:#0d1530;
-    --shadow:0 10px 40px #0007;
   }
   *{box-sizing:border-box}
   body{margin:0;background:linear-gradient(180deg,#0a0f1e,#0c1230 60%,#0a0f1e);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Arial}
@@ -22,7 +21,7 @@
   .wrap{max-width:1300px;margin:auto;padding:16px}
   .grid{display:grid;gap:14px}
   @media(min-width:1100px){ .cols-2{grid-template-columns:2fr 1fr} }
-  .card{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--shadow)}
+  .card{background:linear-gradient(180deg,var(--p1),var(--p2));border:1px solid var(--line);border-radius:14px;padding:14px}
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
   .btn{background:#233261;border:1px solid #3a4ca3;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
   .btn.ghost{background:transparent;border:1px dashed #3a4ca3}
@@ -31,31 +30,10 @@
   input,select,textarea{background:#0d1530;border:1px solid #28356c;border-radius:10px;padding:8px 10px;color:var(--ink);font:inherit}
   input::placeholder,textarea::placeholder{color:#aeb8da99}
   .small{font-size:12px;color:var(--muted)}
-  .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
-  .legend{display:flex;flex-wrap:wrap;gap:8px}
   .dot{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;border:1px solid #2a3a77;background:#0d1530}
   .dot .c{width:10px;height:10px;border-radius:50%}
   .right{display:flex;gap:8px;justify-content:flex-end}
-  .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;background:#101735;border:1px solid #2a3777;padding:2px 6px;border-radius:6px;color:#cfe0ff}
-
-  /* Status bar */
-  .statusbar{display:flex;gap:8px;align-items:center;padding:8px 16px;border-bottom:1px solid var(--line);
-             background:linear-gradient(180deg,#0f1740,#101a4a)}
-  .chip{display:inline-flex;gap:8px;align-items:center;border:1px solid #2a3a77;background:#0d1530;border-radius:999px;padding:4px 10px;font-size:12px}
-  .i{width:8px;height:8px;border-radius:50%}
-  .i.online{background:var(--ok)}
-  .i.offline{background:var(--bad)}
-  .i.apiok{background:var(--ok)}
-  .i.apibad{background:var(--warn)}
-
-  /* Error banner */
-  .err{
-    position: sticky; top: 0; z-index: 60;
-    background: #3a1d1d; color: #ffdede;
-    border: 1px solid #7b3341; border-left: 6px solid #ff6b6b;
-    padding: 10px 14px; font-size: 14px;
-    box-shadow: 0 8px 24px #0007;
-  }
+  .pill{display:inline-block;background:#0d1530;border:1px dashed #2b3a77;border-radius:999px;padding:6px 10px;color:#aeb8da;font-size:13px}
 
   /* Calendar */
   .calendar{border:1px solid var(--line);border-radius:12px;overflow:hidden}
@@ -75,7 +53,7 @@
   th,td{padding:8px 6px;border-bottom:1px solid #1a244d;text-align:left;vertical-align:top}
   th{font-size:12px;color:var(--muted)}
 
-  /* Drawer */
+  /* Drawer (editor) */
   .drawer{position:fixed;right:0;top:0;height:100%;width:520px;max-width:100%;background:linear-gradient(180deg,#0e1433,#0e173d);border-left:1px solid #2b3a77;box-shadow:-20px 0 60px #0008;transform:translateX(100%);transition:.25s;z-index:20;overflow:auto}
   .drawer.open{transform:none}
   .drawer .hd{position:sticky;top:0;background:#101a45;border-bottom:1px solid #2b3a77;padding:12px}
@@ -90,14 +68,8 @@
   .status.done{background:#1d3d2f}
   .status.canc{background:#4a1d1d}
 
-  /* Loader overlay */
-  .loader{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#0006;z-index:50}
-  .loader.show{display:flex}
-  .spin{width:42px;height:42px;border:4px solid #2b3a77;border-top-color:#7aa2ff;border-radius:50%;animation:rot .9s linear infinite}
-  @keyframes rot{to{transform:rotate(360deg)}}
-
   @media print{
-    nav,.btn,.drawer,.statusbar{display:none!important}
+    nav,.btn,.drawer{display:none!important}
     .wrap{max-width:none}
     .calendar .cell{min-height:120px}
   }
@@ -107,19 +79,11 @@
 
 <header>
   <h1>Kalendarz Montaży • ARKON</h1>
-  <div class="small">Planowanie ekip i terminów. Dane: <code>API (Netlify → Neon)</code> + cache offline. Eksport JSON/ICS, druk.</div>
+  <div class="small">
+    Dane: <b>Neon (Data API)</b> + cache <code>localStorage</code>.
+    <span id="apiState" style="margin-left:10px;display:inline-block;padding:2px 8px;border:1px solid #2a3a77;border-radius:999px">API: …</span>
+  </div>
 </header>
-
-<!-- Pasek statusu: online/offline + API + Sync -->
-<div class="statusbar">
-  <span id="netChip" class="chip"><span class="i offline" id="netDot"></span><span id="netTxt">Offline</span></span>
-  <span id="apiChip" class="chip"><span class="i apibad" id="apiDot"></span><span id="apiTxt">API: brak połączenia</span></span>
-  <button id="btnSync" class="btn ghost" type="button" title="Pobierz aktualne dane z API">Synchronizuj teraz</button>
-  <span class="small">Gdy API padnie, pracujesz na cache. Po powrocie online zsynchronizuj.</span>
-</div>
-
-<!-- Baner błędów -->
-<div id="err" class="err" role="alert" hidden></div>
 
 <nav>
   <a href="index.html">Pulpit</a>
@@ -152,8 +116,9 @@
             <option value="ANULOWANY">ANULOWANY</option>
           </select>
           <input id="q" placeholder="🔎 Szukaj: klient/adres/uwagi">
-          <button id="btnClear" class="btn ghost">Wyczyść</button>
+          <button id="btnClear" class="btn ghost">Wyczyść filtry</button>
           <button id="btnNew" class="btn ok">+ Nowy montaż</button>
+          <button id="btnSync" class="btn">Synchronizuj</button>
         </div>
       </div>
 
@@ -161,7 +126,7 @@
         <div class="cal-head" id="calHead"></div>
         <div class="cal-grid" id="calGrid" aria-live="polite"></div>
       </div>
-      <div class="small" style="margin-top:6px">Kliknij podwójnie w dzień, aby dodać. Kliknij w kafelek, aby edytować.</div>
+      <div class="small" style="margin-top:6px">Dwuklik w dzień → dodaj montaż. Klik w kafelek → edytuj.</div>
     </div>
 
     <div class="card">
@@ -186,16 +151,17 @@
     </div>
   </section>
 
-  <!-- PRAWY: legendy, obłożenie, szybkie dodawanie -->
+  <!-- PRAWY: legenda, obłożenie, szybkie dodawanie -->
   <aside class="grid">
     <div class="card">
       <b>Monterzy • legenda</b>
-      <div id="legend" class="legend" style="margin-top:8px"></div>
+      <div id="legend" class="row" style="margin-top:8px;flex-wrap:wrap"></div>
       <div class="row" style="margin-top:10px">
         <input id="newInstName" placeholder="Imię i nazwisko">
         <input id="newInstColor" type="color" value="#7dd3fc" title="Kolor">
         <button id="btnAddInstaller" class="btn ok">+ Monter</button>
       </div>
+      <div class="small">Monterzy = lokalnie (localStorage). W razie potrzeby przeniesiemy do bazy.</div>
     </div>
 
     <div class="card">
@@ -205,7 +171,7 @@
 
     <div class="card">
       <b>Szybkie dodawanie</b>
-      <div class="small">Wypełnij i kliknij „Dodaj”. Potem edytuj w panelu.</div>
+      <div class="small">Wypełnij i kliknij „Dodaj”.</div>
       <div class="grid" style="margin-top:8px">
         <input id="qDate" type="date">
         <div class="row"><input id="qTime" type="time" style="flex:1"><input id="qDur" type="number" min="1" value="4" title="Czas [h]" style="width:100px"><span class="pill">Czas [h]</span></div>
@@ -216,7 +182,7 @@
           <option>PLAN</option><option>POTWIERDZONY</option><option>ZAKOŃCZONY</option><option>ANULOWANY</option>
         </select>
         <div>
-          <label class="small">Monterzy (Ctrl/⌘, aby wybrać kilku)</label>
+          <label class="small">Monterzy (Ctrl/⌘ wybór wielu)</label>
           <select id="qInst" multiple size="4" style="width:100%"></select>
         </div>
         <textarea id="qNotes" placeholder="Uwagi (opcjonalnie)"></textarea>
@@ -252,180 +218,141 @@
       <label>Monterzy</label>
       <div id="e_instBox" class="chips"></div>
       <label>Uwagi</label><textarea id="e_notes"></textarea>
-      <label>Powiązany klient (z modułu Klienci)</label>
-      <select id="e_clientId"><option value="">— niepowiązany —</option></select>
     </div>
   </div>
 </aside>
 
-<!-- Loader -->
-<div id="loader" class="loader"><div class="spin" role="progressbar" aria-label="Ładowanie"></div></div>
-
 <script>
 'use strict';
 
-/* ====== Konfiguracja API / cache ====== */
-const API = '/.netlify/functions/montaze';
-const CACHE_KEY = 'arkon_montaze_cache_v2';
-const CLIENTS_LS = 'arkon_clients_v1';       // z modułu Klienci
-const INSTALLERS_LS = 'arkon_installers_v1'; // monterzy w localStorage
+/* ===== KONFIG NEON DATA API =====
+   Podmień na swój endpoint i klucz (jak w upload.html) */
+const API_URL = "https://YOUR-PROJECT--YOUR-BRANCH.db.neon.tech/sql";
+const API_KEY = "YOUR_DATA_API_KEY";
 
-/* ====== Helpers ====== */
+/* ===== helpers ===== */
 const $  = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const pad2 = n => String(n).padStart(2,'0');
 const toLocalDateStr = d => d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate());
-const fmtDate = ts => new Date(ts||Date.now()).toLocaleDateString('pl-PL');
-function escapeHtml(s){return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
-const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
+const escapeHtml = s => (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const uid = () => Math.random().toString(36).slice(2)+Date.now().toString(36);
+const apiState = txt => { $('#apiState').textContent = txt; };
 
-/* ====== Stan ====== */
-let events = [];                   // z API
-let installers = [];               // z localStorage (legenda/wybory)
+/* ===== storage keys ===== */
+const LS = {
+  events: 'arkon_montaze_cache_v1',
+  installers: 'arkon_installers_v1'
+};
+
+/* ===== state ===== */
+let events = load(LS.events, []);
+let installers = load(LS.installers, []);
 let view = {year: new Date().getFullYear(), month: new Date().getMonth()};
 let filter = {q:'', installer:'', status:''};
 let openId = null;
 
-/* ====== UI refs ====== */
-const calHead = $('#calHead');
-const calGrid = $('#calGrid');
-const drawer  = $('#drawer');
-const loader  = $('#loader');
-const netDot  = $('#netDot'), netTxt = $('#netTxt');
-const apiDot  = $('#apiDot'), apiTxt = $('#apiTxt');
-const btnSync = $('#btnSync');
-const errBox  = $('#err');
-
-/* ====== Status online/offline ====== */
-function updateNetStatus(){
-  const on = navigator.onLine;
-  netDot.className = 'i ' + (on ? 'online' : 'offline');
-  netTxt.textContent = on ? 'Online' : 'Offline';
+/* ===== seed monterów (lokalnie) ===== */
+if(!installers.length){
+  installers = [
+    {id:uid(), name:'Emil Trynda',   color:'#60a5fa'},
+    {id:uid(), name:'Adrian Witka',  color:'#34d399'},
+    {id:uid(), name:'Szefowa Gwiazda', color:'#fbbf24'},
+  ];
+  saveInstallers();
 }
-window.addEventListener('online', () => { updateNetStatus(); loadEventsFromApi(true); });
-window.addEventListener('offline', updateNetStatus);
-updateNetStatus();
 
-/* ====== Monterzy (localStorage) ====== */
-function loadLS(key, fb){ try { return JSON.parse(localStorage.getItem(key)||JSON.stringify(fb)); } catch { return fb; } }
-function saveInstallers(){
-  localStorage.setItem(INSTALLERS_LS, JSON.stringify(installers));
-  fillInstallerFilters(); renderLegend(); renderQuickInstallerSelect(); render(); renderLoad();
+/* ===== NEON DATA API ===== */
+async function neon(sql, params=[]) {
+  const r = await fetch(API_URL, {
+    method:"POST",
+    headers: {
+      "Authorization":"Bearer "+API_KEY,
+      "Content-Type":"application/json"
+    },
+    body: JSON.stringify({ sql, params })
+  });
+  const js = await r.json();
+  if(js.error) throw new Error(js.error.message || js.error);
+  return js; // format: [{ rows: [...] }] — pierwszy element to wynik SELECT
 }
-(function seedInstallers(){
-  installers = loadLS(INSTALLERS_LS, []);
-  if(!installers.length){
-    installers = [
-      {id:uid(), name:'Emil Trynda',   color:'#60a5fa'},
-      {id:uid(), name:'Adrian Witka',  color:'#34d399'},
-      {id:uid(), name:'Szefowa Gwiazda', color:'#fbbf24'},
-    ];
-    saveInstallers();
-  } else {
-    fillInstallerFilters(); renderLegend(); renderQuickInstallerSelect();
+
+/* ===== API CRUD ===== */
+async function apiList(from, to){
+  let sql = "SELECT * FROM montaze";
+  const where = [];
+  if (from) where.push("date >= $1");
+  if (to)   where.push(date <= $${where.length?2:1});
+  if (where.length) sql += " WHERE "+where.join(" AND ");
+  sql += " ORDER BY date, time";
+  const params = [];
+  if (from) params.push(from);
+  if (to)   params.push(to);
+  const data = await neon(sql, params);
+  return (data[0]?.rows)||[];
+}
+async function apiInsert(row){
+  const data = await neon(
+    `INSERT INTO montaze (id,date,time,dur,client,addr,scope,installers,status,notes)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+    [row.id,row.date,row.time,row.dur,row.client,row.addr,row.scope,row.installers,row.status,row.notes]
+  );
+  return data[0].rows[0];
+}
+async function apiUpdate(row){
+  const data = await neon(
+    `UPDATE montaze
+       SET date=$2,time=$3,dur=$4,client=$5,addr=$6,scope=$7,installers=$8,status=$9,notes=$10
+     WHERE id=$1
+     RETURNING *`,
+    [row.id,row.date,row.time,row.dur,row.client,row.addr,row.scope,row.installers,row.status,row.notes]
+  );
+  return data[0].rows[0];
+}
+async function apiDelete(id){
+  await neon("DELETE FROM montaze WHERE id=$1",[id]);
+}
+
+/* ===== cache I/O ===== */
+function load(key, fb){ try{ return JSON.parse(localStorage.getItem(key)||JSON.stringify(fb)); }catch{ return fb; } }
+function saveEvents(){ localStorage.setItem(LS.events, JSON.stringify(events)); render(); }
+function saveInstallers(){ localStorage.setItem(LS.installers, JSON.stringify(installers)); fillInstallerFilters(); renderLegend(); renderQuickInstallerSelect(); renderLoad(); }
+
+/* ===== synchronizacja ===== */
+async function syncNow(){
+  try{
+    apiState('API: łączenie…');
+    const first = new Date(view.year, view.month, 1);
+    const from = toLocalDateStr(new Date(first.getFullYear(), first.getMonth(), 1-7));
+    const to   = toLocalDateStr(new Date(first.getFullYear(), first.getMonth()+1, 7));
+    const fresh = await apiList(from, to);
+    const map = new Map(events.map(e=>[e.id,e]));
+    fresh.forEach(e=>map.set(e.id, e));
+    events = Array.from(map.values());
+    saveEvents();
+    apiState('API: online ✔');
+  }catch(err){
+    console.error(err);
+    apiState('API: błąd / offline');
   }
-})();
-
-/* ====== Loader / status API / errors ====== */
-async function withLoader(fn){ loader.classList.add('show'); try{ return await fn(); } finally{ loader.classList.remove('show'); } }
-function setApiStatus(ok, msgOk='API: OK', msgBad='API: błąd'){
-  apiDot.className = 'i ' + (ok ? 'apiok' : 'apibad');
-  apiTxt.textContent = ok ? msgOk : msgBad;
-}
-function showError(msg, timeoutMs = 6000){
-  if(!errBox) return;
-  errBox.textContent = typeof msg === 'string' ? msg : 'Wystąpił błąd.';
-  errBox.hidden = false;
-  if(timeoutMs){
-    clearTimeout(showError._t);
-    showError._t = setTimeout(() => { errBox.hidden = true; }, timeoutMs);
-  }
-}
-function hideError(){
-  if(!errBox) return;
-  errBox.hidden = true;
 }
 
-/* ====== API: GET/UPSERT/DELETE ====== */
-async function loadEventsFromApi(force = false){
-  return withLoader(async ()=>{
-    try{
-      const r = await fetch(API, { cache: force ? 'reload' : 'no-store' });
-      if(!r.ok) throw new Error(await r.text());
-      events = await r.json();
-      localStorage.setItem(CACHE_KEY, JSON.stringify(events));
-      setApiStatus(true);
-      hideError();
-      console.log('✅ Załadowano z API', events);
-    }catch(err){
-      console.warn('⚠ API niedostępne, używam cache', err);
-      events = loadLS(CACHE_KEY, []);
-      setApiStatus(false, 'API: cache (offline)');
-      showError('API niedostępne — pracujesz na pamięci przeglądarki (cache).');
-    }
-    render();
-  });
-}
-async function upsertEvent(ev){
-  return withLoader(async ()=>{
-    try{
-      const r = await fetch(API, {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify(ev)
-      });
-      if(!r.ok) throw new Error(await r.text());
-      const saved = await r.json();
-      const i = events.findIndex(x=>x.id===saved.id);
-      if(i>=0) events[i]=saved; else events.push(saved);
-      localStorage.setItem(CACHE_KEY, JSON.stringify(events));
-      setApiStatus(true);
-      hideError();
-      render();
-      return saved;
-    }catch(err){
-      console.error('❌ upsertEvent', err);
-      setApiStatus(false, 'API: błąd zapisu');
-      showError('Nie udało się zapisać wydarzenia (API). Sprawdź połączenie i spróbuj ponownie.');
-    }
-  });
-}
-async function removeEvent(id){
-  return withLoader(async ()=>{
-    try{
-      const r = await fetch(API, {
-        method:'DELETE',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({id})
-      });
-      if(!r.ok) throw new Error(await r.text());
-      events = events.filter(x=>x.id!==id);
-      localStorage.setItem(CACHE_KEY, JSON.stringify(events));
-      setApiStatus(true);
-      hideError();
-      render();
-    }catch(err){
-      console.error('❌ removeEvent', err);
-      setApiStatus(false, 'API: błąd usuwania');
-      showError('Nie udało się usunąć wydarzenia (API).');
-    }
-  });
-}
+/* ===== UI init ===== */
+const calHead = $('#calHead'), calGrid = $('#calGrid');
+const drawer = $('#drawer');
 
-/* ====== Toolbar ====== */
 $('#prev').onclick = ()=> shiftMonth(-1);
 $('#next').onclick = ()=> shiftMonth(+1);
-$('#today').onclick = ()=> { const d=new Date(); view.year=d.getFullYear(); view.month=d.getMonth(); render(); };
-$('#jump').onchange = e=>{ const [y,m]=e.target.value.split('-').map(Number); if(y){ view.year=y; view.month=(m||1)-1; render(); } };
+$('#today').onclick = ()=>{ const d=new Date(); view.year=d.getFullYear(); view.month=d.getMonth(); render(); };
+$('#jump').onchange = (e)=>{ const [y,m]=e.target.value.split('-').map(Number); if(y) {view.year=y; view.month=(m||1)-1; render();} };
+$('#btnSync').onclick = syncNow;
 
-$('#q').oninput = e=>{ filter.q=(e.target.value||'').trim().toLowerCase(); renderList(); renderCalendar(); };
-$('#fInstaller').onchange = e=>{ filter.installer=e.target.value||''; renderList(); renderCalendar(); };
-$('#fStatus').onchange    = e=>{ filter.status=e.target.value||''; renderList(); renderCalendar(); };
-$('#btnClear').onclick    = ()=>{ filter={q:'',installer:'',status:''}; $('#q').value=''; $('#fInstaller').value=''; $('#fStatus').value=''; render(); };
-$('#btnNew').onclick      = ()=> openEditorForNew();
-btnSync?.addEventListener('click', () => loadEventsFromApi(true));
+$('#q').oninput = e=>{ filter.q=e.target.value.trim().toLowerCase(); renderList(); renderCalendar(); };
+$('#fInstaller').onchange = e=>{ filter.installer=e.target.value; renderList(); renderCalendar(); };
+$('#fStatus').onchange = e=>{ filter.status=e.target.value; renderList(); renderCalendar(); };
+$('#btnClear').onclick = ()=>{ filter={q:'',installer:'',status:''}; $('#q').value=''; $('#fInstaller').value=''; $('#fStatus').value=''; render(); };
+$('#btnNew').onclick = ()=> openEditorForNew();
 
-/* ====== Quick add ====== */
 $('#btnAddInstaller').onclick = ()=>{
   const name=$('#newInstName').value.trim();
   const color=$('#newInstColor').value||'#7dd3fc';
@@ -434,130 +361,107 @@ $('#btnAddInstaller').onclick = ()=>{
   $('#newInstName').value='';
 };
 $('#btnQuickAdd').onclick = async ()=>{
-  const date=$('#qDate').value||toLocalDateStr(new Date());
-  const time=$('#qTime').value||'08:00';
-  const dur =Math.max(1, Number($('#qDur').value)||4);
-  const client=$('#qClient').value.trim()||'Klient';
-  const addr=$('#qAddr').value.trim();
-  const scope=$('#qScope').value.trim();
-  const status=$('#qStatus').value||'PLAN';
-  const inst=Array.from($('#qInst').selectedOptions).map(o=>o.value);
-  const notes=$('#qNotes').value.trim();
-  const ev = {id:uid(), date,time,dur,client,addr,scope,status,installers:inst,notes};
-  await upsertEvent(ev);
-  const dt = new Date(date+'T00:00:00'); view.year=dt.getFullYear(); view.month=dt.getMonth(); render();
-  ['#qClient','#qAddr','#qScope','#qNotes'].forEach(s=>$(s).value='');
+  const row = getQuickFormRow();
+  try{ const saved = await apiInsert(row); upsertLocal(saved); alert('Dodano.'); }
+  catch(e){ console.warn('API niedostępne, zapis lokalny', e); events.push(row); saveEvents(); alert('Dodano lokalnie. „Synchronizuj” później.'); }
 };
 
-/* ====== Drawer actions ====== */
 $('#btnClose').onclick = ()=> closeDrawer();
 $('#btnDel').onclick = async ()=>{
   if(!openId) return;
-  if(confirm('Usunąć montaż?')){
-    await removeEvent(openId);
-    closeDrawer();
-  }
+  if(!confirm('Usunąć montaż?')) return;
+  try{ await apiDelete(openId); }catch(e){ console.warn('Delete offline?', e); }
+  events = events.filter(e=>e.id!==openId); saveEvents(); closeDrawer();
 };
 $('#btnDup').onclick = async ()=>{
   if(!openId) return;
-  const src = events.find(x=>x.id===openId);
-  if(!src) return;
-  const cp = {...src, id:uid()};
-  await upsertEvent(cp);
-  alert('Zduplikowano.');
+  const src=events.find(x=>x.id===openId); const cp={...src, id:uid()};
+  try{ const saved=await apiInsert(cp); upsertLocal(saved); alert('Zduplikowano.'); }
+  catch{ events.push(cp); saveEvents(); alert('Zduplikowano lokalnie.'); }
 };
-$('#btnIcs').onclick = ()=>{
-  if(!openId) return;
-  const ev = events.find(x=>x.id===openId);
-  if(ev) exportICS(ev);
-};
+$('#btnIcs').onclick = ()=>{ if(!openId) return; const ev=events.find(x=>x.id===openId); if(ev) exportICS(ev); };
 
-/* ====== Eksport/Import/Druk ====== */
 $('#btnExport').onclick = ()=> exportJSON();
 $('#importJSON').onchange = async (e)=>{
   const f=e.target.files[0]; if(!f) return;
   try{
     const dump=JSON.parse(await f.text());
-    if(!Array.isArray(dump)) throw new Error('Format nieobsługiwany');
-    for(const ev of dump){ if(!ev.id) ev.id=uid(); await upsertEvent(ev); }
+    if(!Array.isArray(dump)) throw 0;
+    for(const row of dump){
+      try{
+        const exists = events.find(x=>x.id===row.id);
+        const saved = exists ? await apiUpdate(row) : await apiInsert(row);
+        upsertLocal(saved);
+      }catch{ upsertLocal(row); }
+    }
     alert('Zaimportowano.');
-  }catch(err){
-    showError('Błędny plik JSON (import nieudany).');
-  }
+  }catch{ alert('Błędny plik JSON.'); }
   e.target.value='';
 };
 $('#btnPrint').onclick = ()=> window.print();
 
-/* ====== Klawiatura ====== */
 window.addEventListener('keydown',(e)=>{
   if(e.key==='ArrowLeft' && (e.altKey||e.metaKey)) shiftMonth(-1);
   if(e.key==='ArrowRight'&& (e.altKey||e.metaKey)) shiftMonth(+1);
   if(e.key==='n' && e.altKey){ e.preventDefault(); openEditorForNew(); }
 });
 
-/* ====== Render ====== */
+/* ===== RENDER ===== */
 function render(){
-  const days=['Pon','Wt','Śr','Czw','Pt','Sob','Ndz'];
-  calHead.innerHTML = days.map(d => <div>${d}</div>).join('');
-  $('#jump').value = ${view.year}-${pad2(view.month+1)};
+  const days = ['Pon','Wt','Śr','Czw','Pt','Sob','Ndz'];
+  calHead.innerHTML = days.map(d=><div>${d}</div>).join('');
+  $('#jump').value = view.year+'-'+pad2(view.month+1);
   renderCalendar();
   renderList();
   renderLegend();
   renderLoad();
-  fillClientSelect();
   renderQuickInstallerSelect();
+  fillInstallerFilters();
 }
 function renderCalendar(){
   const first = new Date(view.year, view.month, 1);
   const start = new Date(first);
-  const wd = (first.getDay()+6) % 7; // 0 = Pon
-  start.setDate(first.getDate() - wd);
-
+  const wd = (first.getDay()+6)%7;
+  start.setDate(first.getDate()-wd);
+  const cells = [];
   const todayStr = toLocalDateStr(new Date());
-  let html = '';
   for(let i=0;i<42;i++){
-    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate()+i);
+    const d = new Date(start); d.setDate(start.getDate()+i);
     const ds = toLocalDateStr(d);
-    html += `
-      <div class="cell" data-date="${ds}" aria-label="${fmtDate(d)}" tabindex="0">
-        <div class="d">${d.getDate()} ${ds===todayStr?'<span class="today">dziś</span>':''}</div>
-        <div class="list"></div>
-      </div>`;
+    const tag = ds===todayStr ? '<span class="today">dziś</span>' : '';
+    cells.push(`<div class="cell" data-date="${ds}" aria-label="${d.toLocaleDateString('pl-PL')}">
+      <div class="d">${d.getDate()} ${tag}</div><div class="list"></div></div>`);
   }
-  calGrid.innerHTML = html;
-
+  calGrid.innerHTML = cells.join('');
   const filtered = filterEvents(events);
-  for(const ev of filtered){
-    const listEl = calGrid.querySelector(.cell[data-date="${ev.date}"] .list);
-    if(!listEl) continue;
+  filtered.forEach(ev=>{
+    const el = calGrid.querySelector(.cell[data-date="${ev.date}"] .list);
+    if(!el) return;
     const clr = colorFor(ev);
     const label = escapeHtml(shortEventText(ev));
     const a = document.createElement('a');
-    a.href = '#'; a.className='ev';
+    a.href='#'; a.className='ev';
     a.innerHTML = <span class="bar" style="background:${clr}"></span>${label};
     a.title = ${ev.time||''} • ${ev.client||''} • ${ev.scope||''};
-    a.addEventListener('click', e=>{ e.preventDefault(); openDrawer(ev.id); });
-    listEl.appendChild(a);
-  }
-
-  $$('.cell').forEach(c=>{
-    c.addEventListener('dblclick', ()=> openEditorForNew(c.dataset.date));
+    a.addEventListener('click',(e)=>{ e.preventDefault(); openDrawer(ev.id); });
+    el.appendChild(a);
   });
+  $$('.cell').forEach(c=> c.addEventListener('dblclick', ()=> openEditorForNew(c.dataset.date)));
 }
 function renderList(){
   const tb = $('#tbody'); tb.innerHTML='';
   const rows = filterEvents(events).slice().sort((a,b)=>{
-    const da = (a.date||'') + (a.time||'00:00');
-    const db = (b.date||'') + (b.time||'00:00');
+    const da = (a.date||'')+(a.time||'00:00'); const db=(b.date||'')+(b.time||'00:00');
     return da.localeCompare(db);
   });
   if(!rows.length){
     tb.innerHTML = '<tr><td colspan="8" class="small">Brak pozycji dla aktualnych filtrów.</td></tr>';
     return;
   }
-  for(const ev of rows){
-    const instHtml = (ev.installers||[]).map(id=>{
-      const ins=installers.find(x=>x.id===id); if(!ins) return '';
+  rows.forEach(ev=>{
+    const inst = (ev.installers||[]).map(id=>{
+      const ins = installers.find(x=>x.id===id);
+      if(!ins) return '';
       return <span class="dot"><span class="c" style="background:${ins.color}"></span>${escapeHtml(ins.name)}</span>;
     }).join(' ');
     const stCl = statusClass(ev.status);
@@ -568,47 +472,48 @@ function renderList(){
       <td>${escapeHtml(ev.client||'')}</td>
       <td>${escapeHtml(ev.addr||'')}</td>
       <td>${escapeHtml(ev.scope||'')}</td>
-      <td>${instHtml}</td>
-      <td><span class="status ${stCl}">${escapeHtml(ev.status||'PLAN')}</span></td>
+      <td>${inst}</td>
+      <td><span class="status ${stCl}">${escapeHtml(ev.status||'')}</span></td>
       <td class="row"><button class="btn ghost ed">Edytuj</button></td>
     `;
     tr.querySelector('.ed').onclick = ()=> openDrawer(ev.id);
     tb.appendChild(tr);
-  }
+  });
 }
 function renderLegend(){
   const box = $('#legend'); box.innerHTML='';
-  for(const i of installers){
+  installers.forEach(i=>{
     const div = document.createElement('span');
     div.className='dot';
     div.innerHTML = <span class="c" style="background:${i.color}"></span>${escapeHtml(i.name)};
     box.appendChild(div);
-  }
+  });
 }
 function renderLoad(){
-  const ym = ${view.year}-${pad2(view.month+1)};
-  const counts = {}; installers.forEach(i=>counts[i.id]=0);
+  const ym = view.year+'-'+pad2(view.month+1);
+  const counts = Object.fromEntries(installers.map(i=>[i.id,0]));
   events.forEach(ev=>{
-    if((ev.date||'').startsWith(ym)){ (ev.installers||[]).forEach(id=>{ if(counts[id]!=null) counts[id]++; }); }
+    if((ev.date||'').startsWith(ym)){
+      (ev.installers||[]).forEach(id=>{ if(id in counts) counts[id]++; });
+    }
   });
   const html = installers.map(i=>{
     return `<div class="row" style="justify-content:space-between;border-bottom:1px dashed #28356c;padding:4px 0">
       <span class="dot"><span class="c" style="background:${i.color}"></span>${escapeHtml(i.name)}</span>
-      <b>${counts[i.id]||0}</b>
-    </div>`;
+      <b>${counts[i.id]||0}</b></div>`;
   }).join('');
   $('#load').innerHTML = html || '<div class="small">Brak monterów.</div>';
 }
 function renderQuickInstallerSelect(){
   const sel = $('#qInst'); sel.innerHTML='';
-  for(const i of installers){
+  installers.forEach(i=>{
     const opt=document.createElement('option');
     opt.value=i.id; opt.textContent=i.name;
     sel.appendChild(opt);
-  }
+  });
 }
 
-/* ====== Filtrowanie / kolory ====== */
+/* ===== filters & colors ===== */
 function filterEvents(arr){
   return arr.filter(ev=>{
     if(filter.q){
@@ -641,7 +546,7 @@ function shortEventText(ev){
   return ${time}${ev.client||''}${who};
 }
 
-/* ====== Nawigacja miesiąca ====== */
+/* ===== month nav ===== */
 function shiftMonth(delta){
   let y=view.year, m=view.month+delta;
   if(m<0){ m=11; y--; }
@@ -649,11 +554,10 @@ function shiftMonth(delta){
   view.year=y; view.month=m; render();
 }
 
-/* ====== Drawer (edycja) ====== */
+/* ===== drawer ===== */
 function openDrawer(id){
   openId=id; drawer.classList.add('open');
-  const ev = events.find(x=>x.id===id);
-  if(!ev) return;
+  const ev = events.find(x=>x.id===id); if(!ev) return;
   $('#e_date').value = ev.date||'';
   $('#e_time').value = ev.time||'';
   $('#e_dur').value  = ev.dur||4;
@@ -663,7 +567,6 @@ function openDrawer(id){
   $('#e_status').value= ev.status||'PLAN';
   $('#e_notes').value = ev.notes||'';
   drawInstallerChips(ev.installers||[]);
-  fillClientSelect(ev.clientId||'');
 }
 function drawInstallerChips(list){
   const box=$('#e_instBox'); box.innerHTML='';
@@ -672,28 +575,23 @@ function drawInstallerChips(list){
     const ins = installers.find(x=>x.id===id); if(!ins) return;
     const chip=document.createElement('span');
     chip.className='dot';
-    chip.innerHTML = <span class="c" style="background:${ins.color}"></span>${escapeHtml(ins.name)} <a href="#" data-id="${ins.id}" title="Usuń" style="color:#ffb4b4;margin-left:6px">×</a>;
-    chip.querySelector('a').onclick = async (e)=>{
-      e.preventDefault(); set.delete(ins.id);
-      await saveFromEditor({installers:[...set]});
-      drawInstallerChips([...set]);
-    };
+    chip.innerHTML = `<span class="c" style="background:${ins.color}"></span>${escapeHtml(ins.name)}
+      <a href="#" data-id="${ins.id}" title="Usuń" style="color:#ffb4b4;margin-left:6px">×</a>`;
+    chip.querySelector('a').onclick = (e)=>{ e.preventDefault(); set.delete(ins.id); drawInstallerChips([...set]); saveFromEditor({installers:[...set]}); };
     box.appendChild(chip);
   });
   const sel=document.createElement('select');
   sel.innerHTML = '<option value="">+ Dodaj montera…</option>' + installers.map(i=><option value="${i.id}">${escapeHtml(i.name)}</option>).join('');
-  sel.onchange = async ()=>{
-    if(sel.value){ set.add(sel.value); await saveFromEditor({installers:[...set]}); sel.value=''; drawInstallerChips([...set]); }
-  };
+  sel.onchange = ()=>{ if(sel.value){ set.add(sel.value); drawInstallerChips([...set]); saveFromEditor({installers:[...set]}); sel.value=''; } };
   box.appendChild(sel);
 }
 function closeDrawer(){ drawer.classList.remove('open'); openId=null; }
 
-/* ====== Autosave z edytora ====== */
-['#e_date','#e_time','#e_dur','#e_client','#e_addr','#e_scope','#e_status','#e_notes','#e_clientId'].forEach(sel=>{
+/* ===== editor bindings (autosave) ===== */
+['#e_date','#e_time','#e_dur','#e_client','#e_addr','#e_scope','#e_status','#e_notes'].forEach(sel=>{
   const el=$(sel);
   const evType = el.tagName==='SELECT' ? 'change' : 'input';
-  el.addEventListener(evType, async ()=>{
+  el.addEventListener(evType, ()=> {
     const patch={};
     if(sel==='#e_date') patch.date=el.value;
     if(sel==='#e_time') patch.time=el.value;
@@ -703,32 +601,42 @@ function closeDrawer(){ drawer.classList.remove('open'); openId=null; }
     if(sel==='#e_scope') patch.scope=el.value;
     if(sel==='#e_status') patch.status=el.value;
     if(sel==='#e_notes') patch.notes=el.value;
-    if(sel==='#e_clientId') patch.clientId=el.value||'';
-    await saveFromEditor(patch);
+    saveFromEditor(patch);
   });
 });
 async function saveFromEditor(patch){
   if(!openId) return;
   const i = events.findIndex(x=>x.id===openId); if(i<0) return;
-  const merged = {...events[i], ...patch};
-  const saved  = await upsertEvent(merged);
-  if(saved && openId===saved.id) drawInstallerChips(saved.installers||[]);
+  const row = {...events[i], ...patch};
+  try{
+    const saved = await apiUpdate(row);
+    upsertLocal(saved);
+  }catch(e){
+    console.warn('API offline, zapis tylko lokalny', e);
+    events[i] = row; saveEvents();
+  }
 }
 
-/* ====== Klienci / Monterzy w UI ====== */
-function fillInstallerFilters(){
-  const sel=$('#fInstaller'); const v=sel.value;
-  sel.innerHTML='<option value="">Monter (wszyscy)</option>'+installers.map(i=><option value="${i.id}">${escapeHtml(i.name)}</option>).join('');
-  sel.value=v||'';
+/* ===== local helpers ===== */
+function upsertLocal(row){
+  const i = events.findIndex(x=>x.id===row.id);
+  if(i>=0) events[i]=row; else events.push(row);
+  saveEvents();
 }
-function fillClientSelect(selected){
-  const sel=$('#e_clientId'); const v=selected||sel.value;
-  const data = loadLS(CLIENTS_LS, []);
-  sel.innerHTML='<option value="">— niepowiązany —</option>'+data.map(c=><option value="${c.id}">${escapeHtml(c.name||'Klient')}</option>).join('');
-  sel.value=v||'';
+function getQuickFormRow(){
+  const date=$('#qDate').value||toLocalDateStr(new Date());
+  const time=$('#qTime').value||'08:00';
+  const dur =Math.max(1, Number($('#qDur').value)||4);
+  const client=$('#qClient').value.trim()||'Klient';
+  const addr=$('#qAddr').value.trim();
+  const scope=$('#qScope').value.trim();
+  const status=$('#qStatus').value||'PLAN';
+  const inst=Array.from($('#qInst').selectedOptions).map(o=>o.value);
+  const notes=$('#qNotes').value.trim();
+  return {id:uid(), date,time,dur,client,addr,scope,status,installers:inst,notes};
 }
 
-/* ====== Eksporty ====== */
+/* ===== exports ===== */
 function exportJSON(){
   const blob = new Blob([JSON.stringify(events,null,2)], {type:'application/json'});
   const a = document.createElement('a');
@@ -738,20 +646,16 @@ function exportJSON(){
 }
 function exportICS(ev){
   const start = new Date(ev.date+'T'+(ev.time||'00:00')+':00');
-  const end = new Date(start); end.setHours(end.getHours()+Math.max(1, +ev.dur||1));
-  const dtStart = ev.date.replace(/-/g,'') + 'T' + (ev.time? ev.time.replace(':','')+'00' : '000000');
+  const end = new Date(start); end.setHours(end.getHours()+Math.max(1,Number(ev.dur)||1));
+  const dtStart = ev.date.replace(/-/g,'') + 'T' + (ev.time||'0000').replace(':','') + '00';
   const dtEnd   = toLocalDateStr(end).replace(/-/g,'') + 'T' + pad2(end.getHours()) + pad2(end.getMinutes()) + '00';
-  const uidStr = ev.id+'@arkon';
-  const sum = (ev.client||'Montaż')+' — '+(ev.scope||'');
-  const montery = (ev.installers||[])
-      .map(id=>installers.find(x=>x.id===id)?.name||'')
-      .filter(Boolean).join(', ');
-  const desc = Adres: ${ev.addr||''}\\nMonterzy: ${montery}\\nStatus: ${ev.status||''}\\nUwagi: ${ev.notes||''};
+  const sum = ${ev.client||'Montaż'} — ${ev.scope||''};
+  const desc = Adres: ${ev.addr||''}\\nMonterzy: ${(ev.installers||[]).map(id=>installers.find(x=>x.id===id)?.name||'').join(', ')}\\nStatus: ${ev.status||''}\\nUwagi: ${ev.notes||''};
   const ics = `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//ARKON//Kalendarz Montaży//PL
 BEGIN:VEVENT
-UID:${uidStr}
+UID:${ev.id}@arkon
 DTSTAMP:${new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+Z/,'Z')}
 DTSTART:${dtStart}
 DTEND:${dtEnd}
@@ -766,31 +670,23 @@ END:VCALENDAR`;
   a.click(); URL.revokeObjectURL(a.href);
 }
 
-/* ====== Shortcuts i New ====== */
+/* ===== start ===== */
+function fillInstallerFilters(){
+  const sel=$('#fInstaller'); const v=sel.value;
+  sel.innerHTML='<option value="">Monter (wszyscy)</option>'+installers.map(i=><option value="${i.id}">${escapeHtml(i.name)}</option>).join('');
+  sel.value=v||'';
+}
 function renderQuickInstallerSelect(){
   const sel = $('#qInst'); sel.innerHTML='';
-  for(const i of installers){
+  installers.forEach(i=>{
     const opt=document.createElement('option');
     opt.value=i.id; opt.textContent=i.name;
     sel.appendChild(opt);
-  }
-}
-function initShortcuts(){
-  calGrid.addEventListener('keydown',(e)=>{
-    if(e.key==='Enter' && e.target.classList.contains('cell')){
-      openEditorForNew(e.target.dataset.date);
-    }
   });
 }
-function openEditorForNew(dateStr){
-  const d = dateStr || toLocalDateStr(new Date(view.year,view.month,1));
-  const tmp = {id:uid(), date:d, time:'08:00', dur:4, client:'Nowy klient', addr:'', scope:'', installers:[], status:'PLAN', notes:''};
-  upsertEvent(tmp).then(()=> openDrawer(tmp.id));
-}
 
-/* ====== Start ====== */
-initShortcuts();
-loadEventsFromApi();
+render();
+syncNow().catch(()=>apiState('API: offline'));
 </script>
 </body>
 </html>
