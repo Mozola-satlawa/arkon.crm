@@ -1,19 +1,6 @@
 {
-  "name": "arkon-netlify-chat",
-  "version": "1.0.0",
-  "private": true,
   "type": "module",
-  "scripts": {
-    "dev": "netlify dev",
-    "build": "echo \"Static only\"",
-    "deploy": "netlify deploy",
-    "deploy:prod": "netlify deploy --prod"
-  },
   "dependencies": {
-    "@netlify/blobs": "^7.0.0"
-  },
-  "engines": {
-    "node": ">=18"
+    "@neondatabase/serverless": "^0.10.0"
   }
 }
-
